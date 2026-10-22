@@ -1,0 +1,153 @@
+:root {
+    color-scheme: dark;
+}
+
+html {
+    background: #02050c;
+}
+
+body {
+    color: #F1F5F9;
+    background: #02050c radial-gradient(1px 1px at 12% 18%, #fff, transparent), radial-gradient(1px 1px at 78% 30%, #fff, transparent), radial-gradient(1.5px 1.5px at 40% 80%, #cbd5e1, transparent), radial-gradient(1px 1px at 90% 85%, #fff, transparent), radial-gradient(1px 1px at 25% 55%, #94a3b8, transparent);
+    background-attachment: fixed;
+}
+
+#map {
+    position: fixed;
+    inset: 0;
+}
+
+.maplibregl-canvas {
+    outline: none;
+}
+
+.glass {
+    background: rgba(6, 10, 20, .72);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(56, 189, 248, .2);
+    border-radius: 14px;
+}
+
+.lbl {
+    font: 600 10px 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: #94A3B8;
+}
+
+.btn {
+    padding: 7px 11px;
+    border-radius: 9px;
+    font: 600 11px 'JetBrains Mono', monospace;
+    border: 1px solid #334155;
+    background: #0A1020;
+    color: #E2E8F0;
+    white-space: nowrap;
+}
+
+.btn:hover {
+    border-color: #38BDF8;
+}
+
+.btn.on {
+    background: #38BDF8;
+    color: #020617;
+}
+
+.cta {
+    background: linear-gradient(90deg, #38BDF8, #67E8F9);
+    color: #020617;
+    font: 700 13px 'JetBrains Mono', monospace;
+    padding: 10px 16px;
+    border-radius: 10px;
+}
+
+.cta.on {
+    background: linear-gradient(90deg, #F59E0B, #FCD34D);
+}
+
+:focus-visible {
+    outline: 2px solid #FBBF24;
+    outline-offset: 2px;
+}
+
+input,
+select {
+    background: #050811;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #E2E8F0;
+    font: 12px 'JetBrains Mono', monospace;
+    padding: 6px 8px;
+}
+
+input[type=range] {
+    padding: 0;
+    accent-color: #38BDF8;
+}
+
+#zr {
+    writing-mode: vertical-lr;
+    direction: rtl;
+    height: 38vh;
+    width: 22px;
+}
+
+#scan {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(transparent, #FBBF24, transparent);
+    box-shadow: 0 0 12px #FBBF24;
+    z-index: 40;
+    display: none;
+    pointer-events: none;
+}
+
+.chip {
+    flex: none;
+}
+
+.pe {
+    pointer-events: auto;
+}
+
+.maplibregl-ctrl-attrib {
+    font-size: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation: none !important;
+    }
+}
+
+#legend td {
+    padding: 5px 8px;
+    vertical-align: top;
+    border-bottom: 1px solid #1E293B;
+}
+
+#legend td:first-child {
+    color: #FBBF24;
+    font: 600 11px 'JetBrains Mono', monospace;
+    white-space: nowrap;
+}
+
+#st,
+#px {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: #000;
+}
+
+#px {
+    padding-top: 108px;
+}
+
+#pxv {
+    position: absolute;
+    inset: 108px 0 0 0;
+}
