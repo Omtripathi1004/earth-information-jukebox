@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from urllib.parse import parse_qs, urlencode
 
 # Add project root to sys.path so backend modules are importable
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,23 +15,14 @@ class VercelPathMiddleware:
         self.wsgi_app = wsgi_app
 
     def __call__(self, environ, start_response):
-        # Debug environ
-        headers = {k: v for k, v in environ.items() if k.startswith("HTTP_") or k in ("PATH_INFO", "RAW_URI", "REQUEST_URI")}
-        print(f"VERCEL DEBUG HEADERS: {headers}", flush=True)
-
-        path = (
-            environ.get("HTTP_X_FORWARDED_URI")
-            or environ.get("HTTP_X_MATCHED_PATH")
-            or environ.get("HTTP_X_REAL_IP")
-            or environ.get("RAW_URI")
-        )
-        # Check if incoming request path in header
-        x_now_route = environ.get("HTTP_X_VERCEL_SC_PATH") or environ.get("HTTP_X_NOW_ROUTE_MATCHES")
-        if x_now_route:
-            print(f"NOW_ROUTE: {x_now_route}", flush=True)
-
-        if path and path != "/api/index.py":
-            environ["PATH_INFO"] = path.split("?")[0]
+        qs_str = environ.get("QUERY_STRING", "")
+        if "__path__=" in qs_str:
+            qs = parse_qs(qs_str, keep_blank_values=True)
+            if "__path__" in qs:
+                path = qs.pop("__path__")[0]
+                environ["PATH_INFO"] = path
+                flat_qs = [(k, v) for k, vs in qs.items() for v in vs]
+                environ["QUERY_STRING"] = urlencode(flat_qs)
         return self.wsgi_app(environ, start_response)
 
 
