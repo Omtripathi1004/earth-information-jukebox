@@ -14,13 +14,22 @@ class VercelPathMiddleware:
         self.wsgi_app = wsgi_app
 
     def __call__(self, environ, start_response):
-        # Vercel forwards the real incoming path in HTTP headers
+        # Debug environ
+        headers = {k: v for k, v in environ.items() if k.startswith("HTTP_") or k in ("PATH_INFO", "RAW_URI", "REQUEST_URI")}
+        print(f"VERCEL DEBUG HEADERS: {headers}", flush=True)
+
         path = (
             environ.get("HTTP_X_FORWARDED_URI")
             or environ.get("HTTP_X_MATCHED_PATH")
+            or environ.get("HTTP_X_REAL_IP")
             or environ.get("RAW_URI")
         )
-        if path:
+        # Check if incoming request path in header
+        x_now_route = environ.get("HTTP_X_VERCEL_SC_PATH") or environ.get("HTTP_X_NOW_ROUTE_MATCHES")
+        if x_now_route:
+            print(f"NOW_ROUTE: {x_now_route}", flush=True)
+
+        if path and path != "/api/index.py":
             environ["PATH_INFO"] = path.split("?")[0]
         return self.wsgi_app(environ, start_response)
 
