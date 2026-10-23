@@ -20,9 +20,11 @@ import numpy as np
 from flask import Flask, Response, jsonify, request, send_from_directory
 from PIL import Image
 
-from . import nasa, sonify
+import sys
 
 ROOT = Path(__file__).resolve().parents[2]            # repository root: index.html and assets/
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 try:
     from dotenv import load_dotenv
@@ -30,6 +32,11 @@ try:
     load_dotenv(ROOT / ".env")
 except ImportError:
     pass
+
+try:
+    from . import nasa, sonify
+except (ImportError, ValueError):
+    from backend.app import nasa, sonify
 
 DEFAULT_LAYER = "MODIS_Terra_CorrectedReflectance_TrueColor"
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")

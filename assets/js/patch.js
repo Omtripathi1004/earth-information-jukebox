@@ -3,57 +3,52 @@
 (() => {
   'use strict';
 
-  /* 1. Stop a possible endless zoom loop. frame() calls map.jumpTo(), which fires "moveend";
-        the moveend handler then resets lastZ to -1, so the next frame jumps again.
-        This puts lastZ back after our own jump. (Not tested here: check it in DevTools.) */
-  const jump = map.jumpTo.bind(map);
-  map.jumpTo = (o, e) => {
-    const z = lastZ, r = jump(o, e);
-    if (o && 'zoom' in o && 'pitch' in o) lastZ = z;
-    return r;
-  };
-
-  /* 2. Ctrl+L / Cmd+L (focus the address bar) must not start the sound scan. */
+  /* 1. Ctrl+L / Cmd+L (focus the address bar) must not start the sound scan. */
   addEventListener('keydown', (e) => {
     if (/^l$/i.test(e.key) && (e.ctrlKey || e.metaKey || e.altKey)) e.stopImmediatePropagation();
   }, true);
 
-  /* 3. Escape closes the top-most open panel. */
+  /* 2. Escape closes the top-most open panel. */
   addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     const open = [['#keys', '#kx'], ['#px', '#pxc'], ['#st', '#stx'], ['#legend', '#lg']].find(([p]) => !$(p).hidden);
     if (open) $(open[1]).click();
   });
 
-  /* 4. Pause the Cesium render loop while the photoreal view is closed (saves battery and GPU). */
+  /* 3. Pause the Cesium render loop while the photoreal view is closed (saves battery and GPU). */
   $('#pxc').addEventListener('click', () => { if (pxv) pxv.useDefaultRenderLoop = false; });
   $('#p3').addEventListener('click', () => { if (pxv) pxv.useDefaultRenderLoop = true; });
 
-  /* 5. Keep the map centre's longitude inside -180..180. The backend rejects anything outside that
+  /* 4. Keep the map centre's longitude inside -180..180. The backend rejects anything outside that
         range, so place names and climate could fail after panning across the date line. */
   const centre = map.getCenter.bind(map);
   map.getCenter = () => centre().wrap();
 
-  /* 6. Fast travel between places. The old easeTo kept street-level zoom while crossing the world,
-        so the map tried to load huge numbers of tiles. flyTo zooms out along the way. When a
-        monument is chosen and a Cesium token exists, the photoreal 3D view opens on arrival. */
+  /* 5. Fast travel between places. Smoothly flyTo destination without projection or pitch deformation. */
   window.pick = (lat, lng, z) => {
     busy = true;
     const c = map.getCenter(), far = Math.hypot(lat - c.lat, lng - c.lng) > 2, t = far ? z : Math.max(map.getZoom(), z);
-    map.flyTo({ center: [lng, lat], zoom: t, duration: far ? 3200 : 1800, essential: true });
     scrollToZ(t, 'instant');
-    if (z >= 17 && key('ion')) map.once('moveend', () => { if ($('#px').hidden) openPx(); });
+    zs = t;
+    lastZ = t;
+    const targetPitch = clamp((t - 13) / 4.5, 0, 1) * 35;
+    map.flyTo({ center: [lng, lat], zoom: t, pitch: targetPitch, duration: far ? 2400 : 1400, essential: true });
+    map.once('moveend', () => {
+      busy = false;
+      scheduleLookup();
+      if (z >= 17 && key('ion')) { if ($('#px').hidden) openPx(); }
+    });
   };
 
-  /* 7. The extruded OpenStreetMap boxes look cartoonish, so they start hidden. The menu button brings them back. */
-  let boxesOn = false;
+  /* 7. Extruded 3D buildings and monuments: enabled by default for clear 3D architectural shapes */
+  let boxesOn = true;
   const boxes = (on) => {
     try { map.setLayoutProperty('bld3d', 'visibility', on ? 'visible' : 'none'); } catch (e) {}
     $('#b3').setAttribute('aria-pressed', String(on)); $('#b3').classList.toggle('on', on);
   };
   let tries = 0;
   const wait3d = setInterval(() => {
-    if ((map.getLayer && map.getLayer('bld3d')) || ++tries > 40) { clearInterval(wait3d); boxes(false); }
+    if ((map.getLayer && map.getLayer('bld3d')) || ++tries > 40) { clearInterval(wait3d); boxes(true); }
   }, 500);
   $('#b3').addEventListener('click', () => { boxesOn = !boxesOn; boxes(boxesOn); });
 

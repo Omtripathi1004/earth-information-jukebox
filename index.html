@@ -12,8 +12,8 @@
 <meta property="og:description" content="Fly from orbit to ground level, then hear NASA satellite imagery as sound." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌍%3C/text%3E%3C/svg%3E" />
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.3.0/dist/maplibre-gl.css" />
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.3.0/dist/maplibre-gl.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <script>tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter','sans-serif'], display: ['Space Grotesk','sans-serif'], mono: ['JetBrains Mono','monospace'] } } } }</script>
@@ -22,7 +22,7 @@
 <body class="font-sans antialiased">
 <noscript><p class="fixed inset-0 z-[100] grid place-items-center bg-slate-950 text-slate-200 p-6 text-center">The Earth Information Jukebox needs JavaScript to draw the map and play sound. Turn JavaScript on and reload the page.</p></noscript>
 <div id="map" role="region" aria-label="Interactive Earth view"></div>
-<div class="fixed inset-0 z-[5] pointer-events-none" style="background: radial-gradient(ellipse at center, transparent 58%, rgba(2,5,12,.6))"></div>
+<div id="vignette" class="fixed inset-0 z-[5] pointer-events-none transition-opacity duration-500" style="background: radial-gradient(ellipse at center, transparent 58%, rgba(2,5,12,.6))"></div>
 <div id="scan"></div>
 
 <header id="top" class="fixed top-0 inset-x-0 z-50 p-3 flex flex-wrap items-center gap-2 pointer-events-none" style="padding-top: max(12px, env(safe-area-inset-top))">

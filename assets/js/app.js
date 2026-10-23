@@ -13,21 +13,20 @@ const gibs = () => { const [id, lv, ext] = lyr(); return `https://gibs.earthdata
 
 /* ---------- Earth view ---------- */
 const map = new maplibregl.Map({
-  container: 'map', center: [10, 20], zoom: Z0, minZoom: .5, maxZoom: 20.5, maxPitch: 85, dragRotate: true, scrollZoom: false, doubleClickZoom: false, keyboard: false, touchZoomRotate: false,
+  container: 'map', center: [10, 20], zoom: Z0, minZoom: .5, maxZoom: 20.5, maxPitch: 60, dragRotate: true, scrollZoom: false, doubleClickZoom: false, keyboard: false, touchZoomRotate: false,
   canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true }, attributionControl: { compact: true },
-  style: { version: 8, glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', projection: { type: 'globe' }, sources: {
+  style: { version: 8, glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', sources: {
       esri: { type: 'raster', tileSize: 256, maxzoom: 19, tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], attribution: 'Esri, Maxar, Earthstar Geographics' },
-      gibs: { type: 'raster', tileSize: 256, maxzoom: 9, tiles: [gibs()], attribution: 'NASA EOSDIS GIBS' },
-      dem: { type: 'raster-dem', tileSize: 256, maxzoom: 15, encoding: 'terrarium', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], attribution: 'Terrain: AWS Terrain Tiles' } },
-    layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#02050c' } }, { id: 'esri', type: 'raster', source: 'esri' },
-      { id: 'gibs', type: 'raster', source: 'gibs', paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 8.5, 1, 10.5, 0] } }] }
+      gibs: { type: 'raster', tileSize: 256, maxzoom: 9, tiles: [gibs()], attribution: 'NASA EOSDIS GIBS' } },
+    layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#02050c' } },
+      { id: 'esri', type: 'raster', source: 'esri', paint: { 'raster-fade-duration': 0 } },
+      { id: 'gibs', type: 'raster', source: 'gibs', paint: { 'raster-fade-duration': 0, 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 8.5, 1, 10.5, 0] } }] }
 });
 map.on('load', () => {
-  try { map.setSky({ 'sky-color': '#6fa8ff', 'horizon-color': '#d6e8ff', 'fog-color': '#dbeafe', 'sky-horizon-blend': .6, 'horizon-fog-blend': .5, 'fog-ground-blend': .15, 'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 5, 1, 7, 0] }); } catch (e) {}
   fetch('https://tiles.openfreemap.org/styles/bright').then(r => r.json()).then(s => {   /* OpenStreetMap buildings, extruded in 3D at ground level */
     const bl = s.layers.find(l => l['source-layer'] === 'building'); if (!bl) return;
     map.addSource('ofm', { type: 'vector', url: s.sources[bl.source].url, attribution: '© OpenStreetMap, OpenFreeMap' });
-    map.addLayer({ id: 'bld3d', type: 'fill-extrusion', source: 'ofm', 'source-layer': 'building', minzoom: 14.5, paint: { 'fill-extrusion-color': '#e8e2d6', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 6], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': .9 } });
+    map.addLayer({ id: 'bld3d', type: 'fill-extrusion', source: 'ofm', 'source-layer': 'building', minzoom: 14, paint: { 'fill-extrusion-color': '#e2e8f0', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0], 'fill-extrusion-opacity': .9 } });
     /* real map labels (places, streets, landmarks) on top of the satellite photo */
     try { map.setGlyphs(s.glyphs); } catch (e) {}
     s.layers.filter(l => l.type === 'symbol' && ['place', 'transportation_name', 'water_name', 'poi'].includes(l['source-layer'])).forEach(l => {
@@ -47,21 +46,34 @@ let zs = Z0, busy = false, lastZ = -1, terrainOn = false;
 const range = () => Math.max(1, document.documentElement.scrollHeight - innerHeight), zFromScroll = () => Z0 + (Z1 - Z0) * clamp(scrollY / range(), 0, 1);
 const scrollToZ = (z, b) => scrollTo({ top: (clamp(z, Z0, Z1) - Z0) / (Z1 - Z0) * range(), behavior: b || 'smooth' });
 const chap = z => z < 2.5 ? 'Orbit · the whole Earth' : z < 5 ? 'Continent' : z < 8 ? 'Region' : z < 11 ? 'City' : z < 14 ? 'Neighborhood' : z < 17 ? 'Street level' : 'Ground level · 3D';
+
 function frame() {
   const zt = zFromScroll(); zs += (zt - zs) * .12; if (Math.abs(zt - zs) < .003) zs = zt;
   if (!busy && Math.abs(zs - lastZ) > .002) {
-    lastZ = zs; map.jumpTo({ zoom: zs, pitch: clamp((zs - 12) / 5, 0, 1) * 72 }); const c = map.getCenter();
-    if ((zs > 12.5) !== terrainOn) { terrainOn = zs > 12.5; try { map.setTerrain(terrainOn ? { source: 'dem', exaggeration: 1.4 } : null); } catch (e) {} }
-    $('#chap').textContent = chap(zs); $('#coord').textContent = `${Math.abs(c.lat).toFixed(2)}°${c.lat >= 0 ? 'N' : 'S'} ${Math.abs(c.lng).toFixed(2)}°${c.lng >= 0 ? 'E' : 'W'}`;
-    const wk = 156.543 * Math.cos(c.lat * Math.PI / 180) / 2 ** zs * innerWidth; $('#scale').textContent = zs < 3 ? 'whole planet' : `≈ ${fmtKm(wk)} across · altitude ≈ ${fmtKm(wk * 1.5)}`;
-    $('#intro').style.opacity = clamp(1 - (zs - Z0) / 1.5, 0, 1); $('#zr').value = (zs - Z0) / (Z1 - Z0) * 1000;
+    lastZ = zs;
+    // Gentle 3D perspective pitch (max 38 deg) so monuments are upright and clear, not squashed into flat ovals
+    const targetPitch = clamp((zs - 13) / 4.5, 0, 1) * 38;
+    map.jumpTo({ zoom: zs, pitch: targetPitch });
+    const c = map.getCenter();
+    $('#chap').textContent = chap(zs);
+    $('#coord').textContent = `${Math.abs(c.lat).toFixed(2)}°${c.lat >= 0 ? 'N' : 'S'} ${Math.abs(c.lng).toFixed(2)}°${c.lng >= 0 ? 'E' : 'W'}`;
+    const wk = 156.543 * Math.cos(c.lat * Math.PI / 180) / 2 ** zs * innerWidth;
+    $('#scale').textContent = zs < 3 ? 'whole planet' : `≈ ${fmtKm(wk)} across · altitude ≈ ${fmtKm(wk * 1.5)}`;
+    $('#intro').style.opacity = clamp(1 - (zs - Z0) / 1.5, 0, 1);
+    
+    // Fade out the dark circular vignette so zoomed-in views have zero oval darkening
+    const vig = $('#vignette');
+    if (vig) vig.style.opacity = clamp(1 - (zs - 2.5) / 1.5, 0, 1);
+
+    $('#zr').value = (zs - Z0) / (Z1 - Z0) * 1000;
     if (ac) { dl.frequency.setTargetAtTime(150 + zs * 120, ac.currentTime, .1); dg.gain.setTargetAtTime(listening ? .035 : 0, ac.currentTime, .2); }
   }
   requestAnimationFrame(frame);
 }
 const fmtKm = k => k >= 100 ? Math.round(k) + ' km' : k >= 1 ? k.toFixed(1) + ' km' : Math.round(k * 1000) + ' m';
 map.on('dragstart', () => busy = true);
-map.on('moveend', () => { busy = false; zs = map.getZoom(); lastZ = -1; scheduleLookup(); });
+map.on('moveend', () => { busy = false; zs = map.getZoom(); scheduleLookup(); });
+map.on('dragend', () => { busy = false; zs = map.getZoom(); lastZ = -1; scheduleLookup(); });
 function pick(lat, lng, z) { busy = true; const t = Math.max(map.getZoom(), z); map.easeTo({ center: [lng, lat], zoom: t, duration: 1800 }); scrollToZ(t, 'instant'); }
 map.on('click', e => pick(e.lngLat.lat, e.lngLat.lng, 6));
 $('#zr').oninput = e => scrollToZ(Z0 + e.target.value / 1000 * (Z1 - Z0), 'instant');
