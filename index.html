@@ -103,8 +103,9 @@
   <p class="fixed z-50 bottom-3 left-1/2 -translate-x-1/2 text-[10px] text-slate-300 bg-black/60 px-2 py-1 rounded text-center">Google Photorealistic 3D Tiles via Cesium ion. Search inside this view uses Google geocoding, as Google’s terms require.</p></div>
 <aside id="keys" hidden role="dialog" aria-labelledby="keys-h" class="glass fixed z-[60] left-1/2 top-32 -translate-x-1/2 p-4 w-[min(460px,calc(100vw-24px))]">
   <h2 id="keys-h" class="font-display font-bold mb-1">Tokens for real-life views</h2>
+  <p id="kenv" class="text-emerald-400 font-mono text-[11px] mb-1"></p>
   <p id="kmsg" class="text-amber-300 text-[12px] mb-2"></p>
-  <p class="text-[12px] text-slate-400 mb-3">Both are free. They are saved only in this browser. Never commit them to GitHub.</p>
+  <p class="text-[12px] text-slate-400 mb-3">Both are free. They are loaded automatically from .env or saved in this browser.</p>
   <label class="lbl block mb-1" for="mly">Mapillary client token (street photos) · <a class="underline text-sky-400" href="https://www.mapillary.com/dashboard/developers" target="_blank" rel="noopener">get one</a></label><input id="mly" type="password" autocomplete="off" class="w-full mb-3" placeholder="MLY|…">
   <label class="lbl block mb-1" for="ion">Cesium ion token (photoreal 3D) · <a class="underline text-sky-400" href="https://ion.cesium.com" target="_blank" rel="noopener">get one</a></label><input id="ion" type="password" autocomplete="off" class="w-full mb-3" placeholder="eyJ…">
   <div class="flex gap-2 justify-end"><button id="kx" class="btn">Cancel</button><button id="ks" class="cta">Save</button></div>

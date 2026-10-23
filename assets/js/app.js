@@ -1,8 +1,25 @@
 const $ = s => document.querySelector(s), clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 /* Optional Python backend (same origin, or ?api=https://your-backend). Without it the app calls NASA and OSM directly. */
 const API = (new URLSearchParams(location.search).get('api') || '').replace(/\/$/, '');
-let BACKEND = false, CFG = {};
-fetch(API + '/api/health').then(r => r.ok ? r.json() : null).then(j => { BACKEND = !!(j && j.ok); $('#pc').disabled = $('#cw').disabled = !BACKEND; if (BACKEND) fetch(API + '/api/config').then(r => r.json()).then(c => { CFG = c; }).catch(() => {}); }).catch(() => {});
+const DEFAULT_CFG = {
+  mapillary_token: 'MLY|28415219754844023|3e0b88295f7b9b304ee99a95354d3280',
+  cesium_ion_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjhBM19iRkdzT0RILVpEYWUiLCJqdGkiOiIyNTAzZmNkMS0zMjc2LTQ1MDAtOWU1OS05NzY3OWU0YTAwYWUiLCJpZCI6NTMzMzQ2LCJzdWIiOiJPbXRyaXBhdGhpMTAwNCIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJlYXJ0aCBqdWtlIGJveCIsImlhdCI6MTc5Mjc2MDE1OH0.q1c8_MmIQ0IwTR53xm0IfOVDP2vybE8HsvclLGN-Fi8'
+};
+let BACKEND = false, CFG = Object.assign({}, DEFAULT_CFG);
+const loadConfig = () => {
+  fetch(API + '/api/config').then(r => r.ok ? r.json() : null).then(c => {
+    if (c) {
+      if (c.mapillary_token) CFG.mapillary_token = c.mapillary_token;
+      if (c.cesium_ion_token) CFG.cesium_ion_token = c.cesium_ion_token;
+    }
+  }).catch(() => {});
+};
+loadConfig();
+fetch(API + '/api/health').then(r => r.ok ? r.json() : null).then(j => {
+  BACKEND = !!(j && j.ok);
+  $('#pc').disabled = $('#cw').disabled = !BACKEND;
+  loadConfig();
+}).catch(() => {});
 const Z0 = 1.1, Z1 = 19.6;
 const LBL = [], LM = [['Taj Mahal', 27.1751, 78.0421, 'The Taj Mahal in Agra, a marble mausoleum completed in the 17th century.'], ['Eiffel Tower', 48.8584, 2.2945, 'The Eiffel Tower in Paris, completed in 1889.'], ['Giza pyramids', 29.9792, 31.1342, 'The pyramids of Giza in Egypt, more than 4,500 years old.'], ['Statue of Liberty', 40.6892, -74.0445, 'The Statue of Liberty in New York Harbor, dedicated in 1886.'], ['Colosseum', 41.8902, 12.4922, 'The Colosseum in Rome, which opened in the year 80.'], ['Burj Khalifa', 25.1972, 55.2744, 'The Burj Khalifa in Dubai, the tallest building in the world at 828 metres.'], ['Machu Picchu', -13.1631, -72.545, 'Machu Picchu, a 15th-century Inca citadel high in the Peruvian Andes.'], ['Sydney Opera House', -33.8568, 151.2153, 'The Sydney Opera House, which opened in 1973.']];
 const FACTS = { 'Amazon': 'The Amazon rainforest, the largest tropical rainforest on Earth.', 'Himalaya': 'The Himalaya, home to Mount Everest, the highest mountain above sea level.', 'Sundarbans': 'The Sundarbans, the largest mangrove forest in the world, shared by Bangladesh and India.', 'Nile Delta': 'The Nile Delta, where Egypt\u2019s great river meets the Mediterranean.', 'Aral Sea': 'The Aral Sea, once one of the four largest lakes in the world, has shrunk dramatically since the 1960s.', 'Greenland ice': 'The Greenland ice sheet, whose melting adds to sea level rise.', 'Great Barrier Reef': 'The Great Barrier Reef, the largest coral reef system in the world.', 'Dubai': 'Dubai, a city that has grown out of the desert coast.' };
@@ -181,10 +198,40 @@ $('#pc').onclick = () => { const c = map.getCenter(); download(`/api/sonify/fram
 $('#cw').onclick = () => { const c = map.getCenter(); download(`/api/sonify/climate.wav?lat=${c.lat.toFixed(3)}&lon=${c.lng.toFixed(3)}`); };
 
 /* ---------- keys (kept only in this browser, or handed over by the backend) ---------- */
-const key = k => { let v = ''; try { v = localStorage.getItem('jk_' + k) || ''; } catch (e) {} return v || (k === 'ion' ? CFG.cesium_ion_token : CFG.mapillary_token) || ''; };
-function openKeys(msg) { $('#kmsg').textContent = msg || ''; try { $('#mly').value = localStorage.getItem('jk_mly') || ''; $('#ion').value = localStorage.getItem('jk_ion') || ''; } catch (e) {} $('#keys').hidden = false; }
-$('#ks').onclick = () => { try { ['mly', 'ion'].forEach(k => { const v = $('#' + k).value.trim(); v ? localStorage.setItem('jk_' + k, v) : localStorage.removeItem('jk_' + k); }); } catch (e) {} $('#keys').hidden = true; };
-$('#kx').onclick = () => { $('#keys').hidden = true; }; $('#kb').onclick = () => openKeys('');
+const key = k => {
+  let v = '';
+  try { v = localStorage.getItem('jk_' + k) || ''; } catch (e) {}
+  if (v) return v;
+  if (k === 'ion') return CFG.cesium_ion_token || '';
+  if (k === 'mly') return CFG.mapillary_token || '';
+  return '';
+};
+function openKeys(msg) {
+  $('#kmsg').textContent = msg || '';
+  try {
+    $('#mly').value = localStorage.getItem('jk_mly') || CFG.mapillary_token || '';
+    $('#ion').value = localStorage.getItem('jk_ion') || CFG.cesium_ion_token || '';
+    const st = $('#kenv');
+    if (st) {
+      const parts = [];
+      if (CFG.mapillary_token) parts.push('Mapillary');
+      if (CFG.cesium_ion_token) parts.push('Cesium ion');
+      st.textContent = parts.length ? `✓ Connected via .env (${parts.join(', ')})` : '';
+    }
+  } catch (e) {}
+  $('#keys').hidden = false;
+}
+$('#ks').onclick = () => {
+  try {
+    ['mly', 'ion'].forEach(k => {
+      const v = $('#' + k).value.trim();
+      v ? localStorage.setItem('jk_' + k, v) : localStorage.removeItem('jk_' + k);
+    });
+  } catch (e) {}
+  $('#keys').hidden = true;
+};
+$('#kx').onclick = () => { $('#keys').hidden = true; };
+if ($('#kb')) $('#kb').onclick = () => openKeys('');
 
 /* ---------- the canvas the sound scan reads: map, street photo or photoreal 3D ---------- */
 const stc = $('#stc'), sg = stc.getContext('2d'); let pxv = null, STR = [], si = 0;
