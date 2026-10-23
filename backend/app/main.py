@@ -61,7 +61,7 @@ except (ImportError, ModuleNotFoundError, ValueError):
     except (ImportError, ValueError):
         import nasa, sonify  # type: ignore
 
-DEFAULT_LAYER = "MODIS_Terra_CorrectedReflectance_TrueColor"
+DEFAULT_LAYER = "VIIRS_SNPP_CorrectedReflectance_TrueColor"
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 

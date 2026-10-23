@@ -25,8 +25,12 @@ const LBL = [], LM = [['Taj Mahal', 27.1751, 78.0421, 'The Taj Mahal in Agra, a 
 const FACTS = { 'Amazon': 'The Amazon rainforest, the largest tropical rainforest on Earth.', 'Himalaya': 'The Himalaya, home to Mount Everest, the highest mountain above sea level.', 'Sundarbans': 'The Sundarbans, the largest mangrove forest in the world, shared by Bangladesh and India.', 'Nile Delta': 'The Nile Delta, where Egypt\u2019s great river meets the Mediterranean.', 'Aral Sea': 'The Aral Sea, once one of the four largest lakes in the world, has shrunk dramatically since the 1960s.', 'Greenland ice': 'The Greenland ice sheet, whose melting adds to sea level rise.', 'Great Barrier Reef': 'The Great Barrier Reef, the largest coral reef system in the world.', 'Dubai': 'Dubai, a city that has grown out of the desert coast.' };
 const PLACES = [['Amazon', -3.47, -62.2], ['Himalaya', 27.99, 86.93], ['Sundarbans', 21.95, 89.18], ['Nile Delta', 31.0, 31.0], ['Aral Sea', 45.0, 59.5], ['Greenland ice', 69.2, -51.1], ['Great Barrier Reef', -18.3, 147.7], ['Dubai', 25.2, 55.27]];
 $('#dt').value = $('#dt').max = new Date(Date.now() - 3 * 864e5).toISOString().slice(0, 10);
-const lyr = () => $('#lyr').value.split('|'), isData = () => lyr()[1] !== '9';
-const gibs = () => { const [id, lv, ext] = lyr(); return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${id}/default/${$('#dt').value}/GoogleMapsCompatible_Level${lv}/{z}/{y}/{x}.${ext}`; };
+const lyr = () => $('#lyr').value.split('|'), isData = () => lyr()[1] !== '9' && lyr()[0] !== 'ESRI_World_Imagery';
+const gibs = () => {
+  const [id, lv, ext] = lyr();
+  if (id === 'ESRI_World_Imagery') return '';
+  return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${id}/default/${$('#dt').value}/GoogleMapsCompatible_Level${lv}/{z}/{y}/{x}.${ext}`;
+};
 
 /* ---------- Earth view ---------- */
 const map = new maplibregl.Map({
@@ -34,7 +38,7 @@ const map = new maplibregl.Map({
   canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true }, attributionControl: { compact: true },
   style: { version: 8, glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', sources: {
       esri: { type: 'raster', tileSize: 256, maxzoom: 19, tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], attribution: 'Esri, Maxar, Earthstar Geographics' },
-      gibs: { type: 'raster', tileSize: 256, maxzoom: 9, tiles: [gibs()], attribution: 'NASA EOSDIS GIBS' } },
+      gibs: { type: 'raster', tileSize: 256, maxzoom: 9, tiles: [gibs() || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], attribution: 'NASA EOSDIS GIBS' } },
     layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#02050c' } },
       { id: 'esri', type: 'raster', source: 'esri', paint: { 'raster-fade-duration': 0 } },
       { id: 'gibs', type: 'raster', source: 'gibs', paint: { 'raster-fade-duration': 0, 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 8.5, 1, 10.5, 0] } }] }
@@ -52,8 +56,19 @@ map.on('load', () => {
   }).catch(() => {});
 });
 function applyLayer() {   /* NASA data layers sit on a greyscale base so every colour you hear is data */
-  map.getSource('gibs').setTiles([gibs()]); const d = isData();
-  map.setPaintProperty('esri', 'raster-saturation', d ? -1 : 0); map.setPaintProperty('esri', 'raster-brightness-max', d ? .55 : 1);
+  const [id] = lyr(), d = isData();
+  if (id === 'ESRI_World_Imagery') {
+    try { map.setLayoutProperty('gibs', 'visibility', 'none'); } catch (e) {}
+    map.setPaintProperty('esri', 'raster-saturation', 0);
+    map.setPaintProperty('esri', 'raster-brightness-max', 1);
+    $('#hear').textContent = 'seamless world satellite';
+    return;
+  }
+  try { map.setLayoutProperty('gibs', 'visibility', 'visible'); } catch (e) {}
+  const t = gibs();
+  if (t) { try { map.getSource('gibs').setTiles([t]); } catch (e) {} }
+  map.setPaintProperty('esri', 'raster-saturation', d ? -1 : 0);
+  map.setPaintProperty('esri', 'raster-brightness-max', d ? .55 : 1);
   map.setPaintProperty('gibs', 'raster-opacity', d ? ['interpolate', ['linear'], ['zoom'], 7, .9, 9.5, 0] : ['interpolate', ['linear'], ['zoom'], 8.5, 1, 10.5, 0]);
 }
 ['lyr', 'dt'].forEach(id => $('#' + id).onchange = applyLayer);
@@ -185,11 +200,140 @@ let cmT; $('#cm').onclick = () => {
   cmT = setInterval(() => { if (i >= Y.length) { clearInterval(cmT); $('#clyr').textContent = ''; return; } voice('bell', scaleF(Math.round(clamp((TT[i] - m + 1.5) / 3, 0, 1) * 14)), .16, i / Y.length * 1.6 - .8); $('#clyr').textContent = Y[i++]; }, 200);
 };
 
-/* ---------- narrator ---------- */
-$('#desc').onclick = () => {
-  if (!window.speechSynthesis) return; const c = map.getCenter(), t = `${$('#place').textContent}. ${chap(zs)}. ${$('#scale').textContent}. Latitude ${c.lat.toFixed(1)}, longitude ${c.lng.toFixed(1)}. ` + ($('#hear').textContent !== 'press Listen' ? 'The scan is hearing ' + $('#hear').textContent + '. ' : '') + (CL ? `NASA POWER shows a local temperature trend of ${(CL.b * 10).toFixed(2)} degrees Celsius per decade since 1985.` : '');
-  speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(t));
+/* ---------- rich historical knowledge & narrator ---------- */
+const HISTORICAL_KNOWLEDGE = {
+  'Taj Mahal': {
+    title: 'The Taj Mahal · Agra, India',
+    speech: "Welcome to the Taj Mahal in Agra, India, universally admired as an architectural masterpiece of Mughal art and one of the New Seven Wonders of the World. Commissioned in 1631 by Mughal Emperor Shah Jahan as a mausoleum for his beloved wife Mumtaz Mahal, it took over twenty thousand artisans and twenty-two years to complete. Built entirely from translucent white Makrana marble that subtly changes hue from rosy pink at dawn to shimmering gold under the full moon, its facades feature intricate floral pietra dura inlays crafted from twenty-eight varieties of semi-precious gemstones. An ingenious optical and engineering masterstroke: the four flanking minarets were deliberately constructed to tilt outward by two degrees, guaranteeing that if an earthquake ever struck, they would collapse outward and protect the sacred central dome."
+  },
+  'Eiffel Tower': {
+    title: 'The Eiffel Tower · Paris, France',
+    speech: "You are looking at the Eiffel Tower in Paris, France, the global emblem of the French nation and an extraordinary marvel of 19th-century structural engineering. Designed by Gustave Eiffel and unveiled in 1889 as the grand monumental entrance arch for the Universal Exposition commemorating the centennial of the French Revolution, it held the undisputed title of the world's tallest man-made structure for over forty years at three hundred and thirty metres. Constructed from eighteen thousand pieces of puddle wrought iron joined by two and a half million rivets, it was originally destined for demolition after twenty years. Its fate was saved when the French military discovered its revolutionary strategic value as a radio telegraph tower, famously intercepting enemy battle orders during World War One."
+  },
+  'Colosseum': {
+    title: 'The Colosseum (Flavian Amphitheatre) · Rome, Italy',
+    speech: "This is the Colosseum, the largest standing ancient amphitheatre on Earth, situated at the historic heart of Rome, Italy. Commissioned under Emperor Vespasian in 72 AD and inaugurated by his son Titus in 80 AD with one hundred consecutive days of games, it could seat over fifty thousand Roman spectators. Built using travertine limestone, volcanic tuff, and brick-faced concrete with eighty arched entrances, it featured an intricate multi-level subterranean labyrinth known as the hypogeum, equipped with vertical wooden lifts and pulleys to hoist gladiators and wild animals directly into combat. In its early years, Roman hydraulic engineers could even flood the entire arena floor to stage naumachiae, spectacular mock naval sea battles."
+  },
+  'Giza pyramids': {
+    title: 'The Pyramids of Giza · Cairo, Egypt',
+    speech: "You are surveying the Pyramids of Giza in Egypt, the oldest and only surviving monument of the original Seven Wonders of the Ancient World. Built during Egypt's Fourth Dynasty over four thousand five hundred years ago as monumental royal tombs for Pharaohs Khufu, Khafre, and Menkaure, the Great Pyramid was assembled from approximately two point three million massive limestone blocks, some weighing upwards of fifty tons. For over three thousand eight hundred years, it stood as the tallest building on Earth. Its four cardinal faces align to true astronomical north with an astonishing precision of three sixtieths of a degree, standing as eternal testament to ancient Egyptian mathematics and engineering."
+  },
+  'Statue of Liberty': {
+    title: 'The Statue of Liberty · New York, United States',
+    speech: "This is the Statue of Liberty, officially christened Liberty Enlightening the World, standing proudly in New York Harbor since 1886. A joint gift of friendship from the people of France to the United States celebrating the centennial of American independence and the historic abolition of slavery, it was sculpted by Frédéric-Auguste Bartholdi with an internal load-bearing iron framework engineered by Gustave Eiffel. Fashioned from three hundred and fifty sheets of hand-hammered copper, now draped in its signature green verdigris patina, Lady Liberty holds high the torch of enlightenment and a tabula ansata inscribed July 4, 1776, while broken chains lie at her feet representing freedom from tyranny."
+  },
+  'Burj Khalifa': {
+    title: 'Burj Khalifa · Dubai, United Arab Emirates',
+    speech: "Rising into the desert sky is the Burj Khalifa in Dubai, the tallest building and tallest freestanding structure in recorded human history, soaring eight hundred and twenty-eight metres high with one hundred and sixty-three floors. Opened in 2010 and designed by architect Adrian Smith, its Y-shaped tripartite footprint was inspired by the regional desert spider lily flower, tapering gradually to deflect turbulent high-altitude wind currents. At its summit, the tower's metallic spire is visible from ninety-five kilometres away, and due to its tremendous vertical height, spectators on the ground can watch the sun set twice on the same evening by riding the ultra-high-speed elevator to the top observation decks."
+  },
+  'Machu Picchu': {
+    title: 'Machu Picchu · Cusco Region, Peru',
+    speech: "Perched dramatically two thousand four hundred and thirty metres high in the Peruvian Andes is Machu Picchu, the legendary 15th-century Inca royal sanctuary. Built around 1450 under the reign of Inca Emperor Pachacuti and abandoned during the Spanish conquest, it remained concealed from the world until American explorer Hiram Bingham arrived in 1911. Master Inca stonemasons carved polished granite boulders using ashlar masonry without a drop of mortar, fitting stones so tightly that a knife blade cannot penetrate. During earthquakes, these stones rhythmically vibrate in place before resetting, preserving the ancient citadel through centuries of seismic tremors."
+  },
+  'Sydney Opera House': {
+    title: 'Sydney Opera House · Sydney, Australia',
+    speech: "Gracing Bennelong Point in Sydney Harbour is the Sydney Opera House, universally celebrated as a masterpiece of 20th-century modern expressionist architecture. Designed by Danish architect Jørn Utzon and inaugurated by Queen Elizabeth II in 1973, its iconic white precast vaulted roof shells were inspired by segments of an orange. Utzon solved the monumental mathematical engineering puzzle by deriving all shell ribs from the geometry of a single sphere, covered in over one million self-cleaning Swedish glazed ceramic tiles that capture the changing sea breezes and harbour sunlight."
+  },
+  'Amazon': {
+    title: 'The Amazon River & Rainforest · South America',
+    speech: "Spanning across nine South American nations is the Amazon Basin, the largest tropical rainforest and mightiest hydrological system on our planet. The Amazon River discharges roughly two hundred and nine thousand cubic metres of fresh water every second into the Atlantic Ocean—more than the next seven largest rivers combined. Home to over three hundred and ninety billion individual trees, ten percent of all known animal species, and hundreds of indigenous tribes, the Amazon generates a fifth of the world's river runoff and acts as a colossal planetary climate regulator and carbon reservoir."
+  },
+  'Himalaya': {
+    title: 'The Himalaya & Mount Everest · Asia',
+    speech: "Rising before you is the mighty Himalaya, the world's highest mountain range, forged fifty million years ago when the Indian tectonic plate collided with Eurasia—a geologic collision that still pushes the peaks upward by roughly five millimetres each year. Crowned by Mount Everest at eight thousand eight hundred and forty-eight metres, known as Sagarmatha in Nepal and Chomolungma in Tibet, this immense frozen realm holds the third pole, the largest non-polar ice deposit on Earth, feeding major rivers that sustain over one point three billion people across Asia."
+  },
+  'Sundarbans': {
+    title: 'Sundarbans Mangrove Delta · Bangladesh & India',
+    speech: "This is the Sundarbans, the largest contiguous mangrove forest on Earth, spanning ten thousand square kilometres across the vast delta where the Ganges, Brahmaputra, and Meghna rivers merge into the Bay of Bengal. Named after the exquisite sundari mangrove trees, this tidal labyrinth is the only mangrove habitat on Earth prowled by the endangered Royal Bengal tiger, whose paws have adapted to swimming across saltwater channels. This UNESCO World Heritage biosphere forms a vital living buffer, shielding tens of millions of coastal inhabitants from fierce tropical cyclones."
+  },
+  'Nile Delta': {
+    title: 'The Nile Delta · Egypt',
+    speech: "You are looking at the lush green fan of the Nile Delta in northern Egypt, where the world's longest river meets the Mediterranean Sea. Known as the cradle of ancient Egyptian civilization, these nutrient-rich floodplains have been continuously farmed for over five thousand years. At its western edge stands the historic city of Alexandria, founded in 331 BC by Alexander the Great, once home to the fabled Great Library and the towering Pharos Lighthouse."
+  },
+  'Aral Sea': {
+    title: 'The Aral Sea · Central Asia',
+    speech: "Before you lies the basin of the Aral Sea between Kazakhstan and Uzbekistan, once the fourth largest inland lake in the world, spanning sixty-eight thousand square kilometres. In one of the 20th century's most poignant environmental tragedies, massive Soviet irrigation diversions dried up its feeder rivers, causing ninety percent of the sea to vanish and exposing the new Aralkum desert. Today, the monumental Kokaral Dam in Kazakhstan has begun reversing the tide, successfully restoring fish populations and water levels in the North Aral Sea."
+  },
+  'Greenland ice': {
+    title: 'The Greenland Ice Sheet · Arctic',
+    speech: "Stretching across the polar north is the Greenland Ice Sheet, the second largest body of glacial ice on Earth, blanketing one point seven million square kilometres. Layered with snow that fell over two million years ago and reaching depths of over three kilometres, this immense reservoir holds enough frozen water to raise global sea levels by over seven metres if fully melted. NASA satellites monitor its glacial flow daily to track the pulse of global climate change."
+  },
+  'Great Barrier Reef': {
+    title: 'The Great Barrier Reef · Coral Sea, Australia',
+    speech: "Glittering along the northeast coast of Australia is the Great Barrier Reef, the planet's largest living biological structure, stretching over two thousand three hundred kilometres across three hundred and forty-four thousand square kilometres. Built by trillions of microscopic coral polyps over hundreds of thousands of years, it is so colossal that it can be recognized by astronauts from space. It hosts fifteen hundred species of tropical fish, six species of sea turtles, and more than four hundred varieties of hard and soft coral."
+  },
+  'Dubai': {
+    title: 'Dubai · United Arab Emirates',
+    speech: "On the southern coast of the Persian Gulf stands Dubai, a world-renowned metropolis of visionary architecture and ambition. Originating as a peaceful pearl-diving village along Dubai Creek, the city transformed during the late 20th century into an international crossroads for commerce, aviation, and technological ingenuity. Today, its coastline boasts iconic engineered marvels like the Palm Jumeirah archipelago and record-setting skyscrapers rising boldly above the desert sands."
+  }
 };
+
+async function getRichDescription(c, placeName) {
+  for (const [name, klat, klng] of LM) {
+    if (Math.hypot(c.lat - klat, c.lng - klng) < 0.05 && HISTORICAL_KNOWLEDGE[name]) {
+      return HISTORICAL_KNOWLEDGE[name];
+    }
+  }
+  for (const [name, klat, klng] of PLACES) {
+    if (Math.hypot(c.lat - klat, c.lng - klng) < 1.5 && HISTORICAL_KNOWLEDGE[name]) {
+      return HISTORICAL_KNOWLEDGE[name];
+    }
+  }
+  try {
+    const geo = await (await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${c.lat}|${c.lng}&gsradius=10000&gslimit=1&format=json&origin=*`)).json();
+    const hit = geo && geo.query && geo.query.geosearch && geo.query.geosearch[0];
+    if (hit && hit.title) {
+      const sum = await (await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(hit.title)}`)).json();
+      if (sum && sum.extract) {
+        return {
+          title: sum.title + ' · ' + (placeName || 'Regional Heritage'),
+          speech: `${sum.title}: ${sum.extract} Located in the historic region of ${placeName}.`
+        };
+      }
+    }
+  } catch (e) {}
+  const climInfo = CL ? `NASA POWER climate records document a four-decade temperature trend of ${(CL.b * 10).toFixed(2)} degrees Celsius per decade since 1985.` : '';
+  return {
+    title: placeName || 'Global Observation',
+    speech: `Observing ${placeName || 'this region'}. Looking from ${chap(zs)}, spanning ${$('#scale').textContent}. ${climInfo} Known for its distinct geographical character and natural heritage.`
+  };
+}
+
+let descActive = false;
+const stopSpeech = () => {
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  descActive = false;
+  $('#desc').textContent = '🔊 Describe';
+  $('#desc').classList.remove('on');
+  if ($('#narrative-card')) $('#narrative-card').hidden = true;
+};
+
+$('#desc').onclick = async () => {
+  if (descActive) { stopSpeech(); return; }
+  if (!window.speechSynthesis) return;
+  const c = map.getCenter(), placeName = $('#place').textContent;
+  $('#desc').textContent = '⏳ Researching…';
+  const info = await getRichDescription(c, placeName);
+  const card = $('#narrative-card'), titleEl = $('#narrative-title'), textEl = $('#narrative-text');
+  if (card && titleEl && textEl) {
+    titleEl.textContent = info.title;
+    textEl.textContent = info.speech;
+    card.hidden = false;
+  }
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(info.speech);
+  utt.rate = 0.95;
+  utt.pitch = 1.0;
+  utt.onstart = () => {
+    descActive = true;
+    $('#desc').textContent = '■ Stop story';
+    $('#desc').classList.add('on');
+  };
+  utt.onend = stopSpeech;
+  utt.onerror = stopSpeech;
+  speechSynthesis.speak(utt);
+};
+if ($('#narrative-close')) $('#narrative-close').onclick = stopSpeech;
 addEventListener('keydown', e => { if (!/INPUT|SELECT/.test(e.target.tagName) && (e.key === 'l' || e.key === 'L')) $('#listen').click(); });
 $('#gnd').onclick = () => scrollToZ(18.9);
 $('#lg').onclick = () => { const l = $('#legend'); l.hidden = !l.hidden; $('#lg').setAttribute('aria-expanded', String(!l.hidden)); };
