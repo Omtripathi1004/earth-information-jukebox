@@ -4,6 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>The Earth Information Jukebox | Scroll down to Earth, then listen</title>
+<meta name="description" content="Scroll from orbit down to ground level anywhere on Earth, then press Listen to hear NASA satellite imagery turn into sound." />
+<meta name="theme-color" content="#02050c" />
+<meta name="color-scheme" content="dark" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="The Earth Information Jukebox" />
+<meta property="og:description" content="Fly from orbit to ground level, then hear NASA satellite imagery as sound." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌍%3C/text%3E%3C/svg%3E" />
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.3.0/dist/maplibre-gl.css" />
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.3.0/dist/maplibre-gl.js"></script>
@@ -13,31 +20,40 @@
 <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body class="font-sans antialiased">
-<div id="map" aria-label="Interactive Earth view"></div>
+<noscript><p class="fixed inset-0 z-[100] grid place-items-center bg-slate-950 text-slate-200 p-6 text-center">The Earth Information Jukebox needs JavaScript to draw the map and play sound. Turn JavaScript on and reload the page.</p></noscript>
+<div id="map" role="region" aria-label="Interactive Earth view"></div>
 <div class="fixed inset-0 z-[5] pointer-events-none" style="background: radial-gradient(ellipse at center, transparent 58%, rgba(2,5,12,.6))"></div>
 <div id="scan"></div>
 
-<header class="fixed top-0 inset-x-0 z-50 p-3 flex flex-wrap items-center gap-2 pointer-events-none" style="padding-top: max(12px, env(safe-area-inset-top))">
+<header id="top" class="fixed top-0 inset-x-0 z-50 p-3 flex flex-wrap items-center gap-2 pointer-events-none" style="padding-top: max(12px, env(safe-area-inset-top))">
   <div class="glass px-3 py-2 pe"><div class="lbl text-sky-400">NASA Space Apps 2026</div><div class="font-display font-bold text-sm sm:text-base leading-tight">Earth Information Jukebox</div></div>
-  <form id="sf" class="flex-1 min-w-[200px] max-w-md flex gap-2 pe"><input id="q" class="flex-1 min-w-0" placeholder="Search any place on Earth…" aria-label="Search a place"><button class="btn" type="submit">Go</button></form>
-  <button id="listen" class="cta pe" aria-pressed="false">♪ Listen to this view</button>
-  <button id="desc" class="btn pe" title="Speak a description of this view">🔊 Describe</button>
-  <button id="gnd" class="btn pe" title="Drop to ground level in 3D">⛰ Drop to ground</button>
-  <button id="lg" class="btn pe" aria-expanded="false" aria-controls="legend">? Sound legend</button>
-  <button id="pc" class="btn pe" disabled title="Needs the Python backend: download this view as a .wav file">⬇ Sonic postcard</button>
-  <button id="sv" class="btn pe" title="Real street-level photos near the centre of the view">📷 Street photos</button>
-  <button id="p3" class="btn pe" title="Google Photorealistic 3D Tiles for monuments and cities">🏛 Photoreal 3D</button>
-  <button id="tour" class="btn pe" title="Narrated tour of places and monuments">🎬 Tour</button>
-  <button id="lb" class="btn pe" title="Place, street and landmark names">🏷 Labels</button>
-  <button id="sh" class="btn pe" title="Copy a link to this exact view">🔗 Share</button>
-  <button id="kb" class="btn pe" title="Tokens for street photos and photoreal 3D">⚙ Keys</button>
+  <form id="sf" role="search" class="flex-1 min-w-[200px] max-w-md flex gap-2 pe"><input id="q" class="flex-1 min-w-0" placeholder="Search any place on Earth…" aria-label="Search a place" autocomplete="off" spellcheck="false" enterkeyhint="search"><button class="btn" type="submit">Go</button></form>
+  <button id="listen" class="cta pe" aria-pressed="false" title="Start or stop listening (L)"><span aria-hidden="true">♪</span> Listen to this view</button>
+  <button id="tour" class="btn pe" title="Narrated tour of places and monuments"><span aria-hidden="true">🎬</span> Tour</button>
+  <button id="gnd" class="btn pe" title="Drop to ground level in 3D"><span aria-hidden="true">⛰</span> Drop to ground</button>
+  <button id="desc" class="btn pe" title="Speak a description of this view"><span aria-hidden="true">🔊</span> Describe</button>
+  <details id="more" class="pe">
+    <summary class="btn cursor-pointer select-none" aria-label="More tools"><span aria-hidden="true">⋯</span> More</summary>
+    <div id="more-list" class="glass p-2 flex flex-col gap-1" style="position: fixed; left: 12px; top: calc(var(--top-h, 76px) - 4px); width: min(15rem, calc(100vw - 24px)); z-index: 55">
+      <button id="lg" class="btn pe w-full text-left justify-start" aria-expanded="false" aria-controls="legend"><span aria-hidden="true">?</span> Sound legend</button>
+      <button id="p3" class="btn pe w-full text-left justify-start" title="Google Photorealistic 3D Tiles for monuments and cities"><span aria-hidden="true">🏛</span> Photoreal 3D</button>
+      <button id="sv" class="btn pe w-full text-left justify-start" title="Real street-level photos near the centre of the view"><span aria-hidden="true">📷</span> Street photos</button>
+      <button id="lb" class="btn pe w-full text-left justify-start" title="Place, street and landmark names"><span aria-hidden="true">🏷</span> Labels</button>
+      <button id="pc" class="btn pe w-full text-left justify-start" disabled title="Needs the Python backend: download this view as a .wav file"><span aria-hidden="true">⬇</span> Sonic postcard</button>
+      <button id="sh" class="btn pe w-full text-left justify-start" title="Copy a link to this exact view"><span aria-hidden="true">🔗</span> Share</button>
+      <button id="kb" class="btn pe w-full text-left justify-start" title="Tokens for street photos and photoreal 3D"><span aria-hidden="true">⚙</span> Keys</button>
+      <button id="cmob" class="btn pe w-full text-left justify-start sm:hidden" aria-pressed="false"><span aria-hidden="true">🌡</span> Local climate</button>
+      <button id="b3" class="btn pe w-full text-left justify-start" aria-pressed="false" title="Extruded OpenStreetMap building boxes at ground level"><span aria-hidden="true">🏙</span> 3D building boxes</button>
+      <button id="ab" class="btn pe w-full text-left justify-start"><span aria-hidden="true">ℹ</span> About and credits</button>
+    </div>
+  </details>
 </header>
-<nav id="chips" class="fixed z-20 left-3 right-3 flex gap-2 overflow-x-auto pb-1" style="top: calc(max(12px, env(safe-area-inset-top)) + 64px)" aria-label="Featured places"></nav>
+<nav id="chips" class="fixed z-20 left-3 right-3 flex gap-2 overflow-x-auto pb-1" style="top: var(--top-h, calc(max(12px, env(safe-area-inset-top)) + 64px))" aria-label="Featured places"></nav>
 
 <div id="intro" class="fixed z-10 inset-x-0 top-[30%] text-center px-6 pointer-events-none">
   <h1 class="font-display text-3xl sm:text-5xl font-bold tracking-tight">Fly down to any place on Earth</h1>
   <p class="mt-3 text-slate-300 text-sm sm:text-base max-w-xl mx-auto">Scroll to zoom from orbit all the way down to ground level in 3D. Press <b>Listen</b> and a scan line turns the satellite pixels you see into sound.</p>
-  <p class="mt-5 lbl animate-bounce">↓ Scroll down ↓</p>
+  <p class="mt-5 lbl motion-safe:animate-bounce">↓ Scroll down ↓</p>
 </div>
 
 <aside class="glass fixed z-20 left-3 bottom-3 p-3 w-[min(340px,calc(100vw-24px))]" style="margin-bottom: env(safe-area-inset-bottom)" aria-live="off">
@@ -46,20 +62,20 @@
   <div class="font-mono text-[11px] text-slate-400 mt-1"><span id="coord"></span> · <span id="scale"></span></div>
   <div class="font-mono text-[12px] mt-2 text-amber-300">Hearing: <span id="hear" class="text-slate-200">press Listen</span></div>
   <div class="grid grid-cols-2 gap-2 mt-3">
-    <select id="lyr" aria-label="NASA layer"><optgroup label="Satellite photo (true colour)"><option value="MODIS_Terra_CorrectedReflectance_TrueColor|9|jpg">MODIS Terra</option><option value="MODIS_Aqua_CorrectedReflectance_TrueColor|9|jpg">MODIS Aqua</option><option value="VIIRS_SNPP_CorrectedReflectance_TrueColor|9|jpg">VIIRS Suomi NPP</option></optgroup><optgroup label="NASA data frames"><option value="MODIS_Terra_Land_Surface_Temp_Day|7|png">Land surface temperature</option><option value="MODIS_Terra_Aerosol|6|png">Aerosol optical depth</option></optgroup></select>
+    <select id="lyr" aria-label="NASA layer"><optgroup label="Satellite photo (true colour)"><option value="MODIS_Terra_CorrectedReflectance_TrueColor|9|jpg">MODIS Terra</option><option value="MODIS_Aqua_CorrectedReflectance_TrueColor|9|jpg">MODIS Aqua</option><option value="VIIRS_SNPP_CorrectedReflectance_TrueColor|9|jpg">VIIRS Suomi NPP</option></optgroup><optgroup label="NASA data frames"><option value="MODIS_Terra_Land_Surface_Temp_Day|7|png">Land surface temperature</option><option value="MODIS_Terra_Aerosol|6|png">Aerosol optical depth</option><option value="GHRSST_L4_MUR_Sea_Surface_Temperature|7|png">Sea surface temperature</option><option value="MODIS_Terra_NDSI_Snow_Cover|8|png">Snow cover</option><option value="VIIRS_SNPP_DayNightBand_At_Sensor_Radiance|8|png">Night lights (VIIRS)</option></optgroup></select>
     <input id="dt" type="date" aria-label="Imagery date">
     <label class="lbl col-span-2 flex items-center gap-2">Scan<select id="spdn" class="flex-1"><option value="260">Slow</option><option value="160" selected>Normal</option><option value="90">Fast</option></select></label>
-    <button id="tl" class="btn col-span-2" title="Step through the last 30 days of NASA imagery while the scan plays">▶ Time-lapse (30 days)</button>
+    <button id="tl" class="btn col-span-2" title="Step through the last 30 days of NASA imagery while the scan plays"><span aria-hidden="true">▶</span> Time-lapse (30 days)</button>
   </div>
-  <p class="text-[10px] text-slate-500 mt-2 leading-snug">Imagery and data layers: NASA GIBS. Past NASA’s resolution the view blends into Esri World Imagery, with AWS terrain and OpenStreetMap 3D buildings at ground level. Prototype, not an official NASA product.</p>
+  <p class="text-[10px] text-slate-400 mt-2 leading-snug">Imagery and data layers: NASA GIBS. Past NASA’s resolution the view blends into Esri World Imagery, with AWS terrain and OpenStreetMap 3D buildings at ground level. Prototype, not an official NASA product.</p>
 </aside>
 
-<aside class="glass fixed z-20 right-3 bottom-3 p-3 w-[min(280px,calc(100vw-24px))] hidden sm:block" style="margin-bottom: env(safe-area-inset-bottom)">
+<aside id="climate" class="glass fixed z-20 right-3 bottom-3 p-3 w-[min(280px,calc(100vw-24px))] hidden sm:block" style="margin-bottom: env(safe-area-inset-bottom)">
   <div class="lbl text-amber-400">Local climate · NASA POWER</div>
   <canvas id="cc" width="250" height="64" class="w-full mt-2" role="img" aria-label="Annual mean temperature at this location, 1985 to 2025"></canvas>
   <div id="cl" class="font-mono text-[11px] text-slate-300 mt-1 leading-snug">Zoom in on a place to load its 1985–2025 climate.</div>
-  <button id="cm" class="btn w-full mt-2" disabled>♪ Play 40 years of local temperature <span id="clyr"></span></button>
-  <button id="cw" class="btn w-full mt-2" disabled title="Needs the Python backend">⬇ Download climate melody (.wav)</button>
+  <button id="cm" class="btn w-full mt-2" disabled><span aria-hidden="true">♪</span> Play 40 years of local temperature <span id="clyr"></span></button>
+  <button id="cw" class="btn w-full mt-2" disabled title="Needs the Python backend"><span aria-hidden="true">⬇</span> Download climate melody (.wav)</button>
 </aside>
 
 <div class="fixed z-20 right-3 top-1/2 -translate-y-1/2 glass p-2 flex flex-col items-center gap-2" style="margin-top: -4vh">
@@ -79,22 +95,33 @@
     <tr><td>NASA data frames</td><td>Colour becomes pitch: blue is low, red is high. Grey means no data and is silent</td></tr>
     <tr><td>Local climate</td><td>Each year of NASA POWER temperature (1985–2025) becomes one note</td></tr>
   </tbody></table>
-  <p class="text-[11px] text-slate-500 mt-3">Shortcuts: L start or stop listening · scroll, the + and − buttons or the zoom slider to move between orbit and ground.</p>
+  <p class="text-[11px] text-slate-400 mt-3">Shortcuts: L start or stop listening · scroll, the + and − buttons or the zoom slider to move between orbit and ground.</p>
 </aside>
-<div id="st" hidden><canvas id="stc" class="absolute inset-0 w-full h-full"></canvas>
-  <div class="fixed z-50 bottom-4 left-1/2 -translate-x-1/2 glass px-3 py-2 flex items-center gap-2 text-[11px] font-mono max-w-[96vw]"><button id="stp" class="btn" aria-label="Previous photo">◀</button><span id="stcap" class="text-slate-300"></span><button id="stn" class="btn" aria-label="Next photo">▶</button><button id="stx" class="btn">✕ Close</button></div></div>
-<div id="px" hidden><div id="pxv"></div><button id="pxc" class="btn fixed z-50 top-28 left-3">✕ Close 3D view</button>
+<div id="st" hidden role="dialog" aria-label="Street photos"><canvas id="stc" class="absolute inset-0 w-full h-full"></canvas>
+  <div class="fixed z-50 bottom-4 left-1/2 -translate-x-1/2 glass px-3 py-2 flex items-center gap-2 text-[11px] font-mono max-w-[96vw]"><button id="stp" class="btn" aria-label="Previous photo">◀</button><span id="stcap" class="text-slate-300"></span><button id="stn" class="btn" aria-label="Next photo">▶</button><button id="stx" class="btn"><span aria-hidden="true">✕</span> Close</button></div></div>
+<div id="px" hidden role="dialog" aria-label="Photoreal 3D view"><div id="pxv"></div><button id="pxc" class="btn fixed z-50 left-3" style="top: calc(var(--top-h, 76px) + 40px)"><span aria-hidden="true">✕</span> Close 3D view</button>
   <p class="fixed z-50 bottom-3 left-1/2 -translate-x-1/2 text-[10px] text-slate-300 bg-black/60 px-2 py-1 rounded text-center">Google Photorealistic 3D Tiles via Cesium ion. Search inside this view uses Google geocoding, as Google’s terms require.</p></div>
-<aside id="keys" hidden class="glass fixed z-[60] left-1/2 top-32 -translate-x-1/2 p-4 w-[min(460px,calc(100vw-24px))]" aria-label="Access tokens">
-  <h2 class="font-display font-bold mb-1">Tokens for real-life views</h2>
+<aside id="keys" hidden role="dialog" aria-labelledby="keys-h" class="glass fixed z-[60] left-1/2 top-32 -translate-x-1/2 p-4 w-[min(460px,calc(100vw-24px))]">
+  <h2 id="keys-h" class="font-display font-bold mb-1">Tokens for real-life views</h2>
   <p id="kmsg" class="text-amber-300 text-[12px] mb-2"></p>
   <p class="text-[12px] text-slate-400 mb-3">Both are free. They are saved only in this browser. Never commit them to GitHub.</p>
-  <label class="lbl block mb-1">Mapillary client token (street photos) · <a class="underline text-sky-400" href="https://www.mapillary.com/dashboard/developers" target="_blank" rel="noopener">get one</a></label><input id="mly" type="password" autocomplete="off" class="w-full mb-3" placeholder="MLY|…">
-  <label class="lbl block mb-1">Cesium ion token (photoreal 3D) · <a class="underline text-sky-400" href="https://ion.cesium.com" target="_blank" rel="noopener">get one</a></label><input id="ion" type="password" autocomplete="off" class="w-full mb-3" placeholder="eyJ…">
+  <label class="lbl block mb-1" for="mly">Mapillary client token (street photos) · <a class="underline text-sky-400" href="https://www.mapillary.com/dashboard/developers" target="_blank" rel="noopener">get one</a></label><input id="mly" type="password" autocomplete="off" class="w-full mb-3" placeholder="MLY|…">
+  <label class="lbl block mb-1" for="ion">Cesium ion token (photoreal 3D) · <a class="underline text-sky-400" href="https://ion.cesium.com" target="_blank" rel="noopener">get one</a></label><input id="ion" type="password" autocomplete="off" class="w-full mb-3" placeholder="eyJ…">
   <div class="flex gap-2 justify-end"><button id="kx" class="btn">Cancel</button><button id="ks" class="cta">Save</button></div>
+</aside>
+<aside id="about" hidden role="dialog" aria-labelledby="about-h" class="glass fixed z-[60] left-1/2 top-24 -translate-x-1/2 p-4 w-[min(520px,calc(100vw-24px))] max-h-[70vh] overflow-auto text-[12px] text-slate-300">
+  <h2 id="about-h" class="font-display font-bold text-base text-slate-100 mb-2">About and data credits</h2>
+  <p>An independent prototype made for the NASA Space Apps Challenge. It is not an official NASA product, and NASA does not endorse it.</p>
+  <ul class="list-disc pl-5 mt-2 space-y-1"><li>NASA EOSDIS GIBS: satellite imagery and data layers. NASA POWER: local climate.</li><li>Esri World Imagery, AWS Terrain Tiles, OpenStreetMap and OpenFreeMap: base imagery, terrain, buildings and labels.</li><li>Street photos: © Mapillary contributors, CC BY-SA 4.0.</li><li>Open-source software: MapLibre GL JS, Tailwind CSS, CesiumJS, Flask, NumPy, Pillow and Requests. Esri imagery and Google photoreal 3D are third-party services with their own terms. Full list and licences: SOURCES.md in the repository.</li><li>Photoreal 3D: Google Photorealistic 3D Tiles through Cesium ion, used under their terms.</li></ul>
+  <p class="mt-2">Built with help from AI coding tools (Claude, by Anthropic). Source: github.com/Omtripathi1004/earth-information-jukebox</p>
+  <div class="flex justify-end mt-3"><button id="abx" class="btn">Close</button></div>
 </aside>
 <div id="scroller" style="height: 900vh"></div>
 
+<div id="live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
 <script src="assets/js/app.js"></script>
+<script src="assets/js/patch.js"></script>
+<script src="assets/js/enhance.js"></script>
 </body>
 </html>

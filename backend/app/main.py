@@ -23,6 +23,14 @@ from PIL import Image
 from . import nasa, sonify
 
 ROOT = Path(__file__).resolve().parents[2]            # repository root: index.html and assets/
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(ROOT / ".env")
+except ImportError:
+    pass
+
 DEFAULT_LAYER = "MODIS_Terra_CorrectedReflectance_TrueColor"
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 

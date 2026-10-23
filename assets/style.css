@@ -135,6 +135,8 @@ input[type=range] {
     white-space: nowrap;
 }
 
+/* The 3D view and its Close button follow the real header height
+   (--top-h is set by assets/js/enhance.js; 76px is the fallback). */
 #st,
 #px {
     position: fixed;
@@ -144,10 +146,45 @@ input[type=range] {
 }
 
 #px {
-    padding-top: 108px;
+    padding-top: calc(var(--top-h, 76px) + 36px);
 }
 
 #pxv {
     position: absolute;
-    inset: 108px 0 0 0;
+    inset: calc(var(--top-h, 76px) + 36px) 0 0 0;
+}
+
+/* ---- Additions ---- */
+
+/* Disabled buttons (Sonic postcard, climate play and download) now look disabled */
+.btn:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+    border-color: #334155;
+}
+
+/* "More" menu trigger: hide the browser's default disclosure marker */
+#more > summary {
+    list-style: none;
+}
+
+#more > summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Local climate as a sheet on phones (opened from the More menu) */
+@media (max-width: 639px) {
+    #climate.mobile-open {
+        display: block !important;
+        left: 12px;
+        right: 12px;
+        width: auto;
+        bottom: 12px;
+        max-height: 60vh;
+        overflow: auto;
+        z-index: 35;
+    }
 }

@@ -13,13 +13,28 @@ An interactive Earth observation jukebox that sonifies NASA satellite imagery (M
 
 ## Tech Stack
 - **Frontend**: HTML5, Tailwind CSS, MapLibre GL, Web Audio API
-- **Backend**: Python, Flask, NumPy, Pillow, Requests
+- **Backend**: Python, Flask, NumPy, Pillow, Requests, python-dotenv
 - **Deployment**: Vercel Serverless
+
+## Environment Configuration
+Copy `.env.example` to create your local `.env` file:
+```bash
+cp .env.example .env
+```
+
+| Variable | Description | Default |
+|---|---|---|
+| `MAPILLARY_TOKEN` | Optional token for street-level photos from Mapillary | None |
+| `CESIUM_ION_TOKEN` | Optional token for Google Photorealistic 3D Tiles | None |
+| `JUKEBOX_CONTACT` | Contact email or repo URL for upstream NASA/OSM User-Agent | Jukebox GitHub URL |
+| `HOST` | Flask server host | `127.0.0.1` |
+| `PORT` | Flask server port | `8000` |
 
 ## Local Setup
 ```bash
 git clone https://github.com/Omtripathi1004/earth-information-jukebox.git
 cd earth-information-jukebox
+cp .env.example .env
 pip install -r backend/requirements.txt
 python -m backend.app.main
 ```

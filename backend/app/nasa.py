@@ -21,6 +21,9 @@ LAYERS = {
     "VIIRS_SNPP_CorrectedReflectance_TrueColor": {"matrix": 9, "ext": "jpg", "kind": "photo", "label": "photo"},
     "MODIS_Terra_Land_Surface_Temp_Day": {"matrix": 7, "ext": "png", "kind": "data", "label": "land temperature"},
     "MODIS_Terra_Aerosol": {"matrix": 6, "ext": "png", "kind": "data", "label": "aerosol"},
+    "GHRSST_L4_MUR_Sea_Surface_Temperature": {"matrix": 7, "ext": "png", "kind": "data", "label": "sea temperature"},
+    "MODIS_Terra_NDSI_Snow_Cover": {"matrix": 8, "ext": "png", "kind": "data", "label": "snow cover"},
+    "VIIRS_SNPP_DayNightBand_At_Sensor_Radiance": {"matrix": 8, "ext": "png", "kind": "data", "label": "night light"},
 }
 GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best"
 POWER = "https://power.larc.nasa.gov/api/temporal/monthly/point"
