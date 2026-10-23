@@ -36,12 +36,12 @@ const gibs = () => {
 const map = new maplibregl.Map({
   container: 'map', center: [10, 20], zoom: Z0, minZoom: .5, maxZoom: 20.5, maxPitch: 60, dragRotate: true, scrollZoom: false, doubleClickZoom: false, keyboard: false, touchZoomRotate: false,
   canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true }, attributionControl: { compact: true },
-  style: { version: 8, glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', sources: {
+  style: { version: 8, projection: { type: 'globe' }, glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', sources: {
       esri: { type: 'raster', tileSize: 256, maxzoom: 19, tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], attribution: 'Esri, Maxar, Earthstar Geographics' },
       gibs: { type: 'raster', tileSize: 256, maxzoom: 9, tiles: [gibs() || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], attribution: 'NASA EOSDIS GIBS' } },
     layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#02050c' } },
       { id: 'esri', type: 'raster', source: 'esri', paint: { 'raster-fade-duration': 0 } },
-      { id: 'gibs', type: 'raster', source: 'gibs', paint: { 'raster-fade-duration': 0, 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 8.5, 1, 10.5, 0] } }] }
+      { id: 'gibs', type: 'raster', source: 'gibs', layout: { visibility: lyr()[0] === 'ESRI_World_Imagery' ? 'none' : 'visible' }, paint: { 'raster-fade-duration': 0, 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 8.5, 1, 10.5, 0] } }] }
 });
 map.on('load', () => {
   fetch('https://tiles.openfreemap.org/styles/bright').then(r => r.json()).then(s => {   /* OpenStreetMap buildings, extruded in 3D at ground level */
