@@ -36,19 +36,18 @@
     map.once('moveend', () => {
       busy = false;
       scheduleLookup();
-      if (z >= 17 && key('ion')) { if ($('#px').hidden) openPx(); }
     });
   };
 
-  /* 7. Extruded 3D buildings and monuments: enabled by default for clear 3D architectural shapes */
-  let boxesOn = true;
+  /* 7. Extruded 3D building boxes start hidden so real satellite photographic textures are visible */
+  let boxesOn = false;
   const boxes = (on) => {
     try { map.setLayoutProperty('bld3d', 'visibility', on ? 'visible' : 'none'); } catch (e) {}
     $('#b3').setAttribute('aria-pressed', String(on)); $('#b3').classList.toggle('on', on);
   };
   let tries = 0;
   const wait3d = setInterval(() => {
-    if ((map.getLayer && map.getLayer('bld3d')) || ++tries > 40) { clearInterval(wait3d); boxes(true); }
+    if ((map.getLayer && map.getLayer('bld3d')) || ++tries > 40) { clearInterval(wait3d); boxes(false); }
   }, 500);
   $('#b3').addEventListener('click', () => { boxesOn = !boxesOn; boxes(boxesOn); });
 

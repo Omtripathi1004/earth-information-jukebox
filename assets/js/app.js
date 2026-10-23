@@ -43,7 +43,7 @@ map.on('load', () => {
   fetch('https://tiles.openfreemap.org/styles/bright').then(r => r.json()).then(s => {   /* OpenStreetMap buildings, extruded in 3D at ground level */
     const bl = s.layers.find(l => l['source-layer'] === 'building'); if (!bl) return;
     map.addSource('ofm', { type: 'vector', url: s.sources[bl.source].url, attribution: '© OpenStreetMap, OpenFreeMap' });
-    map.addLayer({ id: 'bld3d', type: 'fill-extrusion', source: 'ofm', 'source-layer': 'building', minzoom: 14, paint: { 'fill-extrusion-color': '#e2e8f0', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0], 'fill-extrusion-opacity': .9 } });
+    map.addLayer({ id: 'bld3d', type: 'fill-extrusion', source: 'ofm', 'source-layer': 'building', minzoom: 14, layout: { visibility: 'none' }, paint: { 'fill-extrusion-color': '#e2e8f0', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0], 'fill-extrusion-opacity': .9 } });
     /* real map labels (places, streets, landmarks) on top of the satellite photo */
     try { map.setGlyphs(s.glyphs); } catch (e) {}
     s.layers.filter(l => l.type === 'symbol' && ['place', 'transportation_name', 'water_name', 'poi'].includes(l['source-layer'])).forEach(l => {
@@ -268,12 +268,28 @@ async function openPx() {
   try {
     await loadCesium(); Cesium.Ion.defaultAccessToken = T; $('#px').hidden = false;
     if (!pxv) {
-      pxv = new Cesium.Viewer('pxv', { globe: false, geocoder: Cesium.IonGeocodeProviderType.GOOGLE, baseLayerPicker: false, timeline: false, animation: false, infoBox: false, selectionIndicator: false, contextOptions: { webgl: { preserveDrawingBuffer: true } } });
-      pxv.scene.skyAtmosphere.show = true; pxv.scene.primitives.add(await Cesium.createGooglePhotorealistic3DTileset({ onlyUsingWithGoogleGeocoder: true }));
+      pxv = new Cesium.Viewer('pxv', {
+        globe: true,
+        geocoder: false,
+        baseLayerPicker: false,
+        timeline: false,
+        animation: false,
+        infoBox: false,
+        selectionIndicator: false,
+        contextOptions: { webgl: { preserveDrawingBuffer: true } }
+      });
+      if (pxv.scene && pxv.scene.skyAtmosphere) pxv.scene.skyAtmosphere.show = true;
+      try {
+        const tileset = await Cesium.createGooglePhotorealistic3DTileset();
+        pxv.scene.primitives.add(tileset);
+      } catch (err) {
+        console.warn('Cesium Google Photorealistic 3D Tiles notice:', err);
+      }
     }
     const c = map.getCenter(), h = (map.queryTerrainElevation && map.queryTerrainElevation([c.lng, c.lat]) || 0) / 1.4;
-    pxv.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(c.lng, c.lat - .0035, h + 320), orientation: { heading: 0, pitch: Cesium.Math.toRadians(-28) }, duration: 2 }); $('#hear').textContent = 'photoreal 3D';
-  } catch (e) { $('#px').hidden = true; $('#hear').textContent = 'Photoreal 3D failed: ' + (e.message || e); }
+    pxv.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(c.lng, c.lat - .0035, h + 320), orientation: { heading: 0, pitch: Cesium.Math.toRadians(-28) }, duration: 2 });
+    $('#hear').textContent = 'photoreal 3D';
+  } catch (e) { $('#px').hidden = true; $('#hear').textContent = 'Photoreal 3D: ' + (e.message || e); }
 }
 $('#p3').onclick = openPx; $('#pxc').onclick = () => { $('#px').hidden = true; };
 
