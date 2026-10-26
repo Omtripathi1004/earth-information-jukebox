@@ -22,13 +22,26 @@ fetch(API + '/api/health').then(r => r.ok ? r.json() : null).then(j => {
 }).catch(() => {});
 const Z0 = 1.1, Z1 = 19.6;
 const LBL = [], LM = [['Taj Mahal', 27.1751, 78.0421, 'The Taj Mahal in Agra, a marble mausoleum completed in the 17th century.'], ['Eiffel Tower', 48.8584, 2.2945, 'The Eiffel Tower in Paris, completed in 1889.'], ['Giza pyramids', 29.9792, 31.1342, 'The pyramids of Giza in Egypt, more than 4,500 years old.'], ['Statue of Liberty', 40.6892, -74.0445, 'The Statue of Liberty in New York Harbor, dedicated in 1886.'], ['Colosseum', 41.8902, 12.4922, 'The Colosseum in Rome, which opened in the year 80.'], ['Burj Khalifa', 25.1972, 55.2744, 'The Burj Khalifa in Dubai, the tallest building in the world at 828 metres.'], ['Machu Picchu', -13.1631, -72.545, 'Machu Picchu, a 15th-century Inca citadel high in the Peruvian Andes.'], ['Sydney Opera House', -33.8568, 151.2153, 'The Sydney Opera House, which opened in 1973.']];
-const FACTS = { 'Amazon': 'The Amazon rainforest, the largest tropical rainforest on Earth.', 'Himalaya': 'The Himalaya, home to Mount Everest, the highest mountain above sea level.', 'Sundarbans': 'The Sundarbans, the largest mangrove forest in the world, shared by Bangladesh and India.', 'Nile Delta': 'The Nile Delta, where Egypt\u2019s great river meets the Mediterranean.', 'Aral Sea': 'The Aral Sea, once one of the four largest lakes in the world, has shrunk dramatically since the 1960s.', 'Greenland ice': 'The Greenland ice sheet, whose melting adds to sea level rise.', 'Great Barrier Reef': 'The Great Barrier Reef, the largest coral reef system in the world.', 'Dubai': 'Dubai, a city that has grown out of the desert coast.' };
-const PLACES = [['Amazon', -3.47, -62.2], ['Himalaya', 27.99, 86.93], ['Sundarbans', 21.95, 89.18], ['Nile Delta', 31.0, 31.0], ['Aral Sea', 45.0, 59.5], ['Greenland ice', 69.2, -51.1], ['Great Barrier Reef', -18.3, 147.7], ['Dubai', 25.2, 55.27]];
+const FACTS = { 'Amazon': 'The Amazon rainforest, the largest tropical rainforest on Earth.', 'Himalaya': 'The Himalaya, home to Mount Everest, the highest mountain above sea level.', 'Sundarbans': 'The Sundarbans, the largest mangrove forest in the world, shared by Bangladesh and India.', 'Nile Delta': 'The Nile Delta, where Egypt\u2019s great river meets the Mediterranean.', 'Aral Sea': 'The Aral Sea, once one of the four largest lakes in the world, has shrunk dramatically since the 1960s.', 'Greenland ice': 'The Greenland ice sheet, whose melting adds to sea level rise.', 'Great Barrier Reef': 'The Great Barrier Reef, the largest coral reef system in the world.', 'Dubai': 'Dubai, a city that has grown out of the desert coast.', 'Central Valley Farms': 'California\u2019s Central Valley, one of the world\u2019s most productive agricultural valleys producing over 250 crops.', 'Punjab Farmlands': 'Punjab, India\u2019s agrarian breadbasket with fertile irrigated fields.', 'Lucas do Rio Verde': 'Lucas do Rio Verde in Mato Grosso, Brazil: a major agricultural center surrounded by vast grain and soybean fields.', 'Iowa Farmland': 'The Iowa Corn Belt, expansive cultivated agricultural grids in the American Midwest.' };
+const PLACES = [
+  ['Amazon', -3.47, -62.2, 8.5],
+  ['Himalaya', 27.99, 86.93, 8.5],
+  ['Sundarbans', 21.95, 89.18, 9.5],
+  ['Nile Delta', 31.0, 31.0, 9.0],
+  ['Aral Sea', 45.0, 59.5, 8.0],
+  ['Greenland ice', 69.2, -51.1, 7.5],
+  ['Great Barrier Reef', -18.3, 147.7, 8.5],
+  ['Dubai', 25.2, 55.27, 14.5],
+  ['Lucas do Rio Verde', -13.0665, -55.9197, 17.5],
+  ['Central Valley Farms', 36.75, -119.77, 17.2],
+  ['Punjab Farmlands', 30.9, 75.85, 17.2],
+  ['Iowa Farmland', 42.03, -93.63, 17.2]
+];
 $('#dt').value = $('#dt').max = new Date(Date.now() - 3 * 864e5).toISOString().slice(0, 10);
-const lyr = () => $('#lyr').value.split('|'), isData = () => lyr()[1] !== '9' && lyr()[0] !== 'ESRI_World_Imagery';
+const lyr = () => $('#lyr').value.split('|'), isData = () => lyr()[1] !== '9' && lyr()[0] !== 'GOOGLE_SATELLITE' && lyr()[0] !== 'ESRI_World_Imagery';
 const gibs = () => {
   const [id, lv, ext] = lyr();
-  if (id === 'ESRI_World_Imagery') return '';
+  if (id === 'GOOGLE_SATELLITE' || id === 'ESRI_World_Imagery') return '';
   return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${id}/default/${$('#dt').value}/GoogleMapsCompatible_Level${lv}/{z}/{y}/{x}.${ext}`;
 };
 
@@ -37,13 +50,19 @@ const map = new maplibregl.Map({
   container: 'map', center: [10, 20], zoom: Z0, minZoom: .5, maxZoom: 20.5, maxPitch: 60, dragRotate: true, scrollZoom: false, doubleClickZoom: false, keyboard: false, touchZoomRotate: false,
   canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true }, attributionControl: { compact: true },
   style: { version: 8, projection: { type: 'globe' }, glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', sources: {
-      esri: { type: 'raster', tileSize: 256, maxzoom: 19, tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], attribution: 'Esri, Maxar, Earthstar Geographics' },
-      gibs: { type: 'raster', tileSize: 256, maxzoom: 9, tiles: [gibs() || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], attribution: 'NASA EOSDIS GIBS' } },
+      google_sat: { type: 'raster', tileSize: 256, maxzoom: 20, tiles: [
+        'https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}',
+        'https://mt1.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}',
+        'https://mt2.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}',
+        'https://mt3.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}'
+      ], attribution: '© Google, Maxar Technologies' },
+      gibs: { type: 'raster', tileSize: 256, maxzoom: 9, tiles: [gibs() || 'https://mt1.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}'], attribution: 'NASA EOSDIS GIBS' } },
     layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#02050c' } },
-      { id: 'esri', type: 'raster', source: 'esri', paint: { 'raster-fade-duration': 0 } },
-      { id: 'gibs', type: 'raster', source: 'gibs', layout: { visibility: lyr()[0] === 'ESRI_World_Imagery' ? 'none' : 'visible' }, paint: { 'raster-fade-duration': 0, 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 8.5, 1, 10.5, 0] } }] }
+      { id: 'google_sat', type: 'raster', source: 'google_sat', paint: { 'raster-fade-duration': 0 } },
+      { id: 'gibs', type: 'raster', source: 'gibs', layout: { visibility: (lyr()[0] === 'GOOGLE_SATELLITE' || lyr()[0] === 'ESRI_World_Imagery') ? 'none' : 'visible' }, paint: { 'raster-fade-duration': 0, 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 8.5, 1, 10.5, 0] } }] }
 });
 map.on('load', () => {
+  schedulePhotoSpots();
   fetch('https://tiles.openfreemap.org/styles/bright').then(r => r.json()).then(s => {   /* OpenStreetMap buildings, extruded in 3D at ground level */
     const bl = s.layers.find(l => l['source-layer'] === 'building'); if (!bl) return;
     map.addSource('ofm', { type: 'vector', url: s.sources[bl.source].url, attribution: '© OpenStreetMap, OpenFreeMap' });
@@ -57,18 +76,20 @@ map.on('load', () => {
 });
 function applyLayer() {   /* NASA data layers sit on a greyscale base so every colour you hear is data */
   const [id] = lyr(), d = isData();
-  if (id === 'ESRI_World_Imagery') {
-    try { map.setLayoutProperty('gibs', 'visibility', 'none'); } catch (e) {}
-    map.setPaintProperty('esri', 'raster-saturation', 0);
-    map.setPaintProperty('esri', 'raster-brightness-max', 1);
-    $('#hear').textContent = 'seamless world satellite';
+  const isNASA = id !== 'GOOGLE_SATELLITE' && id !== 'ESRI_World_Imagery';
+  try {
+    map.setLayoutProperty('gibs', 'visibility', isNASA ? 'visible' : 'none');
+  } catch (e) {}
+  if (!isNASA) {
+    map.setPaintProperty('google_sat', 'raster-saturation', 0);
+    map.setPaintProperty('google_sat', 'raster-brightness-max', 1);
+    $('#hear').textContent = 'global high-res satellite';
     return;
   }
-  try { map.setLayoutProperty('gibs', 'visibility', 'visible'); } catch (e) {}
   const t = gibs();
   if (t) { try { map.getSource('gibs').setTiles([t]); } catch (e) {} }
-  map.setPaintProperty('esri', 'raster-saturation', d ? -1 : 0);
-  map.setPaintProperty('esri', 'raster-brightness-max', d ? .55 : 1);
+  map.setPaintProperty('google_sat', 'raster-saturation', d ? -1 : 0);
+  map.setPaintProperty('google_sat', 'raster-brightness-max', d ? .55 : 1);
   map.setPaintProperty('gibs', 'raster-opacity', d ? ['interpolate', ['linear'], ['zoom'], 7, .9, 9.5, 0] : ['interpolate', ['linear'], ['zoom'], 8.5, 1, 10.5, 0]);
 }
 ['lyr', 'dt'].forEach(id => $('#' + id).onchange = applyLayer);
@@ -104,17 +125,27 @@ function frame() {
 }
 const fmtKm = k => k >= 100 ? Math.round(k) + ' km' : k >= 1 ? k.toFixed(1) + ' km' : Math.round(k * 1000) + ' m';
 map.on('dragstart', () => busy = true);
-map.on('moveend', () => { busy = false; zs = map.getZoom(); scheduleLookup(); });
-map.on('dragend', () => { busy = false; zs = map.getZoom(); lastZ = -1; scheduleLookup(); });
+map.on('moveend', () => { busy = false; zs = map.getZoom(); scheduleLookup(); schedulePhotoSpots(); });
+map.on('dragend', () => { busy = false; zs = map.getZoom(); lastZ = -1; scheduleLookup(); schedulePhotoSpots(); });
 function pick(lat, lng, z) { busy = true; const t = Math.max(map.getZoom(), z); map.easeTo({ center: [lng, lat], zoom: t, duration: 1800 }); scrollToZ(t, 'instant'); }
-map.on('click', e => pick(e.lngLat.lat, e.lngLat.lng, 6));
+map.on('click', e => {
+  if (map.getZoom() < 7) {
+    pick(e.lngLat.lat, e.lngLat.lng, 10);
+  } else {
+    onMapInspectClick(e.lngLat.lat, e.lngLat.lng);
+  }
+});
+map.on('dblclick', e => {
+  e.preventDefault();
+  openPhotosForLocation(e.lngLat.lat, e.lngLat.lng);
+});
 $('#zr').oninput = e => scrollToZ(Z0 + e.target.value / 1000 * (Z1 - Z0), 'instant');
 $('#zin').onclick = () => scrollToZ(zFromScroll() + 1.5); $('#zout').onclick = () => scrollToZ(zFromScroll() - 1.5);
-PLACES.forEach(([n, la, lo]) => { const b = document.createElement('button'); b.className = 'btn chip pe'; b.textContent = n; b.onclick = () => pick(la, lo, 8); $('#chips').appendChild(b); });
+PLACES.forEach(([n, la, lo, z]) => { const b = document.createElement('button'); b.className = 'btn chip pe'; b.textContent = n; b.onclick = () => pick(la, lo, z || 17.2); $('#chips').appendChild(b); });
 LM.forEach(([n, la, lo]) => { const b = document.createElement('button'); b.className = 'btn chip pe'; b.style.borderColor = '#F59E0B'; b.textContent = '🏛 ' + n; b.onclick = () => pick(la, lo, 17.6); $('#chips').appendChild(b); });
 $('#sf').onsubmit = async e => {
   e.preventDefault(); const q = $('#q').value.trim(); if (!q) return;
-  try { const j = await (await fetch((BACKEND ? API + '/api/geocode' : 'https://nominatim.openstreetmap.org/search') + '?format=json&limit=1&q=' + encodeURIComponent(q))).json(); if (j[0]) pick(+j[0].lat, +j[0].lon, 10); else $('#place').textContent = 'No match for “' + q + '”'; } catch (err) { $('#place').textContent = 'Search needs an internet connection'; }
+  try { const j = await (await fetch((BACKEND ? API + '/api/geocode' : 'https://nominatim.openstreetmap.org/search') + '?format=json&limit=1&q=' + encodeURIComponent(q))).json(); if (j[0]) pick(+j[0].lat, +j[0].lon, 16.8); else $('#place').textContent = 'No match for “' + q + '”'; } catch (err) { $('#place').textContent = 'Search needs an internet connection'; }
 };
 
 /* ---------- place name + NASA POWER local climate ---------- */
@@ -377,29 +408,415 @@ $('#ks').onclick = () => {
 $('#kx').onclick = () => { $('#keys').hidden = true; };
 if ($('#kb')) $('#kb').onclick = () => openKeys('');
 
-/* ---------- the canvas the sound scan reads: map, street photo or photoreal 3D ---------- */
-const stc = $('#stc'), sg = stc.getContext('2d'); let pxv = null, STR = [], si = 0;
-const srcCanvas = () => !$('#st').hidden ? stc : (!$('#px').hidden && pxv) ? pxv.scene.canvas : map.getCanvas();
+/* ---------- Global Ground Photos, 360° Street View & Interactive Photo Spots ---------- */
+const stc = $('#stc'), sg = stc ? stc.getContext('2d') : null;
+let pxv = null, ALL_PHOTOS = [], currentPhotoIdx = 0, currentViewMode = '360', lastNearestRoad = null;
+let photoSpotMarkers = [], userPinMarker = null, showPhotoSpots = true, spotsDebounce = null;
 
-/* ---------- real street-level photos (Mapillary) ---------- */
-async function openStreet() {
-  const T = key('mly'); if (!T) return openKeys('Street-level photos need a free Mapillary client token.');
-  const c = map.getCenter(), dy = .0025, dx = dy / Math.max(.2, Math.cos(c.lat * Math.PI / 180)); $('#hear').textContent = 'looking for street photos…';
+const srcCanvas = () => !$('#st').hidden ? (currentViewMode === 'photo' ? (stc || map.getCanvas()) : map.getCanvas()) : (!$('#px').hidden && pxv) ? pxv.scene.canvas : map.getCanvas();
+
+/* 1. Photo Spots on Map */
+function clearPhotoSpots() {
+  photoSpotMarkers.forEach(m => m.remove());
+  photoSpotMarkers = [];
+}
+
+function schedulePhotoSpots() {
+  clearTimeout(spotsDebounce);
+  spotsDebounce = setTimeout(updatePhotoSpots, 800);
+}
+window.schedulePhotoSpots = schedulePhotoSpots;
+window.openPhotosForLocation = openPhotosForLocation;
+window.onMapInspectClick = onMapInspectClick;
+
+async function updatePhotoSpots() {
+  if (!showPhotoSpots || map.getZoom() < 8.5) {
+    clearPhotoSpots();
+    return;
+  }
+  const c = map.getCenter();
+  const z = map.getZoom();
+  const radius = Math.min(10000, Math.max(1200, Math.round(35000000 / Math.pow(2, z))));
   try {
-    const j = await (await fetch(`https://graph.mapillary.com/images?access_token=${encodeURIComponent(T)}&fields=id,thumb_1024_url,computed_geometry,captured_at,compass_angle&bbox=${c.lng - dx},${c.lat - dy},${c.lng + dx},${c.lat + dy}&limit=60`)).json();
-    STR = (j.data || []).filter(i => i.thumb_1024_url && i.computed_geometry).sort((a, b) => dist(a, c) - dist(b, c));
-    if (!STR.length) { $('#hear').textContent = j.error ? 'Mapillary said: ' + j.error.message : 'no street photos within about 250 m of the centre. Zoom to a street and try again'; return; }
-    $('#st').hidden = false; showStreet(0); $('#hear').textContent = 'street photo';
-  } catch (e) { $('#hear').textContent = 'could not reach Mapillary'; }
+    const url = `https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${c.lat}|${c.lng}&ggsradius=${radius}&ggslimit=20&prop=coordinates|pageimages|description&piprop=thumbnail|original&pithumbsize=600&format=json&origin=*`;
+    const resp = await fetch(url);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const pages = data.query && data.query.pages ? Object.values(data.query.pages) : [];
+
+    clearPhotoSpots();
+
+    pages.forEach(p => {
+      const coords = p.coordinates && p.coordinates[0];
+      if (!coords) return;
+      const hasImg = !!p.thumbnail;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'photo-spot-wrapper';
+      wrap.innerHTML = `<div class="photo-spot-pin has-wiki" title="${p.title}${p.description ? ' · ' + p.description : ''}">${hasImg ? '📷' : '📍'}</div>`;
+
+      wrap.onclick = (e) => {
+        e.stopPropagation();
+        onMapInspectClick(coords.lat, coords.lon, p);
+        openPhotosForLocation(coords.lat, coords.lon, p);
+      };
+
+      const marker = new maplibregl.Marker({ element: wrap })
+        .setLngLat([coords.lon, coords.lat])
+        .addTo(map);
+      photoSpotMarkers.push(marker);
+    });
+  } catch (e) {}
 }
-const dist = (i, c) => Math.hypot(i.computed_geometry.coordinates[0] - c.lng, i.computed_geometry.coordinates[1] - c.lat);
-function showStreet(i) {
-  si = (i + STR.length) % STR.length; const it = STR[si], im = new Image(); im.crossOrigin = 'anonymous';
-  im.onload = () => { stc.width = innerWidth; stc.height = innerHeight; const r = Math.max(stc.width / im.width, stc.height / im.height); sg.fillStyle = '#000'; sg.fillRect(0, 0, stc.width, stc.height); sg.drawImage(im, (stc.width - im.width * r) / 2, (stc.height - im.height * r) / 2, im.width * r, im.height * r); };
-  im.onerror = () => { $('#stcap').textContent = 'Could not load this photo'; }; im.src = it.thumb_1024_url;
-  $('#stcap').textContent = `Photo ${si + 1} of ${STR.length}, nearest first · ${it.captured_at ? new Date(it.captured_at).toISOString().slice(0, 10) : 'date unknown'} · © Mapillary contributors, CC BY-SA 4.0`;
+
+/* 2. User Pin Placement on Map Click */
+function onMapInspectClick(lat, lng, initialMeta) {
+  // Move or create glowing blue pin
+  if (!userPinMarker) {
+    const wrap = document.createElement('div');
+    wrap.className = 'user-pin-wrapper';
+    wrap.innerHTML = '<div class="user-click-pin" title="Selected Spot"></div>';
+    wrap.onclick = () => openPhotosForLocation(lat, lng, initialMeta);
+    userPinMarker = new maplibregl.Marker({ element: wrap, anchor: 'bottom' })
+      .setLngLat([lng, lat])
+      .addTo(map);
+  } else {
+    userPinMarker.setLngLat([lng, lat]);
+  }
+
+  // Show inspect notification pill if modal is not active
+  const pill = $('#photo-inspect-pill');
+  if (pill) {
+    pill.hidden = !$('#st').hidden;
+    const title = initialMeta ? initialMeta.title : `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
+    $('#photo-inspect-text').textContent = `📍 ${title}`;
+    $('#photo-inspect-open').onclick = () => openPhotosForLocation(lat, lng, initialMeta);
+  }
+
+  // If photo viewer is already open, reload for this new coordinate
+  if (!$('#st').hidden) {
+    openPhotosForLocation(lat, lng, initialMeta);
+  }
 }
-$('#sv').onclick = openStreet; $('#stp').onclick = () => showStreet(si - 1); $('#stn').onclick = () => showStreet(si + 1); $('#stx').onclick = () => { $('#st').hidden = true; };
+
+if ($('#photo-inspect-close')) {
+  $('#photo-inspect-close').onclick = () => {
+    if ($('#photo-inspect-pill')) $('#photo-inspect-pill').hidden = true;
+  };
+}
+
+if ($('#spots-btn')) {
+  $('#spots-btn').onclick = () => {
+    showPhotoSpots = !showPhotoSpots;
+    $('#spots-btn').classList.toggle('on', showPhotoSpots);
+    $('#spots-btn').setAttribute('aria-pressed', showPhotoSpots ? 'true' : 'false');
+    if (showPhotoSpots) updatePhotoSpots(); else clearPhotoSpots();
+  };
+}
+
+/* 3. Apology Modal for Remote / Inaccessible Areas */
+function showNoStreetModal(target) {
+  $('#st').hidden = true;
+  if ($('#stf')) $('#stf').src = 'about:blank';
+  if ($('#st-header')) $('#st-header').hidden = true;
+  const modal = $('#no-street-modal');
+  if (!modal) return;
+  modal.hidden = false;
+  $('#hear').textContent = 'Ground photo not available for this remote area';
+
+  const nearBtn = $('#no-st-nearest');
+  if (nearBtn) {
+    if (target && target.lat != null && target.lng != null && target.dist != null) {
+      nearBtn.hidden = false;
+      const dKm = target.dist > 1000 ? `${(target.dist / 1000).toFixed(1)} km` : `${Math.round(target.dist)} m`;
+      nearBtn.innerHTML = `<span aria-hidden="true">📍</span> Fly to Nearest Road (${dKm} away)`;
+      nearBtn.onclick = () => {
+        modal.hidden = true;
+        map.flyTo({ center: [target.lng, target.lat], zoom: 16.5, essential: true });
+        map.once('moveend', () => {
+          setTimeout(openStreet, 350);
+        });
+      };
+    } else {
+      nearBtn.hidden = true;
+    }
+  }
+}
+
+if ($('#no-st-close')) {
+  $('#no-st-close').onclick = () => {
+    if ($('#no-street-modal')) $('#no-street-modal').hidden = true;
+  };
+}
+
+/* 4. Multi-Source Photos Fetching & Display (Google 360, Wikipedia, Mapillary) */
+async function openPhotosForLocation(lat, lng, initialMeta) {
+  if (lat == null || lng == null) {
+    const c = map.getCenter();
+    lat = c.lat;
+    lng = c.lng;
+  }
+  if ($('#no-street-modal')) $('#no-street-modal').hidden = true;
+  if ($('#photo-inspect-pill')) $('#photo-inspect-pill').hidden = true;
+
+  ALL_PHOTOS = [];
+  currentPhotoIdx = 0;
+  lastNearestRoad = null;
+  let snapLat = lat, snapLng = lng, roadDist = null;
+
+  // If initialMeta provided (e.g. user clicked a Wikipedia marker), add it immediately
+  if (initialMeta && (initialMeta.thumbnail || initialMeta.original)) {
+    ALL_PHOTOS.push({
+      type: 'photo',
+      source: 'Wikipedia',
+      title: initialMeta.title,
+      desc: initialMeta.description || '',
+      imgUrl: (initialMeta.original && initialMeta.original.source) || (initialMeta.thumbnail && initialMeta.thumbnail.source),
+      mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(initialMeta.title)}`,
+      lat: (initialMeta.coordinates && initialMeta.coordinates[0]) ? initialMeta.coordinates[0].lat : lat,
+      lng: (initialMeta.coordinates && initialMeta.coordinates[0]) ? initialMeta.coordinates[0].lon : lng
+    });
+  }
+
+  // 1. Check nearest drivable road via OSRM for 360 Street View
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 2200);
+    const r = await fetch(`https://router.project-osrm.org/nearest/v1/driving/${lng.toFixed(5)},${lat.toFixed(5)}?number=1`, { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (r.ok) {
+      const j = await r.json();
+      if (j.code === 'Ok' && j.waypoints && j.waypoints[0]) {
+        const wp = j.waypoints[0];
+        roadDist = wp.distance;
+        lastNearestRoad = { lng: wp.location[0], lat: wp.location[1], dist: wp.distance };
+        if (roadDist <= 2500) {
+          snapLng = wp.location[0];
+          snapLat = wp.location[1];
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 2. Query Wikipedia / Wikimedia Geosearch for place photos (malls, parks, landmarks, mountains, villages)
+  try {
+    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${lat}|${lng}&ggsradius=8000&ggslimit=15&prop=coordinates|pageimages|description&piprop=thumbnail|original&pithumbsize=1200&format=json&origin=*`;
+    const wResp = await fetch(wikiUrl);
+    if (wResp.ok) {
+      const wData = await wResp.json();
+      const pages = wData.query && wData.query.pages ? Object.values(wData.query.pages) : [];
+      pages.forEach(p => {
+        if (!p.thumbnail && !p.original) return;
+        if (initialMeta && p.title === initialMeta.title) return; // avoid duplicate
+        ALL_PHOTOS.push({
+          type: 'photo',
+          source: 'Wikimedia',
+          title: p.title,
+          desc: p.description || '',
+          imgUrl: (p.original && p.original.source) || (p.thumbnail && p.thumbnail.source),
+          mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title)}`,
+          lat: (p.coordinates && p.coordinates[0]) ? p.coordinates[0].lat : lat,
+          lng: (p.coordinates && p.coordinates[0]) ? p.coordinates[0].lon : lng
+        });
+      });
+    }
+  } catch (e) {}
+
+  // 3. Query Mapillary crowd photos
+  const T = key('mly');
+  if (T) {
+    const scales = [0.003, 0.015, 0.05];
+    for (const dy of scales) {
+      const dx = dy / Math.max(.2, Math.cos(lat * Math.PI / 180));
+      try {
+        const j = await (await fetch(`https://graph.mapillary.com/images?access_token=${encodeURIComponent(T)}&fields=id,thumb_1024_url,computed_geometry,captured_at,compass_angle&bbox=${lng - dx},${lat - dy},${lng + dx},${lat + dy}&limit=40`)).json();
+        const found = (j.data || []).filter(i => i.thumb_1024_url && i.computed_geometry);
+        if (found.length) {
+          found.forEach(m => {
+            ALL_PHOTOS.push({
+              type: 'photo',
+              source: 'Mapillary',
+              title: `Street Photo (${m.captured_at ? new Date(m.captured_at).toISOString().slice(0, 10) : 'captured'})`,
+              desc: 'Crowd-sourced ground imagery',
+              imgUrl: m.thumb_1024_url,
+              mapsUrl: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${m.computed_geometry.coordinates[1]},${m.computed_geometry.coordinates[0]}`,
+              lat: m.computed_geometry.coordinates[1],
+              lng: m.computed_geometry.coordinates[0]
+            });
+          });
+          break;
+        }
+      } catch (e) {}
+    }
+  }
+
+  // Check if completely remote/inaccessible with 0 photos and no road <= 2.5km
+  const hasRoad = roadDist !== null && roadDist <= 2500;
+  if (!hasRoad && !ALL_PHOTOS.length) {
+    showNoStreetModal(lastNearestRoad);
+    return;
+  }
+
+  // Store 360 panorama metadata
+  const panoMeta = {
+    snapLat, snapLng, roadDist,
+    embedUrl: `https://maps.google.com/maps?q=&layer=c&cbll=${snapLat.toFixed(6)},${snapLng.toFixed(6)}&cbp=11,0,0,0,0&output=svembed`,
+    mapsUrl: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${snapLat.toFixed(6)},${snapLng.toFixed(6)}`
+  };
+
+  // Determine initial mode:
+  // If user clicked a Wikipedia place with a photo -> open photo mode
+  // Otherwise if road exists -> open 360 mode
+  // Otherwise -> open photo mode
+  if (initialMeta && ALL_PHOTOS.length) {
+    currentViewMode = 'photo';
+  } else if (hasRoad) {
+    currentViewMode = '360';
+  } else {
+    currentViewMode = 'photo';
+  }
+
+  $('#st').hidden = false;
+  renderPhotoView(panoMeta);
+}
+
+function renderPhotoView(panoMeta) {
+  const pCount = ALL_PHOTOS.length;
+  if ($('#st-pcount')) $('#st-pcount').textContent = pCount;
+
+  if (currentViewMode === '360' && panoMeta) {
+    if ($('#stf')) {
+      $('#stf').hidden = false;
+      $('#stf').style.display = 'block';
+      $('#stf').src = panoMeta.embedUrl;
+    }
+    if ($('#st-img-wrap')) {
+      $('#st-img-wrap').hidden = true;
+      $('#st-img-wrap').style.display = 'none';
+    }
+    if ($('#stc')) $('#stc').hidden = true;
+    if ($('#st-header')) $('#st-header').hidden = true;
+    if ($('#stp')) $('#stp').hidden = true;
+    if ($('#stn')) $('#stn').hidden = true;
+    if ($('#stmode')) $('#stmode').classList.add('on');
+    if ($('#stphotos')) $('#stphotos').classList.remove('on');
+
+    if ($('#stcap')) {
+      if (panoMeta.roadDist !== null && panoMeta.roadDist > 20) {
+        const dStr = panoMeta.roadDist < 1000 ? `${Math.round(panoMeta.roadDist)} m` : `${(panoMeta.roadDist / 1000).toFixed(1)} km`;
+        $('#stcap').textContent = `360° snapped to nearest road (${dStr} away) · ${panoMeta.snapLat.toFixed(4)}°, ${panoMeta.snapLng.toFixed(4)}°`;
+      } else {
+        $('#stcap').textContent = `360° Street View at ${panoMeta.snapLat.toFixed(4)}°, ${panoMeta.snapLng.toFixed(4)}°`;
+      }
+    }
+    if ($('#sto')) $('#sto').onclick = () => window.open(panoMeta.mapsUrl, '_blank');
+    if ($('#stno')) $('#stno').onclick = () => showNoStreetModal(lastNearestRoad);
+    $('#hear').textContent = '360° street view';
+  } else if (pCount > 0) {
+    currentViewMode = 'photo';
+    if ($('#stf')) {
+      $('#stf').hidden = true;
+      $('#stf').style.display = 'none';
+      $('#stf').src = 'about:blank';
+    }
+    if ($('#stc')) $('#stc').hidden = true;
+    if ($('#st-img-wrap')) {
+      $('#st-img-wrap').hidden = false;
+      $('#st-img-wrap').style.display = 'flex';
+    }
+    if ($('#stp')) $('#stp').hidden = pCount <= 1;
+    if ($('#stn')) $('#stn').hidden = pCount <= 1;
+    if ($('#stmode')) $('#stmode').classList.remove('on');
+    if ($('#stphotos')) $('#stphotos').classList.add('on');
+
+    showPhotoIndex(currentPhotoIdx);
+  } else {
+    currentViewMode = '360';
+    if (panoMeta) renderPhotoView(panoMeta);
+  }
+}
+
+function showPhotoIndex(idx) {
+  if (!ALL_PHOTOS.length) return;
+  currentPhotoIdx = (idx + ALL_PHOTOS.length) % ALL_PHOTOS.length;
+  const p = ALL_PHOTOS[currentPhotoIdx];
+
+  const img = $('#st-img');
+  const loading = $('#st-img-loading');
+  if (img) {
+    if (loading) loading.hidden = false;
+    img.style.opacity = '0';
+    img.referrerPolicy = 'no-referrer';
+    img.onload = () => {
+      if (loading) loading.hidden = true;
+      img.style.opacity = '1';
+    };
+    img.onerror = () => {
+      if (loading) loading.hidden = true;
+      img.style.opacity = '1';
+      if ($('#stcap')) $('#stcap').textContent = `Could not load photo for ${p.title} · Try ◀ ▶`;
+    };
+    img.src = p.imgUrl;
+    img.alt = p.title;
+  }
+  if ($('#st-header')) {
+    $('#st-header').hidden = false;
+    $('#st-place-name').textContent = p.title;
+    $('#st-place-desc').textContent = p.desc || p.source;
+  }
+  if ($('#stcap')) {
+    $('#stcap').textContent = `Photo ${currentPhotoIdx + 1}/${ALL_PHOTOS.length} · ${p.title} (${p.source})`;
+  }
+  if ($('#sto')) {
+    $('#sto').onclick = () => window.open(p.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title)}`, '_blank');
+  }
+  $('#hear').textContent = p.title;
+}
+
+function openStreet() {
+  const c = map.getCenter();
+  openPhotosForLocation(c.lat, c.lng);
+}
+
+$('#sv').onclick = openStreet;
+if ($('#stmode')) $('#stmode').onclick = () => {
+  currentViewMode = '360';
+  const c = map.getCenter();
+  const panoMeta = {
+    snapLat: lastNearestRoad ? lastNearestRoad.lat : c.lat,
+    snapLng: lastNearestRoad ? lastNearestRoad.lng : c.lng,
+    roadDist: lastNearestRoad ? lastNearestRoad.dist : null,
+    embedUrl: `https://maps.google.com/maps?q=&layer=c&cbll=${(lastNearestRoad ? lastNearestRoad.lat : c.lat).toFixed(6)},${(lastNearestRoad ? lastNearestRoad.lng : c.lng).toFixed(6)}&cbp=11,0,0,0,0&output=svembed`,
+    mapsUrl: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${(lastNearestRoad ? lastNearestRoad.lat : c.lat).toFixed(6)},${(lastNearestRoad ? lastNearestRoad.lng : c.lng).toFixed(6)}`
+  };
+  renderPhotoView(panoMeta);
+};
+
+if ($('#stphotos')) $('#stphotos').onclick = () => {
+  if (ALL_PHOTOS.length) {
+    currentViewMode = 'photo';
+    if ($('#stf')) {
+      $('#stf').hidden = true;
+      $('#stf').src = 'about:blank';
+    }
+    if ($('#st-img-wrap')) $('#st-img-wrap').hidden = false;
+    if ($('#stp')) $('#stp').hidden = ALL_PHOTOS.length <= 1;
+    if ($('#stn')) $('#stn').hidden = ALL_PHOTOS.length <= 1;
+    if ($('#stmode')) $('#stmode').classList.remove('on');
+    if ($('#stphotos')) $('#stphotos').classList.add('on');
+    showPhotoIndex(currentPhotoIdx);
+  } else {
+    if ($('#stcap')) $('#stcap').textContent = 'No photos collected yet for this spot.';
+  }
+};
+
+if ($('#stp')) $('#stp').onclick = () => showPhotoIndex(currentPhotoIdx - 1);
+if ($('#stn')) $('#stn').onclick = () => showPhotoIndex(currentPhotoIdx + 1);
+if ($('#stx')) $('#stx').onclick = () => {
+  $('#st').hidden = true;
+  if ($('#stf')) $('#stf').src = 'about:blank';
+  if ($('#st-header')) $('#st-header').hidden = true;
+};
 
 /* ---------- Google Photorealistic 3D Tiles for monuments (CesiumJS + Cesium ion) ---------- */
 const loadCesium = () => window.Cesium ? Promise.resolve() : new Promise((ok, no) => {
@@ -447,7 +864,7 @@ $('#tl').onclick = () => {
 
 /* ---------- guided tour with narration ---------- */
 let touring = false; const wait = ms => new Promise(r => setTimeout(r, ms));
-const TOUR = [...PLACES.map(([n, la, lo]) => [n, la, lo, FACTS[n], 8.5]), ...LM.map(([n, la, lo, t]) => [n, la, lo, t, 17.6])];
+const TOUR = [...PLACES.map(([n, la, lo, z]) => [n, la, lo, FACTS[n], z || 17.2]), ...LM.map(([n, la, lo, t]) => [n, la, lo, t, 17.6])];
 const say = t => { $('#hear').textContent = t; if (window.speechSynthesis) { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(t)); } };
 $('#tour').onclick = async () => {
   if (touring) { touring = false; $('#tour').textContent = '🎬 Tour'; window.speechSynthesis && speechSynthesis.cancel(); return; }
@@ -464,8 +881,19 @@ $('#sh').onclick = async () => {
   try { await navigator.clipboard.writeText(u); $('#hear').textContent = 'link to this view copied'; } catch (e) { prompt('Copy this link', u); }
 };
 map.on('load', () => {
-  const m = location.hash.slice(1).split(','); if (m.length < 3 || m.slice(0, 3).some(v => v === '' || isNaN(+v))) return;
-  map.jumpTo({ center: [+m[1], +m[0]] }); zs = +m[2]; scrollToZ(+m[2], 'instant');
-  if (m[3]) { const o = [...$('#lyr').options].find(o => o.value.startsWith(m[3] + '|')); if (o) $('#lyr').value = o.value; } if (/^\d{4}-\d{2}-\d{2}$/.test(m[4] || '')) $('#dt').value = m[4]; applyLayer(); lastZ = -1;
+  const m = location.hash.slice(1).split(',');
+  if (m.length >= 3 && !m.slice(0, 3).some(v => v === '' || isNaN(+v))) {
+    const tz = clamp(+m[2], Z0, Z1);
+    map.jumpTo({ center: [+m[1], +m[0]], zoom: tz });
+    zs = tz; lastZ = tz;
+    setTimeout(() => scrollToZ(tz, 'instant'), 150);
+  }
+  if (m[3]) {
+    const targetLayer = m[3] === 'ESRI_World_Imagery' ? 'GOOGLE_SATELLITE' : m[3];
+    const o = [...$('#lyr').options].find(o => o.value.startsWith(targetLayer + '|'));
+    if (o) $('#lyr').value = o.value;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(m[4] || '')) $('#dt').value = m[4];
+  applyLayer();
 });
 frame();

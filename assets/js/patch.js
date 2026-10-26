@@ -11,7 +11,7 @@
   /* 2. Escape closes the top-most open panel. */
   addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    const open = [['#keys', '#kx'], ['#px', '#pxc'], ['#st', '#stx'], ['#legend', '#lg']].find(([p]) => !$(p).hidden);
+    const open = [['#no-street-modal', '#no-st-close'], ['#keys', '#kx'], ['#px', '#pxc'], ['#st', '#stx'], ['#legend', '#lg']].find(([p]) => !$(p).hidden);
     if (open) $(open[1]).click();
   });
 
@@ -35,7 +35,11 @@
     map.flyTo({ center: [lng, lat], zoom: t, pitch: targetPitch, duration: far ? 2400 : 1400, essential: true });
     map.once('moveend', () => {
       busy = false;
+      zs = map.getZoom();
+      lastZ = zs;
+      scrollToZ(zs, 'instant');
       scheduleLookup();
+      if (window.schedulePhotoSpots) schedulePhotoSpots();
     });
   };
 
