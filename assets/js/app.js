@@ -21,8 +21,8 @@ fetch(API + '/api/health').then(r => r.ok ? r.json() : null).then(j => {
   loadConfig();
 }).catch(() => {});
 const Z0 = 1.1, Z1 = 19.6;
-const LBL = [], LM = [['Taj Mahal', 27.1751, 78.0421, 'The Taj Mahal in Agra, a marble mausoleum completed in the 17th century.'], ['Eiffel Tower', 48.8584, 2.2945, 'The Eiffel Tower in Paris, completed in 1889.'], ['Giza pyramids', 29.9792, 31.1342, 'The pyramids of Giza in Egypt, more than 4,500 years old.'], ['Statue of Liberty', 40.6892, -74.0445, 'The Statue of Liberty in New York Harbor, dedicated in 1886.'], ['Colosseum', 41.8902, 12.4922, 'The Colosseum in Rome, which opened in the year 80.'], ['Burj Khalifa', 25.1972, 55.2744, 'The Burj Khalifa in Dubai, the tallest building in the world at 828 metres.'], ['Machu Picchu', -13.1631, -72.545, 'Machu Picchu, a 15th-century Inca citadel high in the Peruvian Andes.'], ['Sydney Opera House', -33.8568, 151.2153, 'The Sydney Opera House, which opened in 1973.']];
-const FACTS = { 'Amazon': 'The Amazon rainforest, the largest tropical rainforest on Earth.', 'Himalaya': 'The Himalaya, home to Mount Everest, the highest mountain above sea level.', 'Sundarbans': 'The Sundarbans, the largest mangrove forest in the world, shared by Bangladesh and India.', 'Nile Delta': 'The Nile Delta, where Egypt\u2019s great river meets the Mediterranean.', 'Aral Sea': 'The Aral Sea, once one of the four largest lakes in the world, has shrunk dramatically since the 1960s.', 'Greenland ice': 'The Greenland ice sheet, whose melting adds to sea level rise.', 'Great Barrier Reef': 'The Great Barrier Reef, the largest coral reef system in the world.', 'Dubai': 'Dubai, a city that has grown out of the desert coast.', 'Central Valley Farms': 'California\u2019s Central Valley, one of the world\u2019s most productive agricultural valleys producing over 250 crops.', 'Punjab Farmlands': 'Punjab, India\u2019s agrarian breadbasket with fertile irrigated fields.', 'Lucas do Rio Verde': 'Lucas do Rio Verde in Mato Grosso, Brazil: a major agricultural center surrounded by vast grain and soybean fields.', 'Iowa Farmland': 'The Iowa Corn Belt, expansive cultivated agricultural grids in the American Midwest.' };
+const LBL = [], LM = [['Taj Mahal', 27.1751, 78.0421, 'The Taj Mahal in Agra, a marble mausoleum completed in the 17th century.'], ['Eiffel Tower', 48.8584, 2.2945, 'The Eiffel Tower in Paris, completed in 1889.'], ['Giza pyramids', 29.9792, 31.1342, 'The pyramids of Giza in Egypt, more than 4,500 years old.'], ['Statue of Liberty', 40.6892, -74.0445, 'The Statue of Liberty in New York Harbor, dedicated in 1886.'], ['Statue of Unity', 21.8380, 73.7191, 'The Statue of Unity in Gujarat, India, the tallest statue in the world at 182 metres.'], ['Colosseum', 41.8902, 12.4922, 'The Colosseum in Rome, which opened in the year 80.'], ['Burj Khalifa', 25.1972, 55.2744, 'The Burj Khalifa in Dubai, the tallest building in the world at 828 metres.'], ['Machu Picchu', -13.1631, -72.545, 'Machu Picchu, a 15th-century Inca citadel high in the Peruvian Andes.'], ['Sydney Opera House', -33.8568, 151.2153, 'The Sydney Opera House, which opened in 1973.']];
+const FACTS = { 'Statue of Unity': 'The Statue of Unity in Gujarat, India, the tallest statue in the world at 182 metres.', 'Amazon': 'The Amazon rainforest, the largest tropical rainforest on Earth.', 'Himalaya': 'The Himalaya, home to Mount Everest, the highest mountain above sea level.', 'Sundarbans': 'The Sundarbans, the largest mangrove forest in the world, shared by Bangladesh and India.', 'Nile Delta': 'The Nile Delta, where Egypt\u2019s great river meets the Mediterranean.', 'Aral Sea': 'The Aral Sea, once one of the four largest lakes in the world, has shrunk dramatically since the 1960s.', 'Greenland ice': 'The Greenland ice sheet, whose melting adds to sea level rise.', 'Great Barrier Reef': 'The Great Barrier Reef, the largest coral reef system in the world.', 'Dubai': 'Dubai, a city that has grown out of the desert coast.', 'Central Valley Farms': 'California\u2019s Central Valley, one of the world\u2019s most productive agricultural valleys producing over 250 crops.', 'Punjab Farmlands': 'Punjab, India\u2019s agrarian breadbasket with fertile irrigated fields.', 'Lucas do Rio Verde': 'Lucas do Rio Verde in Mato Grosso, Brazil: a major agricultural center surrounded by vast grain and soybean fields.', 'Iowa Farmland': 'The Iowa Corn Belt, expansive cultivated agricultural grids in the American Midwest.' };
 const PLACES = [
   ['Amazon', -3.47, -62.2, 8.5],
   ['Himalaya', 27.99, 86.93, 8.5],
@@ -550,6 +550,8 @@ if ($('#no-st-close')) {
 }
 
 /* 4. Multi-Source Photos Fetching & Display (Google 360, Wikipedia, Mapillary) */
+let currentPanoMeta = null;
+
 async function openPhotosForLocation(lat, lng, initialMeta) {
   if (lat == null || lng == null) {
     const c = map.getCenter();
@@ -559,136 +561,220 @@ async function openPhotosForLocation(lat, lng, initialMeta) {
   if ($('#no-street-modal')) $('#no-street-modal').hidden = true;
   if ($('#photo-inspect-pill')) $('#photo-inspect-pill').hidden = true;
 
+  // Immediately display photo modal with loading state
+  $('#st').hidden = false;
+  if ($('#stcap')) $('#stcap').textContent = 'Loading photos & 360 view…';
+  if ($('#st-img-loading')) $('#st-img-loading').hidden = false;
+  if ($('#st-pcount')) $('#st-pcount').textContent = '…';
+
   ALL_PHOTOS = [];
   currentPhotoIdx = 0;
   lastNearestRoad = null;
   let snapLat = lat, snapLng = lng, roadDist = null;
+  let isRoadSnapped = false;
+  const MAX_ROAD_SNAP_DIST = 200; // Snapping strictly restricted to 100 - 200m!
 
   // If initialMeta provided (e.g. user clicked a Wikipedia marker), add it immediately
   if (initialMeta && (initialMeta.thumbnail || initialMeta.original)) {
+    const tSrc = initialMeta.thumbnail && initialMeta.thumbnail.source;
+    const oSrc = initialMeta.original && initialMeta.original.source;
     ALL_PHOTOS.push({
       type: 'photo',
       source: 'Wikipedia',
       title: initialMeta.title,
       desc: initialMeta.description || '',
-      imgUrl: (initialMeta.original && initialMeta.original.source) || (initialMeta.thumbnail && initialMeta.thumbnail.source),
+      imgUrl: tSrc || oSrc,
+      fallbackUrl: oSrc && oSrc !== tSrc ? oSrc : null,
       mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(initialMeta.title)}`,
       lat: (initialMeta.coordinates && initialMeta.coordinates[0]) ? initialMeta.coordinates[0].lat : lat,
-      lng: (initialMeta.coordinates && initialMeta.coordinates[0]) ? initialMeta.coordinates[0].lon : lng
+      lng: (initialMeta.coordinates && initialMeta.coordinates[0]) ? initialMeta.coordinates[0].lon : lng,
+      dist: 0
     });
+    currentViewMode = 'photo';
+    renderPhotoView(null);
   }
 
   // 1. Check nearest drivable road via OSRM for 360 Street View
-  try {
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 2200);
-    const r = await fetch(`https://router.project-osrm.org/nearest/v1/driving/${lng.toFixed(5)},${lat.toFixed(5)}?number=1`, { signal: ctrl.signal });
-    clearTimeout(tid);
-    if (r.ok) {
-      const j = await r.json();
-      if (j.code === 'Ok' && j.waypoints && j.waypoints[0]) {
-        const wp = j.waypoints[0];
-        roadDist = wp.distance;
-        lastNearestRoad = { lng: wp.location[0], lat: wp.location[1], dist: wp.distance };
-        if (roadDist <= 2500) {
-          snapLng = wp.location[0];
-          snapLat = wp.location[1];
+  const fetchRoad = (async () => {
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 2000);
+      const r = await fetch(`https://router.project-osrm.org/nearest/v1/driving/${lng.toFixed(5)},${lat.toFixed(5)}?number=1`, { signal: ctrl.signal });
+      clearTimeout(tid);
+      if (r.ok) {
+        const j = await r.json();
+        if (j.code === 'Ok' && j.waypoints && j.waypoints[0]) {
+          const wp = j.waypoints[0];
+          roadDist = wp.distance;
+          lastNearestRoad = { lng: wp.location[0], lat: wp.location[1], dist: wp.distance };
+          // ONLY snap to road if within 200m! Never snap kilometers away!
+          if (roadDist <= MAX_ROAD_SNAP_DIST) {
+            snapLng = wp.location[0];
+            snapLat = wp.location[1];
+            isRoadSnapped = true;
+          }
         }
       }
-    }
-  } catch (e) {}
+    } catch (e) {}
+  })();
 
-  // 2. Query Wikipedia / Wikimedia Geosearch for place photos (malls, parks, landmarks, mountains, villages)
-  try {
-    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${lat}|${lng}&ggsradius=8000&ggslimit=15&prop=coordinates|pageimages|description&piprop=thumbnail|original&pithumbsize=1200&format=json&origin=*`;
-    const wResp = await fetch(wikiUrl);
-    if (wResp.ok) {
-      const wData = await wResp.json();
-      const pages = wData.query && wData.query.pages ? Object.values(wData.query.pages) : [];
-      pages.forEach(p => {
-        if (!p.thumbnail && !p.original) return;
-        if (initialMeta && p.title === initialMeta.title) return; // avoid duplicate
-        ALL_PHOTOS.push({
-          type: 'photo',
-          source: 'Wikimedia',
-          title: p.title,
-          desc: p.description || '',
-          imgUrl: (p.original && p.original.source) || (p.thumbnail && p.thumbnail.source),
-          mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title)}`,
-          lat: (p.coordinates && p.coordinates[0]) ? p.coordinates[0].lat : lat,
-          lng: (p.coordinates && p.coordinates[0]) ? p.coordinates[0].lon : lng
+  // 2. Query Wikipedia / Wikimedia Geosearch for place photos
+  const fetchWiki = (async () => {
+    try {
+      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${lat}|${lng}&ggsradius=8000&ggslimit=20&prop=coordinates|pageimages|description&piprop=thumbnail|original&pithumbsize=1200&format=json&origin=*`;
+      const wResp = await fetch(wikiUrl);
+      if (wResp.ok) {
+        const wData = await wResp.json();
+        const pages = wData.query && wData.query.pages ? Object.values(wData.query.pages) : [];
+        pages.forEach(p => {
+          if (!p.thumbnail && !p.original) return;
+          if (initialMeta && p.title === initialMeta.title) return; // avoid duplicate
+          const pLat = (p.coordinates && p.coordinates[0]) ? p.coordinates[0].lat : lat;
+          const pLng = (p.coordinates && p.coordinates[0]) ? p.coordinates[0].lon : lng;
+          const pDist = Math.hypot(pLat - lat, (pLng - lng) * Math.cos(lat * Math.PI / 180)) * 111000;
+          const tSrc = p.thumbnail && p.thumbnail.source;
+          const oSrc = p.original && p.original.source;
+          ALL_PHOTOS.push({
+            type: 'photo',
+            source: 'Wikimedia',
+            title: p.title,
+            desc: p.description || '',
+            imgUrl: tSrc || oSrc,
+            fallbackUrl: oSrc && oSrc !== tSrc ? oSrc : null,
+            mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title)}`,
+            lat: pLat,
+            lng: pLng,
+            dist: pDist
+          });
         });
-      });
-    }
-  } catch (e) {}
+      }
+    } catch (e) {}
+  })();
 
   // 3. Query Mapillary crowd photos
-  const T = key('mly');
-  if (T) {
-    const scales = [0.003, 0.015, 0.05];
+  const fetchMapillary = (async () => {
+    const T = key('mly');
+    if (!T) return;
+    const scales = [0.003, 0.015];
     for (const dy of scales) {
       const dx = dy / Math.max(.2, Math.cos(lat * Math.PI / 180));
       try {
-        const j = await (await fetch(`https://graph.mapillary.com/images?access_token=${encodeURIComponent(T)}&fields=id,thumb_1024_url,computed_geometry,captured_at,compass_angle&bbox=${lng - dx},${lat - dy},${lng + dx},${lat + dy}&limit=40`)).json();
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 2000);
+        const j = await (await fetch(`https://graph.mapillary.com/images?access_token=${encodeURIComponent(T)}&fields=id,thumb_1024_url,computed_geometry,captured_at,compass_angle&bbox=${lng - dx},${lat - dy},${lng + dx},${lat + dy}&limit=20`, { signal: ctrl.signal })).json();
+        clearTimeout(tid);
         const found = (j.data || []).filter(i => i.thumb_1024_url && i.computed_geometry);
         if (found.length) {
           found.forEach(m => {
+            const mLat = m.computed_geometry.coordinates[1];
+            const mLng = m.computed_geometry.coordinates[0];
+            const mDist = Math.hypot(mLat - lat, (mLng - lng) * Math.cos(lat * Math.PI / 180)) * 111000;
             ALL_PHOTOS.push({
               type: 'photo',
               source: 'Mapillary',
               title: `Street Photo (${m.captured_at ? new Date(m.captured_at).toISOString().slice(0, 10) : 'captured'})`,
               desc: 'Crowd-sourced ground imagery',
               imgUrl: m.thumb_1024_url,
-              mapsUrl: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${m.computed_geometry.coordinates[1]},${m.computed_geometry.coordinates[0]}`,
-              lat: m.computed_geometry.coordinates[1],
-              lng: m.computed_geometry.coordinates[0]
+              fallbackUrl: null,
+              mapsUrl: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${mLat},${mLng}`,
+              lat: mLat,
+              lng: mLng,
+              dist: mDist
             });
           });
           break;
         }
       } catch (e) {}
     }
+  })();
+
+  await Promise.allSettled([fetchRoad, fetchWiki, fetchMapillary]);
+
+  // If geosearch yielded 0 photos, fallback to searching by landmark / place name
+  if (!ALL_PHOTOS.length) {
+    const placeText = ($('#place') ? $('#place').textContent : '').replace(/^[^\w]+/, '').trim();
+    if (placeText && !placeText.includes('Drag the globe') && placeText.length > 2) {
+      try {
+        const sUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(placeText)}&gsrlimit=5&prop=coordinates|pageimages|description&piprop=thumbnail|original&pithumbsize=1200&format=json&origin=*`;
+        const sResp = await fetch(sUrl);
+        if (sResp.ok) {
+          const sData = await sResp.json();
+          const sPages = sData.query && sData.query.pages ? Object.values(sData.query.pages) : [];
+          sPages.forEach(p => {
+            if (!p.thumbnail && !p.original) return;
+            const tSrc = p.thumbnail && p.thumbnail.source;
+            const oSrc = p.original && p.original.source;
+            ALL_PHOTOS.push({
+              type: 'photo',
+              source: 'Wikimedia',
+              title: p.title,
+              desc: p.description || '',
+              imgUrl: tSrc || oSrc,
+              fallbackUrl: oSrc && oSrc !== tSrc ? oSrc : null,
+              mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title)}`,
+              lat: (p.coordinates && p.coordinates[0]) ? p.coordinates[0].lat : lat,
+              lng: (p.coordinates && p.coordinates[0]) ? p.coordinates[0].lon : lng,
+              dist: 0
+            });
+          });
+        }
+      } catch (e) {}
+    }
   }
 
-  // Check if completely remote/inaccessible with 0 photos and no road <= 2.5km
-  const hasRoad = roadDist !== null && roadDist <= 2500;
-  if (!hasRoad && !ALL_PHOTOS.length) {
+  // Sort photos so that the closest landmark/monument is ALWAYS photo #1
+  ALL_PHOTOS.sort((a, b) => a.dist - b.dist);
+
+  // If road is > 200m away, do NOT snap away! Use exact coordinate of monument/target
+  if (!isRoadSnapped) {
+    snapLat = lat;
+    snapLng = lng;
+  }
+
+  // 360 panorama metadata pointing directly at the location
+  const panoMeta = {
+    snapLat, snapLng, roadDist, isRoadSnapped,
+    embedUrl: `https://maps.google.com/maps?q=&layer=c&cbll=${snapLat.toFixed(6)},${snapLng.toFixed(6)}&cbp=11,0,0,0,0&output=svembed`,
+    mapsUrl: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${snapLat.toFixed(6)},${snapLng.toFixed(6)}`
+  };
+  currentPanoMeta = panoMeta;
+
+  // Check if completely remote/inaccessible with 0 photos and no road <= 200m
+  if (!isRoadSnapped && !ALL_PHOTOS.length) {
     showNoStreetModal(lastNearestRoad);
     return;
   }
 
-  // Store 360 panorama metadata
-  const panoMeta = {
-    snapLat, snapLng, roadDist,
-    embedUrl: `https://maps.google.com/maps?q=&layer=c&cbll=${snapLat.toFixed(6)},${snapLng.toFixed(6)}&cbp=11,0,0,0,0&output=svembed`,
-    mapsUrl: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${snapLat.toFixed(6)},${snapLng.toFixed(6)}`
-  };
-
-  // Determine initial mode:
-  // If user clicked a Wikipedia place with a photo -> open photo mode
-  // Otherwise if road exists -> open 360 mode
-  // Otherwise -> open photo mode
+  // Initial mode selection:
+  // If user clicked a place/initialMeta OR if photos exist and we are not right on a car road -> open photo mode!
+  // If user clicked directly on a road (<= 200m) and no specific place was requested -> open 360 mode
   if (initialMeta && ALL_PHOTOS.length) {
     currentViewMode = 'photo';
-  } else if (hasRoad) {
-    currentViewMode = '360';
-  } else {
+  } else if (ALL_PHOTOS.length && (!isRoadSnapped || (roadDist && roadDist > 60))) {
     currentViewMode = 'photo';
+  } else if (isRoadSnapped) {
+    currentViewMode = '360';
+  } else if (ALL_PHOTOS.length) {
+    currentViewMode = 'photo';
+  } else {
+    currentViewMode = '360';
   }
 
-  $('#st').hidden = false;
   renderPhotoView(panoMeta);
 }
 
 function renderPhotoView(panoMeta) {
+  if (panoMeta) currentPanoMeta = panoMeta;
   const pCount = ALL_PHOTOS.length;
   if ($('#st-pcount')) $('#st-pcount').textContent = pCount;
 
-  if (currentViewMode === '360' && panoMeta) {
+  if (currentViewMode === '360' && currentPanoMeta) {
     if ($('#stf')) {
       $('#stf').hidden = false;
       $('#stf').style.display = 'block';
-      $('#stf').src = panoMeta.embedUrl;
+      if ($('#stf').src !== currentPanoMeta.embedUrl) {
+        $('#stf').src = currentPanoMeta.embedUrl;
+      }
     }
     if ($('#st-img-wrap')) {
       $('#st-img-wrap').hidden = true;
@@ -702,14 +788,14 @@ function renderPhotoView(panoMeta) {
     if ($('#stphotos')) $('#stphotos').classList.remove('on');
 
     if ($('#stcap')) {
-      if (panoMeta.roadDist !== null && panoMeta.roadDist > 20) {
-        const dStr = panoMeta.roadDist < 1000 ? `${Math.round(panoMeta.roadDist)} m` : `${(panoMeta.roadDist / 1000).toFixed(1)} km`;
-        $('#stcap').textContent = `360° snapped to nearest road (${dStr} away) · ${panoMeta.snapLat.toFixed(4)}°, ${panoMeta.snapLng.toFixed(4)}°`;
+      if (currentPanoMeta.isRoadSnapped && currentPanoMeta.roadDist !== null) {
+        const dStr = currentPanoMeta.roadDist < 1000 ? `${Math.round(currentPanoMeta.roadDist)} m` : `${(currentPanoMeta.roadDist / 1000).toFixed(1)} km`;
+        $('#stcap').textContent = `360° snapped to road (${dStr}) · ${currentPanoMeta.snapLat.toFixed(4)}°, ${currentPanoMeta.snapLng.toFixed(4)}°`;
       } else {
-        $('#stcap').textContent = `360° Street View at ${panoMeta.snapLat.toFixed(4)}°, ${panoMeta.snapLng.toFixed(4)}°`;
+        $('#stcap').textContent = `360° Street View at ${currentPanoMeta.snapLat.toFixed(4)}°, ${currentPanoMeta.snapLng.toFixed(4)}°`;
       }
     }
-    if ($('#sto')) $('#sto').onclick = () => window.open(panoMeta.mapsUrl, '_blank');
+    if ($('#sto')) $('#sto').onclick = () => window.open(currentPanoMeta.mapsUrl, '_blank');
     if ($('#stno')) $('#stno').onclick = () => showNoStreetModal(lastNearestRoad);
     $('#hear').textContent = '360° street view';
   } else if (pCount > 0) {
@@ -717,7 +803,6 @@ function renderPhotoView(panoMeta) {
     if ($('#stf')) {
       $('#stf').hidden = true;
       $('#stf').style.display = 'none';
-      $('#stf').src = 'about:blank';
     }
     if ($('#stc')) $('#stc').hidden = true;
     if ($('#st-img-wrap')) {
@@ -732,7 +817,7 @@ function renderPhotoView(panoMeta) {
     showPhotoIndex(currentPhotoIdx);
   } else {
     currentViewMode = '360';
-    if (panoMeta) renderPhotoView(panoMeta);
+    if (currentPanoMeta) renderPhotoView(currentPanoMeta);
   }
 }
 
@@ -744,6 +829,7 @@ function showPhotoIndex(idx) {
   const img = $('#st-img');
   const loading = $('#st-img-loading');
   if (img) {
+    img.style.display = 'block';
     if (loading) loading.hidden = false;
     img.style.opacity = '0';
     img.referrerPolicy = 'no-referrer';
@@ -752,9 +838,13 @@ function showPhotoIndex(idx) {
       img.style.opacity = '1';
     };
     img.onerror = () => {
+      if (p.fallbackUrl && img.src !== p.fallbackUrl) {
+        img.src = p.fallbackUrl;
+        return;
+      }
       if (loading) loading.hidden = true;
       img.style.opacity = '1';
-      if ($('#stcap')) $('#stcap').textContent = `Could not load photo for ${p.title} · Try ◀ ▶`;
+      if ($('#stcap')) $('#stcap').textContent = `Photo ${currentPhotoIdx + 1}/${ALL_PHOTOS.length} · ${p.title} (load preview failed, try ◀ ▶)`;
     };
     img.src = p.imgUrl;
     img.alt = p.title;
@@ -765,7 +855,8 @@ function showPhotoIndex(idx) {
     $('#st-place-desc').textContent = p.desc || p.source;
   }
   if ($('#stcap')) {
-    $('#stcap').textContent = `Photo ${currentPhotoIdx + 1}/${ALL_PHOTOS.length} · ${p.title} (${p.source})`;
+    const dStr = p.dist != null ? (p.dist < 1000 ? `${Math.round(p.dist)}m away` : `${(p.dist / 1000).toFixed(1)}km away`) : '';
+    $('#stcap').textContent = `Photo ${currentPhotoIdx + 1}/${ALL_PHOTOS.length} · ${p.title}${dStr ? ' · ' + dStr : ''}`;
   }
   if ($('#sto')) {
     $('#sto').onclick = () => window.open(p.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title)}`, '_blank');
@@ -781,30 +872,13 @@ function openStreet() {
 $('#sv').onclick = openStreet;
 if ($('#stmode')) $('#stmode').onclick = () => {
   currentViewMode = '360';
-  const c = map.getCenter();
-  const panoMeta = {
-    snapLat: lastNearestRoad ? lastNearestRoad.lat : c.lat,
-    snapLng: lastNearestRoad ? lastNearestRoad.lng : c.lng,
-    roadDist: lastNearestRoad ? lastNearestRoad.dist : null,
-    embedUrl: `https://maps.google.com/maps?q=&layer=c&cbll=${(lastNearestRoad ? lastNearestRoad.lat : c.lat).toFixed(6)},${(lastNearestRoad ? lastNearestRoad.lng : c.lng).toFixed(6)}&cbp=11,0,0,0,0&output=svembed`,
-    mapsUrl: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${(lastNearestRoad ? lastNearestRoad.lat : c.lat).toFixed(6)},${(lastNearestRoad ? lastNearestRoad.lng : c.lng).toFixed(6)}`
-  };
-  renderPhotoView(panoMeta);
+  renderPhotoView(currentPanoMeta);
 };
 
 if ($('#stphotos')) $('#stphotos').onclick = () => {
   if (ALL_PHOTOS.length) {
     currentViewMode = 'photo';
-    if ($('#stf')) {
-      $('#stf').hidden = true;
-      $('#stf').src = 'about:blank';
-    }
-    if ($('#st-img-wrap')) $('#st-img-wrap').hidden = false;
-    if ($('#stp')) $('#stp').hidden = ALL_PHOTOS.length <= 1;
-    if ($('#stn')) $('#stn').hidden = ALL_PHOTOS.length <= 1;
-    if ($('#stmode')) $('#stmode').classList.remove('on');
-    if ($('#stphotos')) $('#stphotos').classList.add('on');
-    showPhotoIndex(currentPhotoIdx);
+    renderPhotoView(currentPanoMeta);
   } else {
     if ($('#stcap')) $('#stcap').textContent = 'No photos collected yet for this spot.';
   }
