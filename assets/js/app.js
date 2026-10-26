@@ -429,6 +429,30 @@ window.schedulePhotoSpots = schedulePhotoSpots;
 window.openPhotosForLocation = openPhotosForLocation;
 window.onMapInspectClick = onMapInspectClick;
 
+function isGenuinePhoto(title, url) {
+  if (!url || typeof url !== 'string') return false;
+  const lTitle = (title || '').toLowerCase();
+  const lUrl = url.toLowerCase();
+
+  // Reject SVGs and vector graphics
+  if (lUrl.endsWith('.svg') || lUrl.includes('.svg/') || lUrl.includes('.svg?')) return false;
+
+  // Reject maps, diagrams, plans, locator charts, flags, seals, logos, coats of arms
+  const badPatterns = [
+    'map', 'locator', 'location', 'diagram', 'chart', 'graph', 'plan',
+    'flag', 'coat_of_arms', 'seal', 'logo', 'emblem', 'insignia',
+    'outline', 'border', 'boundary', 'topography', 'orthographic',
+    'relief', 'bathymetry', 'elevation', 'route', 'cadastral',
+    'census', 'demographic', 'blueprint', 'floorplan', 'drawing', 'sketch'
+  ];
+
+  for (const w of badPatterns) {
+    const rx = new RegExp(`(^|[_\\-\\s\\.\\/,])${w}([_\\-\\s\\.\\/,]|$)`, 'i');
+    if (rx.test(lUrl) || rx.test(lTitle)) return false;
+  }
+  return true;
+}
+
 async function updatePhotoSpots() {
   if (!showPhotoSpots || map.getZoom() < 8.5) {
     clearPhotoSpots();
@@ -436,7 +460,7 @@ async function updatePhotoSpots() {
   }
   const c = map.getCenter();
   const z = map.getZoom();
-  const radius = Math.min(10000, Math.max(1200, Math.round(35000000 / Math.pow(2, z))));
+  const radius = Math.min(8000, Math.max(1200, Math.round(35000000 / Math.pow(2, z))));
   try {
     const url = `https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${c.lat}|${c.lng}&ggsradius=${radius}&ggslimit=20&prop=coordinates|pageimages|description&piprop=thumbnail|original&pithumbsize=600&format=json&origin=*`;
     const resp = await fetch(url);
@@ -449,11 +473,13 @@ async function updatePhotoSpots() {
     pages.forEach(p => {
       const coords = p.coordinates && p.coordinates[0];
       if (!coords) return;
-      const hasImg = !!p.thumbnail;
+      const tSrc = p.thumbnail && p.thumbnail.source;
+      const oSrc = p.original && p.original.source;
+      const hasRealImg = !!(tSrc || oSrc) && isGenuinePhoto(p.title, tSrc || oSrc);
 
       const wrap = document.createElement('div');
       wrap.className = 'photo-spot-wrapper';
-      wrap.innerHTML = `<div class="photo-spot-pin has-wiki" title="${p.title}${p.description ? ' · ' + p.description : ''}">${hasImg ? '📷' : '📍'}</div>`;
+      wrap.innerHTML = `<div class="photo-spot-pin has-wiki" title="${p.title}${p.description ? ' · ' + p.description : ''}">${hasRealImg ? '📷' : '📍'}</div>`;
 
       wrap.onclick = (e) => {
         e.stopPropagation();
@@ -549,7 +575,7 @@ if ($('#no-st-close')) {
   };
 }
 
-/* 4. Multi-Source Photos Fetching & Display (Google 360, Wikipedia, Mapillary) */
+/* 4. Multi-Source Photos Fetching & Display (Google 360, Wikipedia) */
 let currentPanoMeta = null;
 
 async function openPhotosForLocation(lat, lng, initialMeta) {
@@ -561,9 +587,9 @@ async function openPhotosForLocation(lat, lng, initialMeta) {
   if ($('#no-street-modal')) $('#no-street-modal').hidden = true;
   if ($('#photo-inspect-pill')) $('#photo-inspect-pill').hidden = true;
 
-  // Immediately display photo modal with loading state
+  // Immediately display photo modal with clean loading state
   $('#st').hidden = false;
-  if ($('#stcap')) $('#stcap').textContent = 'Loading photos & 360 view…';
+  if ($('#stcap')) $('#stcap').textContent = 'Finding verified local photos…';
   if ($('#st-img-loading')) $('#st-img-loading').hidden = false;
   if ($('#st-pcount')) $('#st-pcount').textContent = '…';
 
@@ -572,29 +598,33 @@ async function openPhotosForLocation(lat, lng, initialMeta) {
   lastNearestRoad = null;
   let snapLat = lat, snapLng = lng, roadDist = null;
   let isRoadSnapped = false;
-  const MAX_ROAD_SNAP_DIST = 200; // Snapping strictly restricted to 100 - 200m!
+  const MAX_ROAD_SNAP_DIST = 200; // Road snap strictly limited to 100 - 200m!
+  const MAX_PHOTO_DIST_METERS = 1200; // Strictly within 1.2 km only! Never show photos from 5-10 km away!
 
-  // If initialMeta provided (e.g. user clicked a Wikipedia marker), add it immediately
+  // If initialMeta provided (e.g. user clicked a Wikipedia photo marker)
   if (initialMeta && (initialMeta.thumbnail || initialMeta.original)) {
     const tSrc = initialMeta.thumbnail && initialMeta.thumbnail.source;
     const oSrc = initialMeta.original && initialMeta.original.source;
-    ALL_PHOTOS.push({
-      type: 'photo',
-      source: 'Wikipedia',
-      title: initialMeta.title,
-      desc: initialMeta.description || '',
-      imgUrl: tSrc || oSrc,
-      fallbackUrl: oSrc && oSrc !== tSrc ? oSrc : null,
-      mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(initialMeta.title)}`,
-      lat: (initialMeta.coordinates && initialMeta.coordinates[0]) ? initialMeta.coordinates[0].lat : lat,
-      lng: (initialMeta.coordinates && initialMeta.coordinates[0]) ? initialMeta.coordinates[0].lon : lng,
-      dist: 0
-    });
-    currentViewMode = 'photo';
-    renderPhotoView(null);
+    const chosenUrl = tSrc || oSrc;
+    if (isGenuinePhoto(initialMeta.title, chosenUrl)) {
+      ALL_PHOTOS.push({
+        type: 'photo',
+        source: 'Wikipedia',
+        title: initialMeta.title,
+        desc: initialMeta.description || '',
+        imgUrl: chosenUrl,
+        fallbackUrl: oSrc && oSrc !== tSrc ? oSrc : null,
+        mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(initialMeta.title)}`,
+        lat: (initialMeta.coordinates && initialMeta.coordinates[0]) ? initialMeta.coordinates[0].lat : lat,
+        lng: (initialMeta.coordinates && initialMeta.coordinates[0]) ? initialMeta.coordinates[0].lon : lng,
+        dist: 0
+      });
+      currentViewMode = 'photo';
+      renderPhotoView(null);
+    }
   }
 
-  // 1. Check nearest drivable road via OSRM for 360 Street View
+  // 1. Check nearest drivable road via OSRM for 360 Street View (strict 200m limit)
   const fetchRoad = (async () => {
     try {
       const ctrl = new AbortController();
@@ -607,7 +637,6 @@ async function openPhotosForLocation(lat, lng, initialMeta) {
           const wp = j.waypoints[0];
           roadDist = wp.distance;
           lastNearestRoad = { lng: wp.location[0], lat: wp.location[1], dist: wp.distance };
-          // ONLY snap to road if within 200m! Never snap kilometers away!
           if (roadDist <= MAX_ROAD_SNAP_DIST) {
             snapLng = wp.location[0];
             snapLat = wp.location[1];
@@ -618,28 +647,76 @@ async function openPhotosForLocation(lat, lng, initialMeta) {
     } catch (e) {}
   })();
 
-  // 2. Query Wikipedia / Wikimedia Geosearch for place photos
+  // 2. Check if visiting a major curated monument (e.g. Statue of Liberty, Taj Mahal, Statue of Unity, etc.)
+  const fetchCuratedLandmark = (async () => {
+    const matchLM = LM.find(([name, la, lo]) => {
+      const d = Math.hypot(la - lat, (lo - lng) * Math.cos(lat * Math.PI / 180)) * 111000;
+      return d <= 1500;
+    });
+    if (matchLM) {
+      const lmName = matchLM[0];
+      const wikiTitle = lmName === 'Giza pyramids' ? 'Giza pyramid complex' : lmName;
+      try {
+        const tUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(wikiTitle)}&prop=coordinates|pageimages|description&piprop=thumbnail|original&pithumbsize=1200&format=json&origin=*`;
+        const resp = await fetch(tUrl);
+        if (resp.ok) {
+          const data = await resp.json();
+          const p = data.query && data.query.pages ? Object.values(data.query.pages)[0] : null;
+          if (p && (p.thumbnail || p.original)) {
+            const tSrc = p.thumbnail && p.thumbnail.source;
+            const oSrc = p.original && p.original.source;
+            const chosen = tSrc || oSrc;
+            if (isGenuinePhoto(p.title, chosen) && !ALL_PHOTOS.some(x => x.title === p.title)) {
+              ALL_PHOTOS.unshift({
+                type: 'photo',
+                source: 'Wikipedia',
+                title: p.title,
+                desc: p.description || matchLM[3] || '',
+                imgUrl: chosen,
+                fallbackUrl: oSrc && oSrc !== tSrc ? oSrc : null,
+                mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title)}`,
+                lat: matchLM[1],
+                lng: matchLM[2],
+                dist: 0
+              });
+            }
+          }
+        }
+      } catch (e) {}
+    }
+  })();
+
+  // 3. Query Wikipedia geosearch with a tight 1500m radius (NOT 8km!)
   const fetchWiki = (async () => {
     try {
-      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${lat}|${lng}&ggsradius=8000&ggslimit=20&prop=coordinates|pageimages|description&piprop=thumbnail|original&pithumbsize=1200&format=json&origin=*`;
+      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${lat}|${lng}&ggsradius=1500&ggslimit=15&prop=coordinates|pageimages|description&piprop=thumbnail|original&pithumbsize=1200&format=json&origin=*`;
       const wResp = await fetch(wikiUrl);
       if (wResp.ok) {
         const wData = await wResp.json();
         const pages = wData.query && wData.query.pages ? Object.values(wData.query.pages) : [];
         pages.forEach(p => {
           if (!p.thumbnail && !p.original) return;
-          if (initialMeta && p.title === initialMeta.title) return; // avoid duplicate
+          if (ALL_PHOTOS.some(x => x.title === p.title)) return; // avoid duplicate
           const pLat = (p.coordinates && p.coordinates[0]) ? p.coordinates[0].lat : lat;
           const pLng = (p.coordinates && p.coordinates[0]) ? p.coordinates[0].lon : lng;
           const pDist = Math.hypot(pLat - lat, (pLng - lng) * Math.cos(lat * Math.PI / 180)) * 111000;
+
+          // STRICT FILTER: Discard any photo further than 1.2 km away!
+          if (pDist > MAX_PHOTO_DIST_METERS) return;
+
           const tSrc = p.thumbnail && p.thumbnail.source;
           const oSrc = p.original && p.original.source;
+          const chosen = tSrc || oSrc;
+
+          // STRICT FILTER: Discard maps, SVGs, diagrams, coats of arms, flags!
+          if (!isGenuinePhoto(p.title, chosen)) return;
+
           ALL_PHOTOS.push({
             type: 'photo',
             source: 'Wikimedia',
             title: p.title,
             desc: p.description || '',
-            imgUrl: tSrc || oSrc,
+            imgUrl: chosen,
             fallbackUrl: oSrc && oSrc !== tSrc ? oSrc : null,
             mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title)}`,
             lat: pLat,
@@ -651,76 +728,7 @@ async function openPhotosForLocation(lat, lng, initialMeta) {
     } catch (e) {}
   })();
 
-  // 3. Query Mapillary crowd photos
-  const fetchMapillary = (async () => {
-    const T = key('mly');
-    if (!T) return;
-    const scales = [0.003, 0.015];
-    for (const dy of scales) {
-      const dx = dy / Math.max(.2, Math.cos(lat * Math.PI / 180));
-      try {
-        const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), 2000);
-        const j = await (await fetch(`https://graph.mapillary.com/images?access_token=${encodeURIComponent(T)}&fields=id,thumb_1024_url,computed_geometry,captured_at,compass_angle&bbox=${lng - dx},${lat - dy},${lng + dx},${lat + dy}&limit=20`, { signal: ctrl.signal })).json();
-        clearTimeout(tid);
-        const found = (j.data || []).filter(i => i.thumb_1024_url && i.computed_geometry);
-        if (found.length) {
-          found.forEach(m => {
-            const mLat = m.computed_geometry.coordinates[1];
-            const mLng = m.computed_geometry.coordinates[0];
-            const mDist = Math.hypot(mLat - lat, (mLng - lng) * Math.cos(lat * Math.PI / 180)) * 111000;
-            ALL_PHOTOS.push({
-              type: 'photo',
-              source: 'Mapillary',
-              title: `Street Photo (${m.captured_at ? new Date(m.captured_at).toISOString().slice(0, 10) : 'captured'})`,
-              desc: 'Crowd-sourced ground imagery',
-              imgUrl: m.thumb_1024_url,
-              fallbackUrl: null,
-              mapsUrl: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${mLat},${mLng}`,
-              lat: mLat,
-              lng: mLng,
-              dist: mDist
-            });
-          });
-          break;
-        }
-      } catch (e) {}
-    }
-  })();
-
-  await Promise.allSettled([fetchRoad, fetchWiki, fetchMapillary]);
-
-  // If geosearch yielded 0 photos, fallback to searching by landmark / place name
-  if (!ALL_PHOTOS.length) {
-    const placeText = ($('#place') ? $('#place').textContent : '').replace(/^[^\w]+/, '').trim();
-    if (placeText && !placeText.includes('Drag the globe') && placeText.length > 2) {
-      try {
-        const sUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(placeText)}&gsrlimit=5&prop=coordinates|pageimages|description&piprop=thumbnail|original&pithumbsize=1200&format=json&origin=*`;
-        const sResp = await fetch(sUrl);
-        if (sResp.ok) {
-          const sData = await sResp.json();
-          const sPages = sData.query && sData.query.pages ? Object.values(sData.query.pages) : [];
-          sPages.forEach(p => {
-            if (!p.thumbnail && !p.original) return;
-            const tSrc = p.thumbnail && p.thumbnail.source;
-            const oSrc = p.original && p.original.source;
-            ALL_PHOTOS.push({
-              type: 'photo',
-              source: 'Wikimedia',
-              title: p.title,
-              desc: p.description || '',
-              imgUrl: tSrc || oSrc,
-              fallbackUrl: oSrc && oSrc !== tSrc ? oSrc : null,
-              mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.title)}`,
-              lat: (p.coordinates && p.coordinates[0]) ? p.coordinates[0].lat : lat,
-              lng: (p.coordinates && p.coordinates[0]) ? p.coordinates[0].lon : lng,
-              dist: 0
-            });
-          });
-        }
-      } catch (e) {}
-    }
-  }
+  await Promise.allSettled([fetchRoad, fetchCuratedLandmark, fetchWiki]);
 
   // Sort photos so that the closest landmark/monument is ALWAYS photo #1
   ALL_PHOTOS.sort((a, b) => a.dist - b.dist);
@@ -739,22 +747,16 @@ async function openPhotosForLocation(lat, lng, initialMeta) {
   };
   currentPanoMeta = panoMeta;
 
-  // Check if completely remote/inaccessible with 0 photos and no road <= 200m
+  // Check if completely remote/inaccessible with 0 genuine photos and no road <= 200m
   if (!isRoadSnapped && !ALL_PHOTOS.length) {
     showNoStreetModal(lastNearestRoad);
     return;
   }
 
   // Initial mode selection:
-  // If user clicked a place/initialMeta OR if photos exist and we are not right on a car road -> open photo mode!
-  // If user clicked directly on a road (<= 200m) and no specific place was requested -> open 360 mode
-  if (initialMeta && ALL_PHOTOS.length) {
-    currentViewMode = 'photo';
-  } else if (ALL_PHOTOS.length && (!isRoadSnapped || (roadDist && roadDist > 60))) {
-    currentViewMode = 'photo';
-  } else if (isRoadSnapped) {
-    currentViewMode = '360';
-  } else if (ALL_PHOTOS.length) {
+  // If genuine photos exist within 1.2 km -> open Photo mode!
+  // Otherwise if road/360 is available -> open 360 mode!
+  if (ALL_PHOTOS.length) {
     currentViewMode = 'photo';
   } else {
     currentViewMode = '360';
