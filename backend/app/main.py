@@ -152,8 +152,15 @@ def create_app() -> Flask:
 
     @app.get("/api/reverse")
     def reverse():
-        return jsonify(nasa.nominatim("reverse", {"format": "json", "zoom": int(num("zoom", 3, 18, 10)),
-                                                  "lat": num("lat", -90, 90), "lon": num("lon", -180, 180)}))
+        params = {
+            "format": "jsonv2",
+            "zoom": int(num("zoom", 3, 18, 18)),
+            "lat": num("lat", -90, 90),
+            "lon": num("lon", -180, 180),
+            "addressdetails": 1,
+            "extratags": 1,
+        }
+        return jsonify(nasa.nominatim("reverse", params))
 
     @app.get("/api/sonify/frame.json")
     def frame_json():
