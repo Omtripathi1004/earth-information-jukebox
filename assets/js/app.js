@@ -296,37 +296,164 @@ const HISTORICAL_KNOWLEDGE = {
   'Dubai': {
     title: 'Dubai · United Arab Emirates',
     speech: "On the southern coast of the Persian Gulf stands Dubai, a world-renowned metropolis of visionary architecture and ambition. Originating as a peaceful pearl-diving village along Dubai Creek, the city transformed during the late 20th century into an international crossroads for commerce, aviation, and technological ingenuity. Today, its coastline boasts iconic engineered marvels like the Palm Jumeirah archipelago and record-setting skyscrapers rising boldly above the desert sands."
+  },
+  'Statue of Unity': {
+    title: 'The Statue of Unity · Gujarat, India',
+    speech: "Standing majestically on the island of Sadhu Bet facing the Sardar Sarovar Dam on the Narmada River is the Statue of Unity, the tallest statue in the world at an astounding height of one hundred and eighty-two metres. Inaugurated on October 31, 2018, to commemorate the 143rd birth anniversary of Sardar Vallabhbhai Patel, the First Deputy Prime Minister and Iron Man of India who united five hundred and sixty-two princely states into the Indian Union. Designed by renowned Indian sculptor Ram V. Sutar, it was built by Larsen & Toubro using over seventy thousand tonnes of cement, eighteen thousand five hundred tonnes of reinforced steel, and one thousand seven hundred tonnes of bronze plates. Engineered to withstand high-velocity winds of up to two hundred and twenty kilometres per hour and Category 6 earthquakes, it features a viewing gallery at one hundred and fifty-three metres offering panoramic vistas of the Satpura and Vindhyachal mountain ranges."
   }
 };
 
 async function getRichDescription(c, placeName) {
+  // 1. Check curated landmarks (within 3 km)
   for (const [name, klat, klng] of LM) {
-    if (Math.hypot(c.lat - klat, c.lng - klng) < 0.05 && HISTORICAL_KNOWLEDGE[name]) {
+    if (Math.hypot(c.lat - klat, c.lng - klng) < 0.035 && HISTORICAL_KNOWLEDGE[name]) {
       return HISTORICAL_KNOWLEDGE[name];
     }
   }
   for (const [name, klat, klng] of PLACES) {
-    if (Math.hypot(c.lat - klat, c.lng - klng) < 1.5 && HISTORICAL_KNOWLEDGE[name]) {
+    if (Math.hypot(c.lat - klat, c.lng - klng) < 1.0 && HISTORICAL_KNOWLEDGE[name]) {
       return HISTORICAL_KNOWLEDGE[name];
     }
   }
+
+  // 2. Query high-precision reverse geocode at zoom 18 to identify the EXACT infrastructure / institution / village
+  let osmData = null;
   try {
-    const geo = await (await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${c.lat}|${c.lng}&gsradius=10000&gslimit=1&format=json&origin=*`)).json();
-    const hit = geo && geo.query && geo.query.geosearch && geo.query.geosearch[0];
-    if (hit && hit.title) {
-      const sum = await (await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(hit.title)}`)).json();
-      if (sum && sum.extract) {
-        return {
-          title: sum.title + ' · ' + (placeName || 'Regional Heritage'),
-          speech: `${sum.title}: ${sum.extract} Located in the historic region of ${placeName}.`
-        };
-      }
-    }
+    const revUrl = `${BACKEND ? API + '/api/reverse' : 'https://nominatim.openstreetmap.org/reverse'}?format=jsonv2&lat=${c.lat}&lon=${c.lng}&zoom=18&addressdetails=1&extratags=1`;
+    osmData = await (await fetch(revUrl)).json();
   } catch (e) {}
-  const climInfo = CL ? `NASA POWER climate records document a four-decade temperature trend of ${(CL.b * 10).toFixed(2)} degrees Celsius per decade since 1985.` : '';
+
+  const addr = (osmData && osmData.address) || {};
+  const rawName = (osmData && osmData.name) || '';
+  const extra = (osmData && osmData.extratags) || {};
+  const category = (osmData && osmData.category) || '';
+  const type = (osmData && osmData.type) || '';
+
+  // Extract institution or specific infrastructure
+  const institution = addr.university || addr.college || addr.school || addr.kindergarten ||
+                      addr.hospital || addr.clinic || addr.place_of_worship || addr.temple ||
+                      addr.church || addr.mosque || addr.historic || addr.monument ||
+                      addr.fort || addr.castle || addr.railway || addr.station ||
+                      addr.aeroway || addr.airport || '';
+
+  const settlement = addr.village || addr.hamlet || addr.suburb || addr.neighbourhood || addr.residential || '';
+  const townOrCity = addr.city || addr.town || addr.municipality || '';
+  const district = addr.state_district || addr.county || '';
+  const state = addr.state || '';
+  const country = addr.country || '';
+
+  // Specific exact name:
+  const exactName = rawName || institution || settlement || townOrCity || district || placeName || 'Current Location';
+
+  // Build clean location hierarchy string
+  const locHierarchy = [settlement, townOrCity, district, state, country].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ');
+
+  // 3. Try to locate an authoritative Wikipedia article for this EXACT place or institution
+  let wikiSummary = null;
+
+  // Option A: If OpenStreetMap has a direct wikipedia tag
+  if (extra.wikipedia) {
+    try {
+      const pageTitle = extra.wikipedia.includes(':') ? extra.wikipedia.split(':')[1] : extra.wikipedia;
+      const s = await (await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}`)).json();
+      if (s && s.extract) wikiSummary = s;
+    } catch (e) {}
+  }
+
+  // Option B: Search Wikipedia by the specific exact name (e.g. university / school / monument / village name)
+  if (!wikiSummary && exactName && exactName.length > 2 && !exactName.includes('Unnamed') && !exactName.includes('Drag the globe')) {
+    const searchTerms = [
+      institution ? `${institution} ${townOrCity || district}` : null,
+      rawName ? `${rawName} ${district || state}` : null,
+      settlement ? `${settlement} ${district || state}` : null,
+      exactName
+    ].filter(Boolean);
+
+    for (const q of searchTerms) {
+      try {
+        const sUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&srlimit=1&format=json&origin=*`;
+        const sRes = await (await fetch(sUrl)).json();
+        const hit = sRes && sRes.query && sRes.query.search && sRes.query.search[0];
+        if (hit && hit.title) {
+          const s = await (await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(hit.title)}`)).json();
+          if (s && s.extract && (s.extract.toLowerCase().includes(state.toLowerCase()) || s.extract.toLowerCase().includes(district.toLowerCase()) || s.extract.toLowerCase().includes(country.toLowerCase()) || Math.hypot(c.lat - (s.coordinates ? s.coordinates.lat : c.lat), c.lng - (s.coordinates ? s.coordinates.lon : c.lng)) < 0.15)) {
+            wikiSummary = s;
+            break;
+          }
+        }
+      } catch (e) {}
+    }
+  }
+
+  // Option C: Geosearch with a STRICT SMALL RADIUS (MAX 1,000m / 1 km, NEVER 10km!)
+  if (!wikiSummary) {
+    try {
+      const geoUrl = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${c.lat}|${c.lng}&gsradius=1000&gslimit=3&format=json&origin=*`;
+      const geoRes = await (await fetch(geoUrl)).json();
+      const hits = (geoRes && geoRes.query && geoRes.query.geosearch) || [];
+      for (const h of hits) {
+        if (h.dist <= 1200) { // STRICT: must be within 1.2 km of the user's location
+          const s = await (await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(h.title)}`)).json();
+          if (s && s.extract) {
+            wikiSummary = s;
+            break;
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  // NASA POWER climate string
+  const climInfo = CL ? `Climate records for this coordinate document a 40-year temperature trend of ${(CL.b * 10).toFixed(2)} °C per decade with an annual mean temperature of ${CL.my.toFixed(1)} °C.` : '';
+
+  // 4. Construct rich, accurate narrative
+  if (wikiSummary && wikiSummary.extract) {
+    // Detect when it was built / founded / established
+    let buildInfo = '';
+    const extractText = wikiSummary.extract;
+    const dateMatch = extractText.match(/(?:established|founded|built|constructed|inaugurated|opened|completed|dating back to|dates from|dates to)\s+(?:in\s+)?([A-Za-z0-9,\s\-–]+?)(?:\.|\;|\,)/i);
+    if (dateMatch && dateMatch[1] && dateMatch[1].length < 40) {
+      buildInfo = ` Historical records indicate it was ${dateMatch[0].trim()}.`;
+    }
+
+    const titleStr = `${wikiSummary.title} · ${locHierarchy || placeName}`;
+    const speechStr = `${wikiSummary.title}, located in ${locHierarchy || placeName}.${buildInfo} ${wikiSummary.extract} ${climInfo}`.replace(/\s+/g, ' ').trim();
+
+    return {
+      title: titleStr,
+      speech: speechStr
+    };
+  }
+
+  // 5. If no dedicated Wikipedia article, construct an authoritative institutional & geographical profile!
+  let infrastructureRole = '';
+  let buildEstimate = '';
+  if (extra.start_date || extra.opening_date || extra.built) {
+    buildEstimate = ` Established and built in ${extra.start_date || extra.opening_date || extra.built}.`;
+  }
+
+  if (/university|college/i.test(category + type + institution)) {
+    infrastructureRole = `This is a recognized higher education and academic institution serving students across ${district || state}. It provides collegiate learning programs, lecture halls, and research facilities that support regional academic and skill development.`;
+  } else if (/school|kindergarten/i.test(category + type + institution)) {
+    infrastructureRole = `This is an educational school campus providing foundational primary and secondary education for children and youth of ${settlement || townOrCity || district}. It serves as a vital community pillar supporting literacy and youth education under regional educational boards.`;
+  } else if (/hospital|clinic|doctors/i.test(category + type + institution)) {
+    infrastructureRole = `This is a healthcare facility providing essential outpatient, medical, and emergency services for the residents of ${settlement || townOrCity || district}.`;
+  } else if (/historic|monument|fort|castle|ruins/i.test(category + type + institution)) {
+    infrastructureRole = `This is a heritage landmark of historical significance in ${district || state}, standing as an authentic testament to the traditional architecture and cultural legacy of the region.`;
+  } else if (/railway|station|airport|aeroway|bus/i.test(category + type + institution)) {
+    infrastructureRole = `This is a critical regional transportation hub connecting ${townOrCity || district} to the broader state and national transit network, facilitating trade, passenger mobility, and commerce.`;
+  } else if (settlement) {
+    infrastructureRole = `This is the village settlement of ${settlement}, a close-knit rural community located in ${district ? district + ' district, ' : ''}${state}. The surrounding lands are primarily cultivated with regional agricultural crops that sustain the local rural economy.`;
+  } else {
+    infrastructureRole = `Located precisely at latitude ${c.lat.toFixed(4)}° North, longitude ${c.lng.toFixed(4)}° East in ${locHierarchy || placeName}. This area forms part of the regional administrative grid of ${state || country}.`;
+  }
+
+  const titleStr = `${exactName} · ${locHierarchy || placeName}`;
+  const speechStr = `You are observing ${exactName}, situated in ${locHierarchy || placeName}.${buildEstimate} ${infrastructureRole} ${climInfo}`.replace(/\s+/g, ' ').trim();
+
   return {
-    title: placeName || 'Global Observation',
-    speech: `Observing ${placeName || 'this region'}. Looking from ${chap(zs)}, spanning ${$('#scale').textContent}. ${climInfo} Known for its distinct geographical character and natural heritage.`
+    title: titleStr,
+    speech: speechStr
   };
 }
 
