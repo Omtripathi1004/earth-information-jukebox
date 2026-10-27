@@ -190,7 +190,11 @@
   <div class="flex items-start justify-between gap-3 pb-3 border-b border-sky-500/20">
     <div>
       <div class="flex items-center gap-2 flex-wrap">
-        <span class="eic-badge text-[11px] font-mono px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold">NASA earth.gov</span>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-950/80 border border-sky-400/50 text-[11px] font-mono text-sky-200 shadow-sm">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#0b3d91"/><path d="M3 15l18-6M6 7l12 10" stroke="#fc3d21" stroke-width="1.8"/><circle cx="12" cy="12" r="2" fill="#ffffff"/></svg>
+          <span class="font-bold tracking-wider">NASA</span>
+          <span class="text-sky-300 font-mono text-[10px]">earth.gov</span>
+        </span>
         <span id="eic-theme" class="text-xs text-amber-300 font-medium font-mono"></span>
       </div>
       <h2 id="eic-title" class="font-display font-bold text-lg sm:text-xl text-slate-100 mt-1 leading-snug"></h2>
@@ -206,9 +210,11 @@
     <div class="sm:col-span-2">
       <label for="eic-dataset-select" class="lbl block mb-1">Select Verified EIC Planetary Metric:</label>
       <select id="eic-dataset-select" class="w-full bg-slate-900/90 border border-sky-500/40 rounded-lg p-2 text-xs font-medium text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400">
+        <option value="geos_fp_temp" selected>NASA GEOS-FP Near-Surface Temperature · Global Climate</option>
+        <option value="ecco2_ocean_currents">ECCO2 Ocean Currents & Sea Surface Temp · Ocean Energy</option>
         <option value="co2">Atmospheric Carbon Dioxide (CO₂) · Greenhouse Gases</option>
         <option value="sea_level">Global Mean Sea Level Variation · Sea Level Change</option>
-        <option value="temperature_anomaly">Global Surface Temperature Anomaly · Global Climate</option>
+        <option value="temperature_anomaly">Global Surface Temperature Anomaly (GISTEMP) · Global Climate</option>
         <option value="arctic_sea_ice">Arctic Sea Ice Minimum Extent · Cryosphere</option>
       </select>
     </div>
@@ -250,14 +256,26 @@
   </div>
 
   <div class="mt-3">
-    <input id="eic-slider" type="range" class="w-full accent-sky-400 cursor-pointer" min="0" max="44" value="0" aria-label="Timeline position">
+    <input id="eic-slider" type="range" class="w-full accent-sky-400 cursor-pointer" min="0" max="11" value="0" aria-label="Timeline position">
+    <div class="mt-1.5 px-0.5">
+      <div class="flex justify-between text-[9px] font-mono text-slate-400">
+        <span>Cold / Low Pitch (200 Hz)</span>
+        <span>Baseline Mean (~500 Hz)</span>
+        <span>Heatwave / High Pitch (800 Hz)</span>
+      </div>
+      <div class="eic-pitch-bar w-full my-1"></div>
+    </div>
+    <div id="eic-caption-banner" class="mt-2 text-[11px] font-mono text-amber-300 bg-slate-900/90 border border-slate-800 rounded-lg py-1.5 px-2 text-center" aria-live="polite">
+      Current pitch 200 Hz corresponds to 12.4 °C (Jan 2024) · higher value = higher pitch
+    </div>
   </div>
 
   <div class="flex flex-wrap items-center justify-between gap-2 mt-3 p-2 bg-slate-900/60 rounded-xl border border-slate-800">
     <div class="flex items-center gap-1.5">
-      <button id="eic-prev" class="btn text-xs py-1.5 px-2.5" title="Step back one year">⏮</button>
-      <button id="eic-play" class="cta text-xs py-1.5 px-3 flex items-center gap-1.5 font-semibold"><span aria-hidden="true">▶</span> Play Audio Timeline</button>
-      <button id="eic-next" class="btn text-xs py-1.5 px-2.5" title="Step forward one year">⏭</button>
+      <button id="eic-prev" class="btn text-xs py-1.5 px-2.5" title="Step back (Left Arrow)">⏮</button>
+      <button id="eic-play" class="cta text-xs py-1.5 px-3 flex items-center gap-1.5 font-semibold" title="Play or pause sonification (Space)"><span aria-hidden="true">▶</span> Play Audio Timeline</button>
+      <button id="eic-stop" class="btn text-xs py-1.5 px-2.5" title="Stop audio and reset timeline to beginning">⏹ Stop</button>
+      <button id="eic-next" class="btn text-xs py-1.5 px-2.5" title="Step forward (Right Arrow)">⏭</button>
     </div>
     <div class="flex items-center gap-2">
       <label class="lbl text-[11px] flex items-center gap-1">Speed

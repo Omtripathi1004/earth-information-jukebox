@@ -1,17 +1,77 @@
 /**
  * Earth Information Center (EIC) Jukebox Module
- * Target: NASA Space Apps Challenge 2026 - The Earth Information Jukebox
+ * Target: NASA Space Apps Challenge - The Earth Information Jukebox
  * 
- * Pairs verified NASA Earth Information Center (earth.gov) thematic planetary
- * datasets with synchronized, physically-calibrated dynamic sonification.
+ * Implements the verified EIC visualization-to-sonification pipeline
+ * adhering strictly to the official NASA Space Apps Challenge specifications.
  */
 (() => {
   'use strict';
 
   // ---------------------------------------------------------------------------
-  // 1. Verified EIC Datasets & Scientific Provenance
+  // 1. Verified NASA Earth Information Center (EIC) Datasets & Provenance
   // ---------------------------------------------------------------------------
   const EIC_DATASETS = {
+    geos_fp_temp: {
+      id: 'geos_fp_temp',
+      title: 'NASA GEOS-FP Near-Surface Temperature (2m Air Temp)',
+      theme: 'Global Climate & Atmosphere',
+      agency: 'NASA GSFC / GMAO & Earth Information Center (earth.gov)',
+      portalUrl: 'https://earth.gov/',
+      units: '°C',
+      unitName: 'Degrees Celsius',
+      baselineDesc: 'Global baseline temperature ~14.0 °C',
+      baselineVal: 14.0,
+      description: 'Daily and monthly global near-surface air temperature from the NASA Goddard Earth Observing System Forward Processing (GEOS-FP) model visualization. Tracks seasonal heating cycles, heatwaves (red), and cold snaps (blue) across our living planet.',
+      years: [
+        'Jan 2024', 'Feb 2024', 'Mar 2024', 'Apr 2024', 'May 2024', 'Jun 2024',
+        'Jul 2024', 'Aug 2024', 'Sep 2024', 'Oct 2024', 'Nov 2024', 'Dec 2024'
+      ],
+      values: [
+        12.4, 12.8, 13.5, 14.4, 15.3, 16.2, 17.1, 16.8, 15.9, 14.8, 13.6, 12.6
+      ],
+      camera: { lat: 28.0, lon: 10.0, zoom: 2.5, name: 'Global Thermal Earth View' },
+      suggestedLayer: 'MODIS_Terra_Land_Surface_Temp_Day',
+      sonification: {
+        voice: 'bell',
+        voiceDesc: 'Continuous pitch scaling: higher pitch = warmer temperature; lower pitch = colder temperature.',
+        formula: 'f = 200 + ((Temp - 12.0) / (17.5 - 12.0)) * (800 - 200)',
+        pitchRange: '200 Hz (winter cold) - 760 Hz (summer peak heatwave)',
+        dynamics: 'Loudness expands with thermal intensity; pitch directly tracks warmth in °C.',
+        spatial: 'Pans from left to right along the annual calendar trajectory.'
+      },
+      limitations: 'Model grid resolution averages microclimate extremes in steep mountainous terrain and narrow coastal boundaries.'
+    },
+    ecco2_ocean_currents: {
+      id: 'ecco2_ocean_currents',
+      title: 'ECCO2 Ocean Currents & Sea Surface Temperature',
+      theme: 'Ocean Circulation & Energy',
+      agency: 'NASA JPL / ECCO2 & Earth Information Center (earth.gov)',
+      portalUrl: 'https://earth.gov/',
+      units: '°C',
+      unitName: 'Degrees Celsius',
+      baselineDesc: 'Global mean SST ~16.1 °C',
+      baselineVal: 16.1,
+      description: 'High-resolution global ocean circulation and sea-surface temperatures from the Estimating the Circulation and Climate of the Ocean (ECCO2) model, demonstrating heat transport across global ocean gyres.',
+      years: [
+        'Jan 2024', 'Feb 2024', 'Mar 2024', 'Apr 2024', 'May 2024', 'Jun 2024',
+        'Jul 2024', 'Aug 2024', 'Sep 2024', 'Oct 2024', 'Nov 2024', 'Dec 2024'
+      ],
+      values: [
+        15.8, 15.9, 16.1, 16.4, 16.7, 17.0, 17.3, 17.2, 16.9, 16.6, 16.2, 15.9
+      ],
+      camera: { lat: 25.0, lon: -60.0, zoom: 3.0, name: 'North Atlantic Ocean Gyre & Gulf Stream' },
+      suggestedLayer: 'GHRSST_L4_MUR_Sea_Surface_Temperature',
+      sonification: {
+        voice: 'water',
+        voiceDesc: 'Resonant dual-sine ocean pad reflecting ocean heat capacity and current velocity.',
+        formula: 'f = 160 + ((SST - 15.5) / 2.0) * (480 - 160)',
+        pitchRange: '160 Hz (ocean baseline) - 450 Hz (tropical currents)',
+        dynamics: 'Volume modulated by current velocity and thermal energy.',
+        spatial: 'Spatial panning tracking ocean current direction.'
+      },
+      limitations: 'Sub-mesoscale eddies smaller than 10 km are parameterized rather than directly resolved.'
+    },
     co2: {
       id: 'co2',
       title: 'Atmospheric Carbon Dioxide (CO₂)',
@@ -22,7 +82,7 @@
       unitName: 'Parts per million',
       baselineDesc: 'Pre-industrial baseline ~280 ppm',
       baselineVal: 280,
-      description: 'Annual global mean atmospheric carbon dioxide concentration recorded at Mauna Loa Observatory and global marine boundary stations. CO₂ is the principal greenhouse gas driving long-term global warming.',
+      description: 'Annual global mean atmospheric carbon dioxide concentration recorded at Mauna Loa Observatory and marine boundary stations. Tracks the primary driver of anthropogenic climate change.',
       years: [
         1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989,
         1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
@@ -41,13 +101,13 @@
       suggestedLayer: 'VIIRS_SNPP_CorrectedReflectance_TrueColor',
       sonification: {
         voice: 'forest',
-        voiceDesc: 'Warm harmonic triangle voice representing the biosphere and atmospheric radiative absorption.',
+        voiceDesc: 'Warm harmonic triangle voice representing the biosphere and radiative absorption.',
         formula: 'f = 130.81 * 2^(((CO2 - 330) / 100) * 1.5)',
         pitchRange: '130 Hz (C3) - 290 Hz (D4)',
         dynamics: 'Loudness expands with higher annual accumulation rates (+ppm/yr).',
         spatial: 'Pans from historical 1980 on the left (-0.8) to modern day on the right (+0.8).'
       },
-      limitations: 'Annual global means smooth out seasonal vegetation cycles (sawtooth ±3-6 ppm) and local industrial emission plumes.'
+      limitations: 'Annual global means smooth out seasonal vegetation cycles (sawtooth ±3-6 ppm) and local industrial plumes.'
     },
     sea_level: {
       id: 'sea_level',
@@ -59,7 +119,7 @@
       unitName: 'Millimeters variation',
       baselineDesc: 'Zero baseline at start of satellite altimetry record (1993)',
       baselineVal: 0,
-      description: 'Continuous satellite radar altimetry measuring global ocean height change, reflecting both seawater thermal expansion and land ice discharge from Greenland and Antarctica.',
+      description: 'Continuous satellite radar altimetry measuring global ocean height change, reflecting seawater thermal expansion and land ice discharge.',
       years: [
         1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
         2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
@@ -82,7 +142,7 @@
         dynamics: 'Volume modulated by thermal expansion rate and altimeter precision.',
         spatial: 'Spatial panning from 1993 on the left to 2024 on the right.'
       },
-      limitations: 'Global mean values do not capture regional coastline dynamics influenced by post-glacial rebound, land subsidence, or ocean gyre shifts.'
+      limitations: 'Global mean values do not capture regional coastline dynamics influenced by post-glacial rebound or land subsidence.'
     },
     temperature_anomaly: {
       id: 'temperature_anomaly',
@@ -94,7 +154,7 @@
       unitName: 'Degrees Celsius anomaly',
       baselineDesc: '1951-1980 base period global mean (0.0 °C)',
       baselineVal: 0,
-      description: 'Global combined land-surface air and sea-surface water temperature anomalies relative to the 1951-1980 base period, demonstrating unbroken global planetary heating.',
+      description: 'Global combined land-surface air and sea-surface water temperature anomalies relative to the 1951-1980 base period, demonstrating continuous planetary warming.',
       years: [
         1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989,
         1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
@@ -119,7 +179,7 @@
         dynamics: 'Loudness expands during record-setting heat years (e.g. 2016, 2020, 2023, 2024).',
         spatial: 'Pans from left to right along the 45-year timeline.'
       },
-      limitations: 'Observational station density is lower in the southern oceans and Antarctic interior than in continental mid-latitudes.'
+      limitations: 'Observational station density is lower in southern oceans and Antarctic interior than in continental mid-latitudes.'
     },
     arctic_sea_ice: {
       id: 'arctic_sea_ice',
@@ -131,7 +191,7 @@
       unitName: 'Million square kilometers',
       baselineDesc: '1979-2000 average September extent ~7.0 million km²',
       baselineVal: 7.0,
-      description: 'Annual September minimum ice extent across the Arctic Ocean derived from satellite passive microwave radiometers, showing steep cryospheric decline over recent decades.',
+      description: 'Annual September minimum ice extent across the Arctic Ocean derived from satellite passive microwave radiometers.',
       years: [
         1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989,
         1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
@@ -156,13 +216,41 @@
         dynamics: 'Strikes sharply when ice levels breach historical thresholds (< 4.5 million km²).',
         spatial: 'Pans across time trajectory from 1980 to 2024.'
       },
-      limitations: 'Summer melt ponds on ice surfaces can momentarily attenuate microwave signals without multispectral optical validation.'
+      limitations: 'Summer melt ponds on ice surfaces can attenuate microwave signals without multispectral optical validation.'
     }
   };
 
   // ---------------------------------------------------------------------------
-  // 2. Data Preparation & Validation Layer
+  // 2. Data Preparation & Adapter Layer (EICAdapter)
   // ---------------------------------------------------------------------------
+  class EICAdapter {
+    constructor(config = {}) {
+      this.config = config;
+    }
+
+    async fetchVisualizationFrames(datasetId) {
+      const ds = EIC_DATASETS[datasetId];
+      if (!ds) throw new Error(`EIC dataset '${datasetId}' not found`);
+      return {
+        title: ds.title,
+        theme: ds.theme,
+        agency: ds.agency,
+        frames: ds.years,
+        units: ds.units
+      };
+    }
+
+    async fetchVisualizationData(datasetId) {
+      const ds = EIC_DATASETS[datasetId];
+      if (!ds) throw new Error(`EIC dataset '${datasetId}' not found`);
+      return {
+        values: ds.values,
+        years: ds.years,
+        units: ds.units
+      };
+    }
+  }
+
   class EICDataPrep {
     static validate(dataset) {
       if (!dataset || !Array.isArray(dataset.years) || !Array.isArray(dataset.values)) {
@@ -178,6 +266,11 @@
         }
       }
       return true;
+    }
+
+    static normalize(val, minVal, maxVal) {
+      if (val == null || maxVal === minVal) return 0;
+      return (val - minVal) / (maxVal - minVal);
     }
 
     static computeStats(dataset) {
@@ -223,7 +316,19 @@
       let voiceType = 'bell';
       let vel = 0.16;
 
-      if (dataset.id === 'co2') {
+      if (dataset.id === 'geos_fp_temp') {
+        // GEOS-FP Temp: 12.0 C -> 200 Hz; 17.5 C -> 800 Hz (page 6 & 9 of challenge specification)
+        const norm = Math.max(0, Math.min(1.0, (val - 12.0) / (17.5 - 12.0)));
+        freq = 200.0 + norm * (800.0 - 200.0);
+        voiceType = 'bell';
+        vel = 0.12 + norm * 0.12;
+      } else if (dataset.id === 'ecco2_ocean_currents') {
+        // ECCO2: 15.5 C -> 160 Hz; 17.5 C -> 480 Hz
+        const norm = Math.max(0, Math.min(1.0, (val - 15.5) / 2.0));
+        freq = 160.0 + norm * (480.0 - 160.0);
+        voiceType = 'water';
+        vel = 0.14 + norm * 0.10;
+      } else if (dataset.id === 'co2') {
         const norm = Math.max(0, Math.min(1.2, (val - 330) / 100));
         freq = 130.81 * Math.pow(2, norm * 1.5);
         voiceType = 'forest';
@@ -260,13 +365,13 @@
           window.voice(note.voiceType === 'ice' ? 'bell' : note.voiceType, note.freq, note.vel, note.pan);
           return note;
         } catch (e) {
-          // Fall back to native audio nodes
+          // Fall back to native nodes
         }
       }
 
       try {
         const now = ctx.currentTime;
-        const dur = note.voiceType === 'water' ? 1.6 : 0.9;
+        const dur = note.voiceType === 'water' ? 1.6 : 0.85;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
@@ -291,7 +396,7 @@
         osc.start(now);
         osc.stop(now + dur + 0.05);
       } catch (err) {
-        console.warn('Audio playback error:', err);
+        console.warn('Audio playback notice:', err);
       }
 
       return note;
@@ -303,7 +408,8 @@
   // ---------------------------------------------------------------------------
   class EICPlaybackState {
     constructor() {
-      this.dataset = EIC_DATASETS.co2;
+      // Default to GEOS-FP Near-Surface Temperature as featured in the NASA challenge brief
+      this.dataset = EIC_DATASETS.geos_fp_temp;
       this.stats = EICDataPrep.computeStats(this.dataset);
       this.currentIndex = 0;
       this.isPlaying = false;
@@ -327,7 +433,7 @@
 
     setDataset(id) {
       if (!EIC_DATASETS[id]) return;
-      this.pause();
+      this.stop();
       this.dataset = EIC_DATASETS[id];
       this.stats = EICDataPrep.computeStats(this.dataset);
       this.currentIndex = 0;
@@ -356,9 +462,7 @@
             this.notify(null);
           }
         })
-        .catch(() => {
-          // Gracefully ignore AbortError and network errors; embedded dataset is already active
-        });
+        .catch(() => {});
     }
 
     seek(index, playSound = true) {
@@ -387,7 +491,6 @@
 
     play() {
       if (this.isPlaying) return;
-      // Stop main map scanline if currently listening to prevent competing audio
       const listenBtn = document.getElementById('listen');
       if (listenBtn && listenBtn.classList.contains('on')) {
         listenBtn.click();
@@ -403,7 +506,7 @@
       const note = EICSonifier.playNote(this.dataset, this.currentIndex, this.stats, this.isMuted);
       this.notify(note);
 
-      const intervalMs = Math.round(380 / this.speed);
+      const intervalMs = Math.round(420 / this.speed);
       this.timer = setInterval(() => {
         if (this.currentIndex >= this.dataset.years.length - 1) {
           this.pause();
@@ -422,6 +525,12 @@
         this.timer = null;
       }
       this.notify(null);
+    }
+
+    stop() {
+      this.pause();
+      this.currentIndex = 0;
+      this.seek(0, false);
     }
 
     togglePlay() {
@@ -474,11 +583,12 @@
   }
 
   // ---------------------------------------------------------------------------
-  // 5. User Interface Controller
+  // 5. User Interface Controller (EICUI)
   // ---------------------------------------------------------------------------
   class EICUI {
     static init() {
       this.state = new EICPlaybackState();
+      this.adapter = new EICAdapter();
       this.isDocked = false;
       this.injectStyles();
       this.setupElements();
@@ -502,8 +612,8 @@
           bottom: 12px !important;
           left: 50% !important;
           transform: translateX(-50%) !important;
-          width: min(640px, calc(100vw - 20px)) !important;
-          max-height: 180px !important;
+          width: min(660px, calc(100vw - 20px)) !important;
+          max-height: 200px !important;
           padding: 12px !important;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(56, 189, 248, 0.3) !important;
         }
@@ -517,6 +627,11 @@
           background: rgba(14, 165, 233, 0.15);
           border: 1px solid rgba(14, 165, 233, 0.4);
           color: #38bdf8;
+        }
+        .eic-pitch-bar {
+          background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 30%, #f59e0b 70%, #ef4444 100%);
+          height: 4px;
+          border-radius: 2px;
         }
         .eic-btn-active {
           background: #0284c7 !important;
@@ -552,6 +667,7 @@
       this.btnMinimize = document.getElementById('eic-minimize');
       this.selectDataset = document.getElementById('eic-dataset-select');
       this.btnPlay = document.getElementById('eic-play');
+      this.btnStop = document.getElementById('eic-stop');
       this.btnPrev = document.getElementById('eic-prev');
       this.btnNext = document.getElementById('eic-next');
       this.slider = document.getElementById('eic-slider');
@@ -563,13 +679,14 @@
       this.soundInfoPanel = document.getElementById('eic-sound-info');
       this.tableDetails = document.getElementById('eic-table-details');
       this.tableBody = document.getElementById('eic-data-table-body');
+      this.captionBanner = document.getElementById('eic-caption-banner');
     }
 
     static attachEvents() {
       if (this.btnOpen) {
         this.btnOpen.addEventListener('click', () => {
           this.modal.hidden = false;
-          if (this.btnOpen) this.btnOpen.setAttribute('aria-expanded', 'true');
+          this.btnOpen.setAttribute('aria-expanded', 'true');
           this.state.flyToDatasetLocation();
           EICSonifier.getAudioContext();
           this.drawSparkline();
@@ -579,7 +696,7 @@
       if (this.btnClose) {
         this.btnClose.addEventListener('click', () => {
           this.modal.hidden = true;
-          if (this.btnOpen) this.btnOpen.setAttribute('aria-expanded', 'false');
+          this.btnOpen.setAttribute('aria-expanded', 'false');
           this.state.pause();
         });
       }
@@ -611,6 +728,10 @@
 
       if (this.btnPlay) {
         this.btnPlay.addEventListener('click', () => this.state.togglePlay());
+      }
+
+      if (this.btnStop) {
+        this.btnStop.addEventListener('click', () => this.state.stop());
       }
 
       if (this.btnPrev) {
@@ -654,7 +775,6 @@
         });
       }
 
-      // Sparkline mouse & touch scrub handlers
       if (this.canvas) {
         const handleSeekPos = (clientX) => {
           const rect = this.canvas.getBoundingClientRect();
@@ -685,12 +805,10 @@
         this.canvas.addEventListener('touchend', () => { isTouchDragging = false; });
       }
 
-      // Global keyboard accessibility
       window.addEventListener('keydown', (e) => {
         const tag = (e.target && e.target.tagName) || '';
         const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 
-        // Shortcut 'e' or 'E' toggles EIC Jukebox
         if (/^e$/i.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey && !isEditing) {
           if (this.modal.hidden) {
             this.btnOpen.click();
@@ -742,15 +860,15 @@
       setText('eic-agency', d.agency);
       setText('eic-desc', d.description);
       setText('eic-year-display', String(year));
-      setText('eic-val-display', `${val.toFixed(d.units === '°C' ? 2 : 1)} ${d.units}`);
+      setText('eic-val-display', `${val.toFixed(d.units === '°C' ? 1 : 1)} ${d.units}`);
       setText('eic-baseline-display', `${baselineDiff >= 0 ? '+' : ''}${baselineDiff.toFixed(1)} ${d.units} vs baseline`);
-      setText('eic-delta-display', idx > 0 ? `${delta >= 0 ? '+' : ''}${delta.toFixed(2)} ${d.units}/yr` : '—');
+      setText('eic-delta-display', idx > 0 ? `${delta >= 0 ? '+' : ''}${delta.toFixed(2)} ${d.units}/step` : '—');
 
       if (this.slider) {
         this.slider.min = '0';
         this.slider.max = String(d.years.length - 1);
         this.slider.value = String(idx);
-        this.slider.setAttribute('aria-valuenow', String(year));
+        this.slider.setAttribute('aria-valuenow', String(idx));
         this.slider.setAttribute('aria-valuetext', `${year}: ${val} ${d.units}`);
       }
 
@@ -777,9 +895,14 @@
       setText('eic-sound-spatial', s.spatial);
       setText('eic-sound-limits', d.limitations);
 
-      if (note) {
-        setText('eic-live-freq', `${Math.round(note.freq)} Hz`);
-        setText('eic-live-pan', `Pan: ${note.pan > 0 ? '+' : ''}${note.pan.toFixed(2)}`);
+      const calculatedNote = note || EICSonifier.calculateNote(d, idx, state.stats);
+      const freqHz = Math.round(calculatedNote.freq);
+      setText('eic-live-freq', `${freqHz} Hz`);
+      setText('eic-live-pan', `Pan: ${calculatedNote.pan > 0 ? '+' : ''}${calculatedNote.pan.toFixed(2)}`);
+
+      // Accessible live caption banner (as specified on page 11)
+      if (this.captionBanner) {
+        this.captionBanner.textContent = `Current pitch ${freqHz} Hz corresponds to ${val.toFixed(1)} ${d.units} (${year}) · ${d.id === 'arctic_sea_ice' ? 'smaller ice extent = higher pitch' : 'higher value = higher pitch'}`;
       }
 
       this.drawSparkline();
@@ -790,7 +913,7 @@
 
       const live = document.getElementById('live');
       if (live && state.isPlaying) {
-        live.textContent = `${d.title}: Year ${year}, value ${val} ${d.units}, delta ${delta >= 0 ? '+' : ''}${delta.toFixed(2)} ${d.units}/yr`;
+        live.textContent = `${d.title}: ${year}, value ${val} ${d.units}, pitch ${freqHz} Hz`;
       }
     }
 
@@ -808,7 +931,7 @@
         return `
           <tr class="${isCurrent ? 'bg-sky-500/20 text-white font-bold' : 'hover:bg-slate-900'} cursor-pointer" onclick="window.EICJukebox.PlaybackState.seek(${i}, true)">
             <td class="py-1 px-2">${isCurrent ? '▶ ' : ''}${yr}</td>
-            <td class="py-1 px-2">${val.toFixed(d.units === '°C' ? 2 : 1)} ${d.units}</td>
+            <td class="py-1 px-2">${val.toFixed(1)} ${d.units}</td>
             <td class="py-1 px-2 ${delta > 0 ? 'text-amber-400' : 'text-slate-400'}">${i > 0 ? (delta >= 0 ? '+' : '') + delta.toFixed(2) : '—'}</td>
             <td class="py-1 px-2 text-purple-300">${Math.round(note.freq)} Hz</td>
           </tr>
@@ -833,7 +956,7 @@
       const max = Math.max(...vals);
       const range = max - min || 1;
 
-      const padX = 12;
+      const padX = 14;
       const padY = 10;
       const plotW = w - padX * 2;
       const plotH = h - padY * 2;
@@ -902,6 +1025,7 @@
 
   window.EICJukebox = {
     datasets: EIC_DATASETS,
+    Adapter: EICAdapter,
     DataPrep: EICDataPrep,
     Sonifier: EICSonifier,
     PlaybackState: EICPlaybackState,

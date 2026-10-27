@@ -74,6 +74,8 @@ class ApiTests(unittest.TestCase):
         ids = [d["id"] for d in datasets]
         self.assertIn("co2", ids)
         self.assertIn("sea_level", ids)
+        self.assertIn("geos_fp_temp", ids)
+        self.assertIn("ecco2_ocean_currents", ids)
 
         r_detail = self.c.get("/api/eic/dataset/co2")
         self.assertEqual(r_detail.status_code, 200)
