@@ -5,7 +5,7 @@
 
 [![Live on Vercel](https://img.shields.io/badge/Live%20App-nasa3--pi.vercel.app-0ea5e9?style=flat&logo=vercel)](https://nasa3-pi.vercel.app/)
 [![NASA Space Apps](https://img.shields.io/badge/NASA%20Space%20Apps-2026%20Challenge-blue?style=flat)](https://www.spaceappschallenge.org/2026/challenges/the-earth-information-jukebox/)
-[![Tests](https://img.shields.io/badge/Tests-30%2F30%20Passing-emerald?style=flat)](tests/test_backend.py)
+[![Tests](https://img.shields.io/badge/Tests-31%2F31%20Passing-emerald?style=flat)](tests/test_backend.py)
 [![CI](https://github.com/Omtripathi1004/earth-information-jukebox/actions/workflows/test.yml/badge.svg)](https://github.com/Omtripathi1004/earth-information-jukebox/actions)
 
 ---
@@ -54,8 +54,8 @@ Every acoustic parameter in Mode A and Mode B follows documented mathematical tr
 | Dataset / Pipeline | Physical Parameter | Formula Domain & Full Pitch | Observed Historical Range & Pitch | Mathematical Transfer Function | Contextual Globe Layer |
 |---|---|---|---|---|---|
 | **NASA GEOS-FP Temp** | 2m Air Temperature ($T$) | $[12.0, 17.5]\text{ }^\circ\text{C}$<br>$\to [200.0, 800.0]\text{ Hz}$ | $[12.4, 17.1]\text{ }^\circ\text{C}$<br>$\to [243.6, 756.4]\text{ Hz}$ | $f = 200.0 + \text{clamp}\left(\frac{T - 12.0}{5.5}, 0, 1\right) \times 600.0$ | MODIS Land Surface Temp Day (contextual skin temp proxy) |
-| **ECCO2 Ocean Currents** | Sea Surface Temp ($SST$) | $[15.5, 17.5]\text{ }^\circ\text{C}$<br>$\to [160.0, 480.0]\text{ Hz}$ | $[15.8, 17.3]\text{ }^\circ\text{C}$<br>$\to [208.0, 448.0]\text{ Hz}$ | $f = 160.0 + \text{clamp}\left(\frac{SST - 15.5}{2.0}, 0, 1\right) \times 320.0$ | GHRSST MUR Sea Surface Temp (1km SST thermal proxy) |
-| **Atmospheric $\text{CO}_2$** | Carbon Dioxide Mole Fraction | $[330.0, 430.0]\text{ ppm}$<br>$\to [130.8, 370.0]\text{ Hz}$ | $[338.8, 424.5]\text{ ppm}$<br>$\to [143.3, 349.4]\text{ Hz}$ | $f = 130.81 \times 2^{\text{clamp}\left(\frac{CO_2 - 330}{100}, 0, 1.2\right) \times 1.5}$ | Suomi-NPP VIIRS True Color (photosynthetic biome proxy) |
+| **ECCO2 Potential Temp** | Sea Surface Potential Temp ($SST$) | $[15.5, 17.5]\text{ }^\circ\text{C}$<br>$\to [160.0, 480.0]\text{ Hz}$ | $[15.8, 17.3]\text{ }^\circ\text{C}$<br>$\to [208.0, 448.0]\text{ Hz}$ | $f = 160.0 + \text{clamp}\left(\frac{SST - 15.5}{2.0}, 0, 1\right) \times 320.0$ | GHRSST MUR Sea Surface Temp (1km SST thermal proxy) |
+| **Atmospheric $\text{CO}_2$** | Carbon Dioxide Mole Fraction | $[330.0, 430.0]\text{ ppm}$<br>$\to [130.8, 370.0]\text{ Hz}$ | $[338.8, 424.6]\text{ ppm}$<br>$\to [143.3, 349.8]\text{ Hz}$ | $f = 130.81 \times 2^{\text{clamp}\left(\frac{CO_2 - 330}{100}, 0, 1.2\right) \times 1.5}$ | Suomi-NPP VIIRS True Color (photosynthetic biome proxy) |
 | **Global Sea Level** | Altimetry GMSL Rise ($SL$) | $[0.0, 120.0]\text{ mm}$<br>$\to [110.0, 311.1]\text{ Hz}$ | $[0.0, 105.8]\text{ mm}$<br>$\to [110.0, 275.1]\text{ Hz}$ | $f = 110.0 \times 2^{\text{clamp}\left(\frac{SL}{120}, 0, 1.2\right) \times 1.5}$ | GHRSST MUR SST (thermal expansion oceanic proxy) |
 | **Temperature Anomaly** | GISTEMP v4 Anomaly ($\Delta T$) | $[0.0, 1.5]\text{ }^\circ\text{C}$<br>$\to [164.8, 466.2]\text{ Hz}$ | $[0.12, 1.28]\text{ }^\circ\text{C}$<br>$\to [179.1, 400.2]\text{ Hz}$ | $f = 164.81 \times 2^{\text{clamp}\left(\frac{\Delta T}{1.5}, 0, 1.2\right) \times 1.5}$ | MODIS LST Day (absolute daytime skin temp proxy) |
 | **Arctic Sea Ice** | September Min Extent ($SIE$) | $[8.0, 3.0]\text{ M km}^2$<br>$\to [220.0, 622.3]\text{ Hz}$ | $[7.67, 3.39]\text{ M km}^2$<br>$\to [235.6, 573.8]\text{ Hz}$ | $f = 220.0 \times 2^{\text{clamp}\left(\frac{8.0 - SIE}{5.0}, 0, 1.2\right) \times 1.5}$ | MODIS NDSI Snow Cover (polar reflectance proxy) |

@@ -36,5 +36,5 @@ jobs:
 
     - name: Run Frontend EIC Verification Suite
       run: |
-        node scratch/verify_frontend_eic.js
+        node tests/test_frontend.js
 

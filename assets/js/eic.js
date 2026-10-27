@@ -74,7 +74,7 @@
         formula: 'f = 160 + ((SST - 15.5) / 2.0) * (480 - 160)',
         contextualGlobeLayer: 'GHRSST_L4_MUR_Sea_Surface_Temperature',
         contextualLayerTitle: 'GHRSST MUR Sea Surface Temperature (1km High-Res SST)',
-        contextualLayerNote: 'Contextual satellite thermal proxy. The 3D globe displays high-resolution satellite SST imagery for oceanic orientation, while ECCO2 represents global 3D ocean dynamic current simulation models.',
+        contextualLayerNote: 'Contextual satellite thermal proxy. The 3D globe displays high-resolution satellite SST imagery for oceanic orientation, while the sonification represents global basin-averaged surface potential temperature from the ECCO2 ocean state estimate (ocean currents and vector velocities are not encoded in the audio).',
         pitchRange: '160 Hz – 480 Hz (calibration) · 208 Hz – 448 Hz (observed 2024)',
         fullCalibrationRange: '160 Hz – 480 Hz',
         voice_desc: 'Resonant dual-sine ocean pad reflecting ocean heat capacity and surface thermal energy',
@@ -82,7 +82,7 @@
         dynamics: 'Volume scales with thermal energy magnitude (0.14–0.24); pan follows 12-month calendar trajectory (-0.8 in Jan to +0.8 in Dec).',
         spatial: 'Pans temporally along the 12-month calendar trajectory (-0.8 in Jan to +0.8 in Dec).'
       },
-      limitations: 'Sub-mesoscale eddies smaller than 10 km are parameterized rather than directly resolved.'
+      limitations: 'Sub-mesoscale eddies smaller than 10 km are parameterized rather than directly resolved. This sonification encodes surface potential temperature only (0–5m layer); dynamic ocean current vectors, circulation velocity, and direction are not sonified.'
     },
     co2: {
       id: 'co2',
@@ -118,7 +118,7 @@
         contextualGlobeLayer: 'VIIRS_SNPP_CorrectedReflectance_TrueColor',
         contextualLayerTitle: 'Suomi-NPP VIIRS Corrected Reflectance (True Color)',
         contextualLayerNote: 'Contextual optical satellite imagery. Displays terrestrial vegetation and cloud cover at Mauna Loa for geographical orientation, not the atmospheric CO2 column mixing ratio.',
-        pitchRange: '131 Hz – 370 Hz (calibration) · 143 Hz – 349 Hz (observed 1980–2024)',
+        pitchRange: '131 Hz – 370 Hz (calibration) · 143 Hz – 350 Hz (observed 1980–2024)',
         fullCalibrationRange: '131 Hz – 370 Hz',
         voice_desc: 'Warm harmonic triangle voice representing terrestrial biosphere and atmospheric absorption',
         frequency_formula: 'f = 130.81 * (2 ** (clamp((CO2 - 330.0) / 100.0, 0.0, 1.2) * 1.5))',
@@ -1057,13 +1057,19 @@
       const banner = document.getElementById('eic-vis-status-banner');
       const bannerTxt = document.getElementById('eic-vis-status-text');
       const bannerLnk = document.getElementById('eic-vis-official-link');
+      const syncBadge = document.getElementById('eic-sync-status-indicator');
       if (banner && bannerTxt) {
         if (d.id === 'sea_level') {
           banner.hidden = false;
-          bannerTxt.innerHTML = '<span class="text-amber-400 font-semibold">⚠️ Official EIC Media (NASA SVS #5516 / Earth.gov #332):</span> Distributed as 4K video (by Mark SubbaRao). Frame-level sequence integration is <strong>BLOCKED</strong> due to lack of decomposed annual frames from NASA SVS; chart below is an interactive real-time sonification model.';
+          bannerTxt.innerHTML = '<span class="text-amber-400 font-semibold">Official NASA SVS #5516 Video:</span> Linked as external reference media. Playback is <strong>NOT synchronized</strong> to observation years because NASA SVS does not provide decomposed annual frames or an official timestamp lookup table. The interactive chart below is a real-time sonification model.';
           if (bannerLnk) bannerLnk.href = 'https://svs.gsfc.nasa.gov/5516';
+          if (syncBadge) {
+            syncBadge.hidden = false;
+            syncBadge.textContent = 'Official Video: Linked · Not Synchronized';
+          }
         } else {
           banner.hidden = true;
+          if (syncBadge) syncBadge.hidden = true;
         }
       }
 

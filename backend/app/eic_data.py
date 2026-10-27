@@ -84,7 +84,7 @@ DATASETS = {
         "suggested_layer": "GHRSST_L4_MUR_Sea_Surface_Temperature",
         "contextual_globe_layer": "GHRSST_L4_MUR_Sea_Surface_Temperature",
         "contextual_layer_title": "GHRSST MUR Sea Surface Temperature (1km High-Res SST)",
-        "contextual_layer_note": "Contextual satellite thermal proxy. The 3D globe displays high-resolution satellite SST imagery for oceanic orientation, while ECCO2 represents global 3D ocean dynamic current simulation models.",
+        "contextual_layer_note": "Contextual satellite thermal proxy. The 3D globe displays high-resolution satellite SST imagery for oceanic orientation, while the sonification represents global basin-averaged surface potential temperature from the ECCO2 ocean state estimate (ocean currents and vector velocities are not encoded in the audio).",
         "sonification": {
             "voice": "water",
             "voice_desc": "Resonant dual-sine ocean pad reflecting ocean heat capacity and surface thermal energy",
@@ -99,7 +99,7 @@ DATASETS = {
             "dynamics": "Volume scales with thermal energy magnitude (0.14–0.24); pan follows 12-month calendar trajectory (-0.8 in Jan to +0.8 in Dec)",
             "spatial": "Pans temporally along the 12-month calendar trajectory (-0.8 in Jan to +0.8 in Dec)"
         },
-        "limitations": "Sub-mesoscale eddies smaller than 10 km are parameterized rather than fully resolved in global simulations."
+        "limitations": "Sub-mesoscale eddies smaller than 10 km are parameterized rather than fully resolved in global simulations. This sonification encodes surface potential temperature only (0–5m layer); dynamic ocean current vectors, circulation velocity, and direction are not sonified."
     },
     "co2": {
         "id": "co2",
@@ -138,10 +138,10 @@ DATASETS = {
             "frequency_formula": "f = 130.81 * (2 ** (clamp((CO2 - 330.0) / 100.0, 0.0, 1.2) * 1.5))",
             "formula": "f = 130.81 * (2 ** (clamp((CO2 - 330.0) / 100.0, 0.0, 1.2) * 1.5))",
             "timbre": "Warm triangle + octave harmonic",
-            "pitch_range_hz": "131 Hz – 370 Hz (calibration) · 143 Hz – 349 Hz (observed 1980–2024)",
-            "pitchRange": "131 Hz – 370 Hz (calibration) · 143 Hz – 349 Hz (observed 1980–2024)",
+            "pitch_range_hz": "131 Hz – 370 Hz (calibration) · 143 Hz – 350 Hz (observed 1980–2024)",
+            "pitchRange": "131 Hz – 370 Hz (calibration) · 143 Hz – 350 Hz (observed 1980–2024)",
             "full_calibration_range_hz": [130.81, 369.99],
-            "observed_historical_range_hz": [143.34, 349.42],
+            "observed_historical_range_hz": [143.34, 349.79],
             "dynamics": "Velocity increases with annual rate of CO2 accumulation (ppm/yr)",
             "spatial": "Pans from historical 1980 on the left (-0.8) to modern day on the right (+0.8)"
         },
@@ -394,7 +394,7 @@ MAPPINGS_SPEC = {
         "valid_range": [280.0, 600.0],
         "formula_domain": [330.0, 430.0],
         "calibration_pitch_range_hz": [130.81, 369.99],
-        "observed_historical_range": [338.8, 424.5],
+        "observed_historical_range": [338.8, 424.6],
         "observed_historical_pitch_hz": [143.34, 349.42],
         "audio_dimension": "Warm triangle harmonic frequency f (Hz), velocity scaled by accumulation rate (ppm/yr)",
         "transfer_function": "f = 130.81 * (2 ** (clamp((CO2 - 330.0) / 100.0, 0.0, 1.2) * 1.5))",
@@ -604,6 +604,17 @@ def describe_mapping(dataset_id: str) -> dict | None:
     if not spec:
         return None
     res = dict(spec)
+    # Dynamically derive observed historical min/max values and pitch ranges from canonical dataset
+    ds = DATASETS.get(dataset_id)
+    if ds and ds.get("values"):
+        vals = ds["values"]
+        min_v = round(float(min(vals)), 2)
+        max_v = round(float(max(vals)), 2)
+        res["observed_historical_range"] = [min_v, max_v]
+        res["observed_historical_pitch_hz"] = [
+            round(calculate_pitch(dataset_id, min_v), 2),
+            round(calculate_pitch(dataset_id, max_v), 2)
+        ]
     res["pitch_slider_labels"] = generate_pitch_labels(dataset_id)
     return res
 

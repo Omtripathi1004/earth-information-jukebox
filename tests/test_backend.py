@@ -500,6 +500,28 @@ class ApiTests(unittest.TestCase):
                 self.assertGreater(w.getnframes(), 0)
 
 
+
+    def test_co2_metadata_and_mapping_consistency(self):
+        # 1. Direct dataset inspection
+        ds = eic_data.get_dataset("co2")
+        self.assertEqual(ds["values"][-1], 424.6)
+        self.assertIn("424.61", ds["transformation_notes"])
+
+        # 2. Derived mapping inspection
+        mapping = eic_data.describe_mapping("co2")
+        self.assertEqual(mapping["observed_historical_range"], [338.8, 424.6])
+        self.assertAlmostEqual(mapping["observed_historical_pitch_hz"][1], 349.79, places=1)
+
+        # 3. HTTP API endpoint verification
+        r_ds = self.c.get("/api/eic/dataset/co2")
+        self.assertEqual(r_ds.status_code, 200)
+        self.assertEqual(r_ds.get_json()["values"][-1], 424.6)
+
+        r_map = self.c.get("/api/eic/mapping/co2")
+        self.assertEqual(r_map.status_code, 200)
+        self.assertEqual(r_map.get_json()["observed_historical_range"], [338.8, 424.6])
+
+
 if __name__ == "__main__":
     unittest.main()
 
