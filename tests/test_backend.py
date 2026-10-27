@@ -325,6 +325,39 @@ class ApiTests(unittest.TestCase):
         self.assertIsNone(j["yoy_deltas"][0])
         self.assertEqual(j["trend_period"], "1993–2024")
 
+    def test_dynamic_pitch_labels_generation(self):
+        labels_geos = eic_data.generate_pitch_labels("geos_fp_temp")
+        self.assertEqual(len(labels_geos), 3)
+        self.assertIn("418 Hz", labels_geos[1])
+        self.assertIn("200 Hz", labels_geos[0])
+        self.assertIn("800 Hz", labels_geos[2])
+
+        labels_sl = eic_data.generate_pitch_labels("sea_level")
+        self.assertEqual(len(labels_sl), 3)
+        self.assertIn("110 Hz", labels_sl[0])
+        self.assertIn("185 Hz", labels_sl[1])
+        self.assertIn("311 Hz", labels_sl[2])
+
+        r = self.c.get("/api/eic/mapping/geos_fp_temp")
+        self.assertEqual(r.status_code, 200)
+        j = r.get_json()
+        self.assertIn("pitch_slider_labels", j)
+        self.assertEqual(j["pitch_slider_labels"], labels_geos)
+
+    def test_security_config_no_default_leaks(self):
+        import os
+        orig_cesium = os.environ.pop("CESIUM_ION_TOKEN", None)
+        orig_mapillary = os.environ.pop("MAPILLARY_TOKEN", None)
+        try:
+            r = self.c.get("/api/config")
+            self.assertEqual(r.status_code, 200)
+            j = r.get_json()
+            self.assertIn(j.get("cesium_ion_token"), ["", None])
+            self.assertIn(j.get("mapillary_token"), ["", None])
+        finally:
+            if orig_cesium: os.environ["CESIUM_ION_TOKEN"] = orig_cesium
+            if orig_mapillary: os.environ["MAPILLARY_TOKEN"] = orig_mapillary
+
 
 if __name__ == "__main__":
     unittest.main()

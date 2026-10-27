@@ -2,8 +2,8 @@ const $ = s => document.querySelector(s), clamp = (x, a, b) => Math.min(b, Math.
 /* Optional Python backend (same origin, or ?api=https://your-backend). Without it the app calls NASA and OSM directly. */
 const API = (new URLSearchParams(location.search).get('api') || '').replace(/\/$/, '');
 const DEFAULT_CFG = {
-  mapillary_token: 'MLY|28415219754844023|3e0b88295f7b9b304ee99a95354d3280',
-  cesium_ion_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjhBM19iRkdzT0RILVpEYWUiLCJqdGkiOiIyNTAzZmNkMS0zMjc2LTQ1MDAtOWU1OS05NzY3OWU0YTAwYWUiLCJpZCI6NTMzMzQ2LCJzdWIiOiJPbXRyaXBhdGhpMTAwNCIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJlYXJ0aCBqdWtlIGJveCIsImlhdCI6MTc5Mjc2MDE1OH0.q1c8_MmIQ0IwTR53xm0IfOVDP2vybE8HsvclLGN-Fi8'
+  mapillary_token: '',
+  cesium_ion_token: ''
 };
 let BACKEND = false, CFG = Object.assign({}, DEFAULT_CFG);
 const loadConfig = () => {
@@ -83,7 +83,7 @@ function applyLayer() {   /* NASA data layers sit on a greyscale base so every c
   if (!isNASA) {
     map.setPaintProperty('google_sat', 'raster-saturation', 0);
     map.setPaintProperty('google_sat', 'raster-brightness-max', 1);
-    $('#hear').textContent = 'global high-res satellite';
+    if (!listening) $('#hear').textContent = 'Global high-res satellite (press Listen to scan)';
     return;
   }
   const t = gibs();
@@ -91,6 +91,21 @@ function applyLayer() {   /* NASA data layers sit on a greyscale base so every c
   map.setPaintProperty('google_sat', 'raster-saturation', d ? -1 : 0);
   map.setPaintProperty('google_sat', 'raster-brightness-max', d ? .55 : 1);
   map.setPaintProperty('gibs', 'raster-opacity', d ? ['interpolate', ['linear'], ['zoom'], 7, .9, 9.5, 0] : ['interpolate', ['linear'], ['zoom'], 8.5, 1, 10.5, 0]);
+
+  const layerNames = {
+    'VIIRS_SNPP_CorrectedReflectance_TrueColor': 'NASA VIIRS true-color',
+    'MODIS_Terra_CorrectedReflectance_TrueColor': 'NASA MODIS Terra true-color',
+    'MODIS_Aqua_CorrectedReflectance_TrueColor': 'NASA MODIS Aqua true-color',
+    'MODIS_Terra_Land_Surface_Temp_Day': 'Land surface temperature',
+    'MODIS_Terra_Aerosol': 'Aerosol optical depth',
+    'GHRSST_L4_MUR_Sea_Surface_Temperature': 'Sea surface temperature',
+    'MODIS_Terra_NDSI_Snow_Cover': 'Snow cover',
+    'VIIRS_SNPP_DayNightBand_At_Sensor_Radiance': 'Night lights radiance'
+  };
+  const friendly = layerNames[id] || id;
+  if (!listening) {
+    $('#hear').textContent = `${friendly} (press Listen to scan)`;
+  }
 }
 ['lyr', 'dt'].forEach(id => $('#' + id).onchange = applyLayer);
 
@@ -564,8 +579,8 @@ const key = k => {
 function openKeys(msg) {
   $('#kmsg').textContent = msg || '';
   try {
-    $('#mly').value = localStorage.getItem('jk_mly') || CFG.mapillary_token || '';
-    $('#ion').value = localStorage.getItem('jk_ion') || CFG.cesium_ion_token || '';
+    $('#mly').value = localStorage.getItem('jk_mly') || '';
+    $('#ion').value = localStorage.getItem('jk_ion') || '';
     const st = $('#kenv');
     if (st) {
       const parts = [];
@@ -1112,11 +1127,95 @@ $('#p3').onclick = openPx; $('#pxc').onclick = () => { $('#px').hidden = true; }
 
 /* ---------- time-lapse of NASA daily imagery, with sound ---------- */
 let tlT = null;
-const tlStop = () => { clearInterval(tlT); tlT = null; $('#tl').textContent = '▶ Time-lapse (30 days)'; };
-$('#tl').onclick = () => {
-  if (tlT) return tlStop(); const end = new Date($('#dt').max + 'T00:00:00Z'), d = new Date(end); d.setUTCDate(d.getUTCDate() - 30); $('#tl').textContent = '■ Stop time-lapse'; if (!listening) $('#listen').click();
-  tlT = setInterval(() => { d.setUTCDate(d.getUTCDate() + 1); if (d > end) return tlStop(); $('#dt').value = d.toISOString().slice(0, 10); applyLayer(); }, 1500);
+const updateTlSlider = (dObj, endObj) => {
+  const slider = $('#tl-slider');
+  if (!slider) return;
+  const daysDiff = Math.round((dObj - endObj) / (86400000));
+  slider.value = String(daysDiff);
+  const statusEl = $('#tl-status');
+  if (statusEl) statusEl.textContent = `Date: ${dObj.toISOString().slice(0, 10)}`;
 };
+
+const tlStop = () => {
+  clearInterval(tlT);
+  tlT = null;
+  if ($('#tl')) $('#tl').textContent = '▶ Time-lapse (30 days)';
+  if ($('#tl-play')) $('#tl-play').textContent = '▶ Play';
+  const statusEl = $('#tl-status');
+  if (statusEl) statusEl.textContent = 'Time-lapse stopped';
+};
+
+const tlPlay = () => {
+  if (tlT) return tlStop();
+  const maxDateStr = $('#dt').max || new Date().toISOString().slice(0, 10);
+  const end = new Date(maxDateStr + 'T00:00:00Z');
+  let currentVal = $('#dt').value ? new Date($('#dt').value + 'T00:00:00Z') : new Date(end);
+  if (currentVal >= end) {
+    currentVal = new Date(end);
+    currentVal.setUTCDate(currentVal.getUTCDate() - 30);
+  }
+  if ($('#tl')) $('#tl').textContent = '■ Stop time-lapse';
+  if ($('#tl-play')) $('#tl-play').textContent = '⏸ Pause';
+  if (!listening && $('#listen')) $('#listen').click();
+
+  const speed = parseInt($('#tl-speed') ? $('#tl-speed').value : '1200', 10) || 1200;
+  tlT = setInterval(() => {
+    currentVal.setUTCDate(currentVal.getUTCDate() + 1);
+    if (currentVal > end) return tlStop();
+    const dateStr = currentVal.toISOString().slice(0, 10);
+    $('#dt').value = dateStr;
+    updateTlSlider(currentVal, end);
+    applyLayer();
+  }, speed);
+};
+
+if ($('#tl')) $('#tl').onclick = () => {
+  const c = $('#tl-controls');
+  if (c) c.hidden = !c.hidden;
+  tlT ? tlStop() : tlPlay();
+};
+if ($('#tl-play')) $('#tl-play').onclick = () => { tlT ? tlStop() : tlPlay(); };
+if ($('#tl-stop')) $('#tl-stop').onclick = tlStop;
+
+if ($('#tl-prev')) $('#tl-prev').onclick = () => {
+  tlStop();
+  const cur = new Date(($('#dt').value || new Date().toISOString().slice(0, 10)) + 'T00:00:00Z');
+  cur.setUTCDate(cur.getUTCDate() - 1);
+  const dateStr = cur.toISOString().slice(0, 10);
+  $('#dt').value = dateStr;
+  const maxDateStr = $('#dt').max || new Date().toISOString().slice(0, 10);
+  updateTlSlider(cur, new Date(maxDateStr + 'T00:00:00Z'));
+  applyLayer();
+};
+
+if ($('#tl-next')) $('#tl-next').onclick = () => {
+  tlStop();
+  const cur = new Date(($('#dt').value || new Date().toISOString().slice(0, 10)) + 'T00:00:00Z');
+  const maxDateStr = $('#dt').max || new Date().toISOString().slice(0, 10);
+  const end = new Date(maxDateStr + 'T00:00:00Z');
+  if (cur < end) {
+    cur.setUTCDate(cur.getUTCDate() + 1);
+    const dateStr = cur.toISOString().slice(0, 10);
+    $('#dt').value = dateStr;
+    updateTlSlider(cur, end);
+    applyLayer();
+  }
+};
+
+if ($('#tl-slider')) {
+  $('#tl-slider').oninput = e => {
+    tlStop();
+    const offset = parseInt(e.target.value, 10);
+    const maxDateStr = $('#dt').max || new Date().toISOString().slice(0, 10);
+    const targetDate = new Date(maxDateStr + 'T00:00:00Z');
+    targetDate.setUTCDate(targetDate.getUTCDate() + offset);
+    const dateStr = targetDate.toISOString().slice(0, 10);
+    $('#dt').value = dateStr;
+    const statusEl = $('#tl-status');
+    if (statusEl) statusEl.textContent = `Date: ${dateStr}`;
+    applyLayer();
+  };
+}
 
 /* ---------- guided tour with narration ---------- */
 let touring = false; const wait = ms => new Promise(r => setTimeout(r, ms));

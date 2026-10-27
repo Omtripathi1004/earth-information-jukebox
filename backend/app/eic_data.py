@@ -538,9 +538,55 @@ def calculate_pitch(dataset_id: str, value: float | int) -> float:
         raise ValueError(f"No sonification mapping implemented for '{dataset_id}'")
 
 
+def generate_pitch_labels(dataset_id: str) -> list[str]:
+    """Dynamically generate low, baseline/mid, and high pitch slider labels from scientific mapping formulas."""
+    ds = DATASETS.get(dataset_id)
+    if not ds:
+        return ["Low Pitch", "Mid Baseline", "High Pitch"]
+    u = ds["units"]
+    b_val = ds.get("baseline_val", 0.0)
+
+    if dataset_id == "geos_fp_temp":
+        p_min = round(calculate_pitch(dataset_id, 12.0))
+        p_base = round(calculate_pitch(dataset_id, b_val))
+        p_max = round(calculate_pitch(dataset_id, 17.5))
+        return [f"Min (12.0 {u} → {p_min} Hz)", f"Baseline ({b_val:.1f} {u} → {p_base} Hz)", f"Max (17.5 {u} → {p_max} Hz)"]
+    elif dataset_id == "ecco2_ocean_currents":
+        p_min = round(calculate_pitch(dataset_id, 15.5))
+        p_base = round(calculate_pitch(dataset_id, b_val))
+        p_max = round(calculate_pitch(dataset_id, 17.5))
+        return [f"Min (15.5 {u} → {p_min} Hz)", f"Baseline ({b_val:.1f} {u} → {p_base} Hz)", f"Max (17.5 {u} → {p_max} Hz)"]
+    elif dataset_id == "co2":
+        p_floor = round(calculate_pitch(dataset_id, 330.0))
+        p_mid = round(calculate_pitch(dataset_id, 380.0))
+        p_upper = round(calculate_pitch(dataset_id, 430.0))
+        return [f"Floor (330 {u} → {p_floor} Hz)", f"Mid-Scale (380 {u} → {p_mid} Hz)", f"Upper Bound (430 {u} → {p_upper} Hz)"]
+    elif dataset_id == "sea_level":
+        p_base = round(calculate_pitch(dataset_id, 0.0))
+        p_mid = round(calculate_pitch(dataset_id, 60.0))
+        p_limit = round(calculate_pitch(dataset_id, 120.0))
+        return [f"1993 Base (0 {u} → {p_base} Hz)", f"+60 mm Rise ({p_mid} Hz)", f"+120 mm Limit ({p_limit} Hz)"]
+    elif dataset_id == "temperature_anomaly":
+        p_base = round(calculate_pitch(dataset_id, 0.0))
+        p_mid = round(calculate_pitch(dataset_id, 0.75))
+        p_limit = round(calculate_pitch(dataset_id, 1.5))
+        return [f"1951-80 Base (0 {u} → {p_base} Hz)", f"+0.75 {u} Anomaly ({p_mid} Hz)", f"+1.5 {u} Policy Ref ({p_limit} Hz)"]
+    elif dataset_id == "arctic_sea_ice":
+        p_max = round(calculate_pitch(dataset_id, 8.0))
+        p_mid = round(calculate_pitch(dataset_id, 5.5))
+        p_low = round(calculate_pitch(dataset_id, 3.0))
+        return [f"Max Extent (8.0 {u} → {p_max} Hz)", f"Mid-Melt (5.5 {u} → {p_mid} Hz)", f"Record Low Bound (3.0 {u} → {p_low} Hz)"]
+    return ["Low Pitch", "Mid Baseline", "High Pitch"]
+
+
 def describe_mapping(dataset_id: str) -> dict | None:
     """Return scientific mapping details, formulas, and test cases."""
-    return MAPPINGS_SPEC.get(dataset_id)
+    spec = MAPPINGS_SPEC.get(dataset_id)
+    if not spec:
+        return None
+    res = dict(spec)
+    res["pitch_slider_labels"] = generate_pitch_labels(dataset_id)
+    return res
 
 
 def compute_trend(years: list, values: list) -> dict:

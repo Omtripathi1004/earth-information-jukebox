@@ -73,12 +73,31 @@
   <div class="lbl text-sky-400" id="chap">Orbit · the whole Earth</div>
   <div id="place" class="font-display font-bold text-base leading-snug mt-1">Drag the globe, or click a place</div>
   <div class="font-mono text-[11px] text-slate-400 mt-1"><span id="coord"></span> · <span id="scale"></span></div>
-  <div class="font-mono text-[12px] mt-2 text-amber-300">Hearing: <span id="hear" class="text-slate-200">press Listen</span></div>
+  <div class="font-mono text-[12px] mt-2 text-amber-300 break-words leading-relaxed">Hearing: <span id="hear" class="text-slate-200 break-words">press Listen</span></div>
   <div class="grid grid-cols-2 gap-2 mt-3">
-    <select id="lyr" aria-label="NASA layer"><optgroup label="Satellite photo (seamless & true colour)"><option value="GOOGLE_SATELLITE|20|jpg" selected>Seamless Global Satellite (High-Res, Farmlands & Cities)</option><option value="VIIRS_SNPP_CorrectedReflectance_TrueColor|9|jpg">NASA VIIRS (Daily clouds & weather)</option><option value="MODIS_Terra_CorrectedReflectance_TrueColor|9|jpg">NASA MODIS Terra (Orbital tracks)</option><option value="MODIS_Aqua_CorrectedReflectance_TrueColor|9|jpg">NASA MODIS Aqua (Orbital tracks)</option></optgroup><optgroup label="NASA data frames"><option value="MODIS_Terra_Land_Surface_Temp_Day|7|png">Land surface temperature</option><option value="MODIS_Terra_Aerosol|6|png">Aerosol optical depth</option><option value="GHRSST_L4_MUR_Sea_Surface_Temperature|7|png">Sea surface temperature</option><option value="MODIS_Terra_NDSI_Snow_Cover|8|png">Snow cover</option><option value="VIIRS_SNPP_DayNightBand_At_Sensor_Radiance|8|png">Night lights (VIIRS)</option></optgroup></select>
+    <select id="lyr" aria-label="NASA layer"><optgroup label="Satellite photo (seamless & true colour)"><option value="GOOGLE_SATELLITE|20|jpg" selected>Seamless Global Satellite (High-Res, Farmlands & Cities)</option><option value="VIIRS_SNPP_CorrectedReflectance_TrueColor|9|jpg">NASA VIIRS (Daily clouds & weather)</option><option value="MODIS_Terra_CorrectedReflectance_TrueColor|9|jpg">NASA MODIS Terra (Daily True-Color Reflectance)</option><option value="MODIS_Aqua_CorrectedReflectance_TrueColor|9|jpg">NASA MODIS Aqua (Daily True-Color Reflectance)</option></optgroup><optgroup label="NASA data frames"><option value="MODIS_Terra_Land_Surface_Temp_Day|7|png">Land surface temperature</option><option value="MODIS_Terra_Aerosol|6|png">Aerosol optical depth</option><option value="GHRSST_L4_MUR_Sea_Surface_Temperature|7|png">Sea surface temperature</option><option value="MODIS_Terra_NDSI_Snow_Cover|8|png">Snow cover</option><option value="VIIRS_SNPP_DayNightBand_At_Sensor_Radiance|8|png">Night lights (VIIRS)</option></optgroup></select>
     <input id="dt" type="date" aria-label="Imagery date">
     <label class="lbl col-span-2 flex items-center gap-2">Scan<select id="spdn" class="flex-1"><option value="260">Slow</option><option value="160" selected>Normal</option><option value="90">Fast</option></select></label>
     <button id="tl" class="btn col-span-2" title="Step through the last 30 days of NASA imagery while the scan plays"><span aria-hidden="true">▶</span> Time-lapse (30 days)</button>
+    <div id="tl-controls" class="col-span-2 bg-slate-900/90 border border-slate-700/60 rounded-lg p-2 space-y-1.5" hidden>
+      <div class="flex items-center justify-between text-[10px] font-mono text-slate-300">
+        <span id="tl-status">Time-lapse ready</span>
+        <label class="flex items-center gap-1">Speed
+          <select id="tl-speed" class="bg-slate-950 border border-slate-700 rounded px-1 text-[10px]">
+            <option value="600">Fast (0.6s)</option>
+            <option value="1200" selected>Normal (1.2s)</option>
+            <option value="2000">Slow (2.0s)</option>
+          </select>
+        </label>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button id="tl-prev" class="btn text-[10px] py-0.5 px-2" title="Previous imagery day">⏮ -1d</button>
+        <button id="tl-play" class="btn text-[10px] py-0.5 px-2 flex-1" title="Play or pause 30-day time-lapse">▶ Play</button>
+        <button id="tl-stop" class="btn text-[10px] py-0.5 px-2" title="Stop time-lapse">⏹ Reset</button>
+        <button id="tl-next" class="btn text-[10px] py-0.5 px-2" title="Next imagery day">+1d ⏭</button>
+      </div>
+      <input id="tl-slider" type="range" min="-30" max="0" value="0" class="w-full accent-sky-400 cursor-pointer" aria-label="30-day imagery time-lapse position">
+    </div>
   </div>
   <p class="text-[10px] text-slate-400 mt-2 leading-snug">Imagery and data layers: NASA GIBS. Past NASA’s resolution the view seamlessly transitions into Global High-Resolution Satellite & Esri Imagery with OpenStreetMap 3D buildings at ground level. Prototype, not an official NASA product.</p>
 </aside>
@@ -158,7 +177,7 @@
   </div>
 </div>
 <div id="px" hidden role="dialog" aria-label="Photoreal 3D view"><div id="pxv"></div><button id="pxc" class="btn fixed z-50 left-3" style="top: calc(var(--top-h, 76px) + 40px)"><span aria-hidden="true">✕</span> Close 3D view</button>
-  <p class="fixed z-50 bottom-3 left-1/2 -translate-x-1/2 text-[10px] text-slate-300 bg-black/60 px-2 py-1 rounded text-center">Google Photorealistic 3D Tiles via Cesium ion. Search inside this view uses Google geocoding, as Google’s terms require.</p></div>
+  <p class="fixed z-50 bottom-3 left-1/2 -translate-x-1/2 text-[10px] text-slate-300 bg-black/60 px-2 py-1 rounded text-center">Google Photorealistic 3D Tiles via Cesium ion (used under Google and Cesium terms). Main map search powered by OpenStreetMap Nominatim.</p></div>
 <aside id="keys" hidden role="dialog" aria-labelledby="keys-h" class="glass fixed z-[60] left-1/2 top-32 -translate-x-1/2 p-4 w-[min(460px,calc(100vw-24px))]">
   <h2 id="keys-h" class="font-display font-bold mb-1">Tokens for real-life views</h2>
   <p id="kenv" class="text-emerald-400 font-mono text-[11px] mb-1"></p>
@@ -232,6 +251,22 @@
       <span id="eic-globe-context-note" class="text-slate-300 ml-1"></span>
     </div>
   </div>
+
+  <!-- Judge & Reviewer Interactive Walkthrough Guide -->
+  <details id="eic-judge-guide" class="mt-2.5 text-[11px] bg-sky-950/40 border border-sky-600/30 rounded-lg p-2.5">
+    <summary class="font-semibold text-sky-300 cursor-pointer select-none flex items-center justify-between">
+      <span>📋 Judge & Reviewer Guided Demonstration (NASA Space Apps 2026)</span>
+      <span class="text-[10px] font-mono text-sky-400">Click to expand</span>
+    </summary>
+    <ol class="mt-2 pl-4 list-decimal space-y-1 text-slate-300 leading-relaxed text-[11px]">
+      <li><b>Select Verified EIC Metric:</b> Choose <i>Global Mean Sea Level · NASA GSFC / EIC Resource #332 (1993–2024)</i> or <i>NASA GEOS-FP 2m Air Temp</i>.</li>
+      <li><b>Inspect Official Provenance:</b> Confirm authoritative dataset ID, agency attribution, and Public Domain terms.</li>
+      <li><b>Start Real-Time Sonification:</b> Click <kbd class="px-1 bg-slate-800 rounded">▶ Play Audio Timeline</kbd> (or press Space) to hear physical pitch evolution.</li>
+      <li><b>Observe Synchronous State:</b> Watch timeline year, measured physical value, acoustic frequency (Hz), stereo pan, and data table synchronize seamlessly.</li>
+      <li><b>Scrub Time:</b> Drag across the sparkline or slider to explore historical trends.</li>
+      <li><b>Inspect Mathematical Rigor:</b> Expand <i>How Sound Works</i> to review the exact physics transfer equations and documented sensor limitations.</li>
+    </ol>
+  </details>
 
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 p-3 bg-slate-900/70 border border-slate-800 rounded-xl">
     <div>
@@ -353,6 +388,6 @@
 <script src="assets/js/app.js?v=4.6"></script>
 <script src="assets/js/patch.js?v=4.6"></script>
 <script src="assets/js/enhance.js?v=4.6"></script>
-<script src="assets/js/eic.js?v=4.8"></script>
+<script src="assets/js/eic.js?v=4.9"></script>
 </body>
 </html>

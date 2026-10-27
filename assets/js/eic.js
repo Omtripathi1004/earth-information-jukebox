@@ -367,8 +367,8 @@
       return null;
     }
 
-    static calculateNote(dataset, index, stats) {
-      const val = dataset.values[index];
+    static calculateNote(dataset, index, stats, overrideVal) {
+      const val = overrideVal !== undefined ? overrideVal : dataset.values[index];
       const year = dataset.years[index];
       const delta = stats.deltas[index];
       const n = dataset.years.length;
@@ -415,6 +415,70 @@
       }
 
       return { freq, voiceType, vel, pan, val, year, delta };
+    }
+
+    static generateDynamicPitchLabels(dataset) {
+      if (!dataset) return ['Low Pitch', 'Mid Baseline', 'High Pitch'];
+      const id = dataset.id;
+      const u = dataset.units;
+      const bVal = dataset.baselineVal !== undefined ? dataset.baselineVal : dataset.baseline_val;
+
+      if (id === 'geos_fp_temp') {
+        const pMin = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 12.0).freq);
+        const pBase = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, bVal).freq);
+        const pMax = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 17.5).freq);
+        return [
+          `Min (12.0 ${u} → ${pMin} Hz)`,
+          `Baseline (${bVal.toFixed(1)} ${u} → ${pBase} Hz)`,
+          `Max (17.5 ${u} → ${pMax} Hz)`
+        ];
+      } else if (id === 'ecco2_ocean_currents') {
+        const pMin = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 15.5).freq);
+        const pBase = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, bVal).freq);
+        const pMax = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 17.5).freq);
+        return [
+          `Min (15.5 ${u} → ${pMin} Hz)`,
+          `Baseline (${bVal.toFixed(1)} ${u} → ${pBase} Hz)`,
+          `Max (17.5 ${u} → ${pMax} Hz)`
+        ];
+      } else if (id === 'co2') {
+        const pFloor = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 330.0).freq);
+        const pMid = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 380.0).freq);
+        const pUpper = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 430.0).freq);
+        return [
+          `Floor (330 ${u} → ${pFloor} Hz)`,
+          `Mid-Scale (380 ${u} → ${pMid} Hz)`,
+          `Upper Bound (430 ${u} → ${pUpper} Hz)`
+        ];
+      } else if (id === 'sea_level') {
+        const pBase = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 0.0).freq);
+        const pMid = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 60.0).freq);
+        const pLimit = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 120.0).freq);
+        return [
+          `1993 Base (0 ${u} → ${pBase} Hz)`,
+          `+60 mm Rise (${pMid} Hz)`,
+          `+120 mm Limit (${pLimit} Hz)`
+        ];
+      } else if (id === 'temperature_anomaly') {
+        const pBase = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 0.0).freq);
+        const pMid = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 0.75).freq);
+        const pLimit = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 1.5).freq);
+        return [
+          `1951-80 Base (0 ${u} → ${pBase} Hz)`,
+          `+0.75 ${u} Anomaly (${pMid} Hz)`,
+          `+1.5 ${u} Policy Ref (${pLimit} Hz)`
+        ];
+      } else if (id === 'arctic_sea_ice') {
+        const pMaxExt = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 8.0).freq);
+        const pMid = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 5.5).freq);
+        const pLow = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 3.0).freq);
+        return [
+          `Max Extent (8.0 ${u} → ${pMaxExt} Hz)`,
+          `Mid-Melt (5.5 ${u} → ${pMid} Hz)`,
+          `Record Low Bound (3.0 ${u} → ${pLow} Hz)`
+        ];
+      }
+      return ['Low Pitch', 'Mid Baseline', 'High Pitch'];
     }
 
     static playNote(dataset, index, stats, isMuted) {
@@ -762,6 +826,7 @@
           this.modal.hidden = true;
           this.btnOpen.setAttribute('aria-expanded', 'false');
           this.state.pause();
+          if (this.btnOpen) this.btnOpen.focus();
         });
       }
 
@@ -873,6 +938,12 @@
         const tag = (e.target && e.target.tagName) || '';
         const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 
+        if (e.key === 'Escape' && this.modal && !this.modal.hidden) {
+          e.preventDefault();
+          this.btnClose.click();
+          return;
+        }
+
         if (/^e$/i.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey && !isEditing) {
           if (this.modal.hidden) {
             this.btnOpen.click();
@@ -952,16 +1023,8 @@
       const ctxNote = d.contextualLayerNote || d.contextual_layer_note || '';
       setText('eic-globe-context-note', ctxNote);
 
-      // Dynamic metric-specific pitch slider labels
-      const pitchLabels = {
-        geos_fp_temp: ['Min (12.0 °C → 200 Hz)', 'Baseline (14.0 °C → 418 Hz)', 'Max (17.5 °C → 800 Hz)'],
-        ecco2_ocean_currents: ['Min (15.5 °C → 160 Hz)', 'Baseline (16.5 °C → 320 Hz)', 'Max (17.5 °C → 480 Hz)'],
-        co2: ['1980 Base (330 ppm → 131 Hz)', 'Mid-Scale (380 ppm → 220 Hz)', 'Upper Bound (430 ppm → 370 Hz)'],
-        sea_level: ['1993 Base (0 mm → 110 Hz)', '+60 mm Rise (185 Hz)', '+120 mm Limit (311 Hz)'],
-        temperature_anomaly: ['1951-80 Base (0 °C → 165 Hz)', '+0.75 °C Anomaly (277 Hz)', '+1.5 °C Paris Goal (466 Hz)'],
-        arctic_sea_ice: ['1980 Extent (8.0 M km² → 220 Hz)', 'Mid-Melt (5.5 M km² → 370 Hz)', 'Record Low (3.0 M km² → 622 Hz)']
-      };
-      const curLabels = pitchLabels[d.id] || ['Low Pitch', 'Mid Baseline', 'High Pitch'];
+      // Dynamically generated scientific pitch slider labels
+      const curLabels = EICSonifier.generateDynamicPitchLabels(d);
       setText('eic-pitch-label-low', curLabels[0]);
       setText('eic-pitch-label-mid', curLabels[1]);
       setText('eic-pitch-label-high', curLabels[2]);
