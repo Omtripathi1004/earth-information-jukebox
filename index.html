@@ -107,11 +107,13 @@
     <tr><td>Altitude</td><td>Low drone that brightens as you fly closer to the ground</td></tr>
     <tr><td>NASA data frames</td><td>Colour becomes pitch: blue is low, red is high. Grey means no data and is silent</td></tr>
     <tr><td>Local climate</td><td>Each year of NASA POWER temperature (1985–2025) becomes one note</td></tr>
-    <tr><td colspan="2" class="pt-3 pb-1 font-bold text-sky-300 border-t border-slate-700">NASA Earth Information Center (EIC) Sonification</td></tr>
-    <tr><td>CO₂ (Greenhouse Gases)</td><td>Warm triangle voice; pitch rises with ppm; volume tracks annual accumulation rate</td></tr>
-    <tr><td>Global Sea Level</td><td>Resonant dual-sine ocean pad; pitch rises with sea level height (+mm)</td></tr>
-    <tr><td>Global Temp Anomaly</td><td>Metallic bell chime; pitch reflects warming above 1951-1980 baseline; strikes louder on record years</td></tr>
-    <tr><td>Arctic Sea Ice Minimum</td><td>Inverted crystalline bell: pitch rises into alert register as polar ice extent declines</td></tr>
+    <tr><td colspan="2" class="pt-3 pb-1 font-bold text-sky-300 border-t border-slate-700">NASA Earth Information Center (EIC) Mode A Physical Sonification</td></tr>
+    <tr><td>NASA GEOS-FP 2m Air Temp</td><td>Continuous metallic bell (200–800 Hz): winter cold (200 Hz) to peak summer heatwave (800 Hz)</td></tr>
+    <tr><td>ECCO2 Ocean Currents & SST</td><td>Resonant dual-sine water pad (160–480 Hz): ocean thermal baseline to peak seasonal currents</td></tr>
+    <tr><td>CO₂ (Greenhouse Gases)</td><td>Warm triangle voice (131–370 Hz): 1980 baseline (131 Hz) to present record concentration (370 Hz)</td></tr>
+    <tr><td>Global Mean Sea Level</td><td>Resonant dual-sine ocean pad (110–311 Hz): 1993 baseline (110 Hz) to +120 mm altimetric rise (311 Hz)</td></tr>
+    <tr><td>Global Temp Anomaly</td><td>Additive metallic chime (165–466 Hz): 1951-80 base (165 Hz) to +1.5 °C Paris threshold (466 Hz)</td></tr>
+    <tr><td>Arctic Sea Ice Minimum</td><td>Inverted crystalline bell (220–622 Hz): pitch ascends into urgent alert register as polar ice retreats</td></tr>
   </tbody></table>
   <p class="text-[11px] text-slate-400 mt-3">Shortcuts: L map scan · E open EIC Jukebox · ←/→ scrub timeline · Space play/pause · M mute · Esc close.</p>
 </aside>
@@ -223,6 +225,14 @@
     </div>
   </div>
 
+  <div id="eic-globe-context-notice" class="mt-2.5 text-[11px] text-slate-300 bg-slate-900/80 border border-sky-800/40 rounded-lg p-2.5 flex items-start gap-2">
+    <span class="text-amber-400 text-xs mt-0.5" aria-hidden="true">🌐</span>
+    <div class="leading-relaxed">
+      <span class="font-semibold text-sky-300">Contextual Globe Imagery:</span>
+      <span id="eic-globe-context-note" class="text-slate-300 ml-1"></span>
+    </div>
+  </div>
+
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 p-3 bg-slate-900/70 border border-slate-800 rounded-xl">
     <div>
       <div class="lbl text-[10px] text-slate-400">Timeline Year</div>
@@ -233,8 +243,8 @@
       <div id="eic-val-display" class="font-mono text-xl sm:text-2xl font-bold text-sky-400 mt-0.5">338.8 ppm</div>
     </div>
     <div>
-      <div class="lbl text-[10px] text-slate-400">Annual Trend</div>
-      <div id="eic-delta-display" class="font-mono text-sm sm:text-base font-semibold text-emerald-400 mt-1.5">+1.3 ppm/yr</div>
+      <div id="eic-delta-label" class="lbl text-[10px] text-slate-400">Monthly Trend</div>
+      <div id="eic-delta-display" class="font-mono text-sm sm:text-base font-semibold text-emerald-400 mt-1.5">+0.40 °C/mo</div>
     </div>
     <div>
       <div class="lbl text-[10px] text-slate-400">Acoustic Pitch</div>
@@ -243,6 +253,7 @@
   </div>
   <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 px-1 mt-1">
     <span id="eic-baseline-display">Pre-industrial ~280 ppm</span>
+    <span id="eic-trend-summary" class="text-emerald-400 font-semibold"></span>
     <span id="eic-live-pan">Pan: 0.0</span>
   </div>
 
@@ -259,9 +270,9 @@
     <input id="eic-slider" type="range" class="w-full accent-sky-400 cursor-pointer" min="0" max="11" value="0" aria-label="Timeline position">
     <div class="mt-1.5 px-0.5">
       <div class="flex justify-between text-[9px] font-mono text-slate-400">
-        <span>Cold / Low Pitch (200 Hz)</span>
-        <span>Baseline Mean (~500 Hz)</span>
-        <span>Heatwave / High Pitch (800 Hz)</span>
+        <span id="eic-pitch-label-low">Winter Cold (200 Hz)</span>
+        <span id="eic-pitch-label-mid">Baseline Mean (~500 Hz)</span>
+        <span id="eic-pitch-label-high">Summer Peak Heatwave (800 Hz)</span>
       </div>
       <div class="eic-pitch-bar w-full my-1"></div>
     </div>

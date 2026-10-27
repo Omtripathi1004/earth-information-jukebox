@@ -116,6 +116,59 @@ class ApiTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 eic_data.calculate_pitch(ds_id, float("nan"))
 
+    def test_eic_metadata_provenance_and_layers(self):
+        from backend.app import eic_data
+        for ds_id, ds in eic_data.DATASETS.items():
+            # Provenance fields verification
+            self.assertTrue(ds.get("data_identifier"), f"Missing data_identifier in {ds_id}")
+            self.assertTrue(ds.get("authoritative_url"), f"Missing authoritative_url in {ds_id}")
+            self.assertTrue(ds.get("retrieval_date"), f"Missing retrieval_date in {ds_id}")
+            self.assertTrue(ds.get("variable_name"), f"Missing variable_name in {ds_id}")
+            self.assertTrue(ds.get("transformation_notes"), f"Missing transformation_notes in {ds_id}")
+            self.assertTrue(ds.get("historical_period"), f"Missing historical_period in {ds_id}")
+
+            # Contextual globe layer check
+            ctx_layer = ds.get("contextual_globe_layer")
+            self.assertIn(ctx_layer, nasa.LAYERS, f"Contextual layer {ctx_layer} not in nasa.LAYERS")
+            self.assertIn("contextual", ds.get("contextual_layer_note", "").lower())
+
+            # Data arrays length
+            self.assertEqual(len(ds["years"]), len(ds["values"]))
+            self.assertGreater(len(ds["values"]), 0)
+
+            # Reconciled sonification metadata
+            son = ds["sonification"]
+            self.assertIn("voiceDesc", son)
+            self.assertIn("voice_desc", son)
+            self.assertIn("formula", son)
+            self.assertIn("frequency_formula", son)
+            self.assertIn("pitchRange", son)
+            self.assertIn("full_calibration_range_hz", son)
+            self.assertIn("observed_historical_range_hz", son)
+
+    def test_eic_timeline_synchronization(self):
+        from backend.app import eic_data
+        for ds_id, ds in eic_data.DATASETS.items():
+            vals = ds["values"]
+            for i, val in enumerate(vals):
+                pitch = eic_data.calculate_pitch(ds_id, val)
+                self.assertTrue(100.0 <= pitch <= 850.0, f"Pitch {pitch} out of audible limits for {ds_id}")
+
+            # Verify monotonic directional response
+            if ds_id == "geos_fp_temp":
+                p_cold = eic_data.calculate_pitch(ds_id, 12.4)
+                p_warm = eic_data.calculate_pitch(ds_id, 17.1)
+                self.assertLess(p_cold, p_warm)
+            elif ds_id == "co2":
+                p_1980 = eic_data.calculate_pitch(ds_id, ds["values"][0])
+                p_2024 = eic_data.calculate_pitch(ds_id, ds["values"][-1])
+                self.assertLess(p_1980, p_2024)
+            elif ds_id == "arctic_sea_ice":
+                # Inverted: less ice = higher pitch
+                p_high_ice = eic_data.calculate_pitch(ds_id, 7.67)
+                p_low_ice = eic_data.calculate_pitch(ds_id, 3.39)
+                self.assertLess(p_high_ice, p_low_ice)
+
     def test_health_and_static(self):
         j = self.c.get("/api/health").get_json()
         self.assertTrue(j["ok"])
@@ -176,6 +229,59 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(r.mimetype, "audio/wav")
         with patch.object(nasa, "get_json", return_value={"display_name": "A, B, C"}):
             self.assertEqual(self.c.get("/api/reverse?lat=1&lon=2&zoom=10").get_json()["display_name"], "A, B, C")
+
+    def test_synthetic_trends(self):
+        from backend.app import eic_data
+        # 1. Strictly increasing
+        res_inc = eic_data.compute_trend([2000, 2001, 2002, 2003], [10.0, 12.0, 14.0, 16.0])
+        self.assertEqual(res_inc["status"], "valid")
+        self.assertEqual(res_inc["ols_slope"], 2.0)
+        self.assertEqual(res_inc["step_unit"], "yr")
+
+        # 2. Strictly decreasing
+        res_dec = eic_data.compute_trend([2000, 2001, 2002], [5.0, 4.0, 3.0])
+        self.assertEqual(res_dec["status"], "valid")
+        self.assertEqual(res_dec["ols_slope"], -1.0)
+
+        # 3. Constant values
+        res_const = eic_data.compute_trend([2000, 2001, 2002], [7.0, 7.0, 7.0])
+        self.assertEqual(res_const["status"], "valid")
+        self.assertEqual(res_const["ols_slope"], 0.0)
+
+        # 4. Insufficient points
+        res_few = eic_data.compute_trend([2000], [5.0])
+        self.assertEqual(res_few["status"], "insufficient_points")
+
+        # 5. Invalid/missing/NaN measurements
+        res_nan = eic_data.compute_trend([2000, 2001], [5.0, float("nan")])
+        self.assertEqual(res_nan["status"], "invalid_data")
+
+        res_none = eic_data.compute_trend([2000, 2001], [5.0, None])
+        self.assertEqual(res_none["status"], "invalid_data")
+
+        # 6. Monthly series detection
+        res_mo = eic_data.compute_trend(["Jan 2024", "Feb 2024", "Mar 2024"], [12.4, 12.8, 13.5])
+        self.assertTrue(res_mo["is_monthly"])
+        self.assertEqual(res_mo["step_unit"], "mo")
+
+        # 7. Real CO2 dataset verification
+        co2_ds = eic_data.get_dataset("co2")
+        res_co2 = eic_data.compute_trend(co2_ds["years"], co2_ds["values"])
+        self.assertEqual(res_co2["status"], "valid")
+        self.assertAlmostEqual(res_co2["ols_slope"], 1.92, places=1)
+        self.assertFalse(res_co2["is_monthly"])
+        self.assertEqual(res_co2["step_unit"], "yr")
+
+    def test_eic_trend_endpoint(self):
+        r = self.c.get("/api/eic/trend/co2")
+        self.assertEqual(r.status_code, 200)
+        j = r.get_json()
+        self.assertEqual(j["status"], "valid")
+        self.assertEqual(j["step_unit"], "yr")
+        self.assertGreater(j["ols_slope"], 1.5)
+
+        r_404 = self.c.get("/api/eic/trend/nonexistent")
+        self.assertEqual(r_404.status_code, 404)
 
 
 if __name__ == "__main__":

@@ -36,7 +36,13 @@
         voice: 'bell',
         voiceDesc: 'Continuous pitch scaling: higher pitch = warmer temperature; lower pitch = colder temperature.',
         formula: 'f = 200 + ((Temp - 12.0) / (17.5 - 12.0)) * (800 - 200)',
-        pitchRange: '200 Hz (winter cold) - 760 Hz (summer peak heatwave)',
+        contextualGlobeLayer: 'MODIS_Terra_Land_Surface_Temp_Day',
+        contextualLayerTitle: 'MODIS Land Surface Temperature (Daytime Skin Temp)',
+        contextualLayerNote: 'Contextual Earth observation proxy. The 3D globe displays satellite land skin temperature, which provides geographic surface thermal context but is distinct from the GMAO GEOS-FP 2m atmospheric air temperature grid.',
+        pitchRange: '200 Hz – 800 Hz (calibration) · 244 Hz – 756 Hz (observed 2024)',
+        fullCalibrationRange: '200 Hz – 800 Hz',
+        voice_desc: 'Continuous tone scaling from 200 Hz (winter/cold) to 800 Hz (summer peak heatwave)',
+        frequency_formula: 'f = 200.0 + clamp((Temp - 12.0) / 5.5, 0.0, 1.0) * (800.0 - 200.0)',
         dynamics: 'Loudness expands with thermal intensity; pitch directly tracks warmth in °C.',
         spatial: 'Pans from left to right along the annual calendar trajectory.'
       },
@@ -66,7 +72,13 @@
         voice: 'water',
         voiceDesc: 'Resonant dual-sine ocean pad reflecting ocean heat capacity and current velocity.',
         formula: 'f = 160 + ((SST - 15.5) / 2.0) * (480 - 160)',
-        pitchRange: '160 Hz (ocean baseline) - 450 Hz (tropical currents)',
+        contextualGlobeLayer: 'GHRSST_L4_MUR_Sea_Surface_Temperature',
+        contextualLayerTitle: 'GHRSST MUR Sea Surface Temperature (1km High-Res SST)',
+        contextualLayerNote: 'Contextual satellite thermal proxy. The 3D globe displays high-resolution satellite SST imagery for oceanic orientation, while ECCO2 represents global 3D ocean dynamic current simulation models.',
+        pitchRange: '160 Hz – 480 Hz (calibration) · 208 Hz – 448 Hz (observed 2024)',
+        fullCalibrationRange: '160 Hz – 480 Hz',
+        voice_desc: 'Resonant dual-sine ocean pad reflecting ocean heat capacity and current velocity',
+        frequency_formula: 'f = 160.0 + clamp((SST - 15.5) / 2.0, 0.0, 1.0) * (480.0 - 160.0)',
         dynamics: 'Volume modulated by current velocity and thermal energy.',
         spatial: 'Spatial panning tracking ocean current direction.'
       },
@@ -103,7 +115,13 @@
         voice: 'forest',
         voiceDesc: 'Warm harmonic triangle voice representing the biosphere and radiative absorption.',
         formula: 'f = 130.81 * 2^(((CO2 - 330) / 100) * 1.5)',
-        pitchRange: '130 Hz (C3) - 290 Hz (D4)',
+        contextualGlobeLayer: 'VIIRS_SNPP_CorrectedReflectance_TrueColor',
+        contextualLayerTitle: 'Suomi-NPP VIIRS Corrected Reflectance (True Color)',
+        contextualLayerNote: 'Contextual optical satellite imagery. Displays terrestrial vegetation and cloud cover at Mauna Loa for geographical orientation, not the atmospheric CO2 column mixing ratio.',
+        pitchRange: '131 Hz – 370 Hz (calibration) · 143 Hz – 349 Hz (observed 1980–2024)',
+        fullCalibrationRange: '131 Hz – 370 Hz',
+        voice_desc: 'Warm harmonic triangle voice representing terrestrial biosphere and atmospheric absorption',
+        frequency_formula: 'f = 130.81 * (2 ** (clamp((CO2 - 330.0) / 100.0, 0.0, 1.2) * 1.5))',
         dynamics: 'Loudness expands with higher annual accumulation rates (+ppm/yr).',
         spatial: 'Pans from historical 1980 on the left (-0.8) to modern day on the right (+0.8).'
       },
@@ -138,7 +156,13 @@
         voice: 'water',
         voiceDesc: 'Resonant dual-sine ocean pad ascending steadily as sea levels rise.',
         formula: 'f = 110.0 * 2^((SeaLevel / 120) * 1.5)',
-        pitchRange: '110 Hz (A2) - 235 Hz (Bb3)',
+        contextualGlobeLayer: 'GHRSST_L4_MUR_Sea_Surface_Temperature',
+        contextualLayerTitle: 'GHRSST MUR Sea Surface Temperature',
+        contextualLayerNote: 'Contextual ocean thermal imagery. Displays ocean warmth (thermal expansion driver) for coastal context at Tuvalu, distinct from radar altimetric sea surface height anomaly.',
+        pitchRange: '110 Hz – 311 Hz (calibration) · 110 Hz – 275 Hz (observed 1993–2024)',
+        fullCalibrationRange: '110 Hz – 311 Hz',
+        voice_desc: 'Resonant dual-sine ocean pad ascending as sea levels rise',
+        frequency_formula: 'f = 110.0 * (2 ** (clamp(SL / 120.0, 0.0, 1.2) * 1.5))',
         dynamics: 'Volume modulated by thermal expansion rate and altimeter precision.',
         spatial: 'Spatial panning from 1993 on the left to 2024 on the right.'
       },
@@ -175,7 +199,13 @@
         voice: 'bell',
         voiceDesc: 'Bright metallic bell chime with inharmonic overtones tracking heating spikes above baseline.',
         formula: 'f = 164.81 * 2^((TempAnomaly / 1.5) * 1.5)',
-        pitchRange: '165 Hz (E3) - 460 Hz (Bb4)',
+        contextualGlobeLayer: 'MODIS_Terra_Land_Surface_Temp_Day',
+        contextualLayerTitle: 'MODIS Land Surface Temperature (Daytime Skin Temp)',
+        contextualLayerNote: 'Contextual daytime surface thermal imagery. Displays absolute land skin temperature, not the GISTEMP statistical anomaly relative to 1951–1980 baseline.',
+        pitchRange: '165 Hz – 466 Hz (calibration) · 179 Hz – 400 Hz (observed 1980–2024)',
+        fullCalibrationRange: '165 Hz – 466 Hz',
+        voice_desc: 'Bright metallic chime whose pitch tracks heating above baseline',
+        frequency_formula: 'f = 164.81 * (2 ** (clamp(ΔT / 1.5, 0.0, 1.2) * 1.5))',
         dynamics: 'Loudness expands during record-setting heat years (e.g. 2016, 2020, 2023, 2024).',
         spatial: 'Pans from left to right along the 45-year timeline.'
       },
@@ -212,7 +242,13 @@
         voice: 'ice',
         voiceDesc: 'Inverted crystalline bell: as Arctic ice retreats, pitch ascends into an urgent high register.',
         formula: 'f = 220.0 * 2^(((8.0 - IceExtent) / 5.0) * 1.5)',
-        pitchRange: '220 Hz (A3) - 550 Hz (Db5)',
+        contextualGlobeLayer: 'MODIS_Terra_NDSI_Snow_Cover',
+        contextualLayerTitle: 'MODIS Terra NDSI Snow Cover / Sea Ice',
+        contextualLayerNote: 'Contextual cryosphere optical reflectance. Displays normalized difference snow and sea-ice reflectance for polar context, while the sonified metric is NSIDC microwave sea-ice minimum extent.',
+        pitchRange: '220 Hz – 622 Hz (calibration) · 236 Hz – 574 Hz (observed 1980–2024)',
+        fullCalibrationRange: '220 Hz – 622 Hz',
+        voice_desc: 'Inverted crystalline bell: as ice retreats, pitch ascends into alert register',
+        frequency_formula: 'f = 220.0 * (2 ** (clamp((8.0 - IceExtent) / 5.0, 0.0, 1.2) * 1.5))',
         dynamics: 'Strikes sharply when ice levels breach historical thresholds (< 4.5 million km²).',
         spatial: 'Pans across time trajectory from 1980 to 2024.'
       },
@@ -276,11 +312,35 @@
     static computeStats(dataset) {
       this.validate(dataset);
       const vals = dataset.values;
+      const n = vals.length;
       const min = Math.min(...vals);
       const max = Math.max(...vals);
       const range = max - min || 1;
-      const deltas = vals.map((v, i) => (i === 0 ? 0 : v - vals[i - 1]));
-      return { min, max, range, deltas };
+      const deltas = vals.map((v, i) => (i === 0 ? (n > 1 ? vals[1] - vals[0] : 0) : v - vals[i - 1]));
+
+      const firstYr = String(dataset.years[0]);
+      const isMonthly = firstYr.includes(' ') || ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].some(m => firstYr.includes(m));
+      const stepUnit = isMonthly ? 'mo' : 'yr';
+
+      // Ordinary Least Squares slope across observations
+      const xMean = (n - 1) / 2.0;
+      const yMean = vals.reduce((a, b) => a + b, 0) / n;
+      let num = 0, den = 0;
+      for (let i = 0; i < n; i++) {
+        num += (i - xMean) * (vals[i] - yMean);
+        den += (i - xMean) * (i - xMean);
+      }
+      const olsSlope = den !== 0 ? num / den : 0;
+      const totalChange = vals[n - 1] - vals[0];
+
+      return {
+        min, max, range, deltas,
+        isMonthly,
+        stepUnit,
+        olsSlope,
+        totalChange,
+        meanRate: n > 1 ? totalChange / (n - 1) : 0
+      };
     }
   }
 
@@ -855,14 +915,53 @@
         if (el) el.textContent = txt;
       };
 
+      const stats = state.stats;
+      const isMonthly = stats.isMonthly;
+      const stepUnit = stats.stepUnit;
+      setText('eic-delta-label', isMonthly ? 'Monthly Step Delta' : 'Year-over-Year Delta');
+
+      let deltaText = '';
+      if (idx > 0) {
+        deltaText = `${delta >= 0 ? '+' : ''}${delta.toFixed(2)} ${d.units}/${stepUnit}`;
+      } else if (d.values.length > 1) {
+        const initDelta = d.values[1] - d.values[0];
+        deltaText = `${initDelta >= 0 ? '+' : ''}${initDelta.toFixed(2)} ${d.units}/${stepUnit} (initial)`;
+      } else {
+        deltaText = `0.00 ${d.units}/${stepUnit}`;
+      }
+
       setText('eic-title', d.title);
       setText('eic-theme', d.theme);
       setText('eic-agency', d.agency);
       setText('eic-desc', d.description);
       setText('eic-year-display', String(year));
-      setText('eic-val-display', `${val.toFixed(d.units === '°C' ? 1 : 1)} ${d.units}`);
+      setText('eic-val-display', `${val.toFixed(1)} ${d.units}`);
       setText('eic-baseline-display', `${baselineDiff >= 0 ? '+' : ''}${baselineDiff.toFixed(1)} ${d.units} vs baseline`);
-      setText('eic-delta-display', idx > 0 ? `${delta >= 0 ? '+' : ''}${delta.toFixed(2)} ${d.units}/step` : '—');
+      setText('eic-delta-display', deltaText);
+
+      // Long-term trend summary
+      const trendSummary = isMonthly
+        ? 'Seasonal Cycle'
+        : `45-Yr Trend: ${stats.olsSlope >= 0 ? '+' : ''}${stats.olsSlope.toFixed(2)} ${d.units}/yr`;
+      setText('eic-trend-summary', trendSummary);
+
+      // Contextual globe imagery notice
+      const ctxNote = d.contextualLayerNote || d.contextual_layer_note || '';
+      setText('eic-globe-context-note', ctxNote);
+
+      // Dynamic metric-specific pitch slider labels
+      const pitchLabels = {
+        geos_fp_temp: ['Winter Cold (200 Hz)', 'Baseline Mean (~500 Hz)', 'Summer Peak Heatwave (800 Hz)'],
+        ecco2_ocean_currents: ['Winter Baseline (160 Hz)', 'Global SST Mean (320 Hz)', 'Peak Ocean Heat (480 Hz)'],
+        co2: ['1980 Baseline (131 Hz)', '2005 Level (~220 Hz)', 'Present Record (~370 Hz)'],
+        sea_level: ['1993 Baseline (110 Hz)', '+60 mm Rise (~185 Hz)', '+120 mm Rise (~311 Hz)'],
+        temperature_anomaly: ['1951-80 Base (165 Hz)', '+0.75 °C Anomaly (277 Hz)', '+1.5 °C Paris Limit (466 Hz)'],
+        arctic_sea_ice: ['1980 Ice Extent (220 Hz)', 'Moderate Melt (370 Hz)', 'Record Low Alert (622 Hz)']
+      };
+      const curLabels = pitchLabels[d.id] || ['Low Pitch', 'Mid Baseline', 'High Pitch'];
+      setText('eic-pitch-label-low', curLabels[0]);
+      setText('eic-pitch-label-mid', curLabels[1]);
+      setText('eic-pitch-label-high', curLabels[2]);
 
       if (this.slider) {
         this.slider.min = '0';
@@ -886,14 +985,21 @@
         this.btnMute.setAttribute('aria-pressed', String(state.isMuted));
       }
 
-      const s = d.sonification;
+      const s = d.sonification || {};
+      const voiceName = (s.voice || 'bell').toUpperCase();
+      const voiceDesc = s.voiceDesc || s.voice_desc || 'Calibrated physical sonification tone';
+      const formula = s.formula || s.frequency_formula || '';
+      const pitchRange = s.pitchRange || s.pitch_range_hz || '';
+      const dynamics = s.dynamics || '';
+      const spatial = s.spatial || '';
+
       setText('eic-sound-var', `${d.title} (${d.units})`);
-      setText('eic-sound-voice', `${s.voice.toUpperCase()}: ${s.voiceDesc}`);
-      setText('eic-sound-formula', s.formula);
-      setText('eic-sound-range', s.pitchRange);
-      setText('eic-sound-dynamics', s.dynamics);
-      setText('eic-sound-spatial', s.spatial);
-      setText('eic-sound-limits', d.limitations);
+      setText('eic-sound-voice', `${voiceName}: ${voiceDesc}`);
+      setText('eic-sound-formula', formula);
+      setText('eic-sound-range', pitchRange);
+      setText('eic-sound-dynamics', dynamics);
+      setText('eic-sound-spatial', spatial);
+      setText('eic-sound-limits', d.limitations || '');
 
       const calculatedNote = note || EICSonifier.calculateNote(d, idx, state.stats);
       const freqHz = Math.round(calculatedNote.freq);
@@ -932,7 +1038,7 @@
           <tr class="${isCurrent ? 'bg-sky-500/20 text-white font-bold' : 'hover:bg-slate-900'} cursor-pointer" onclick="window.EICJukebox.PlaybackState.seek(${i}, true)">
             <td class="py-1 px-2">${isCurrent ? '▶ ' : ''}${yr}</td>
             <td class="py-1 px-2">${val.toFixed(1)} ${d.units}</td>
-            <td class="py-1 px-2 ${delta > 0 ? 'text-amber-400' : 'text-slate-400'}">${i > 0 ? (delta >= 0 ? '+' : '') + delta.toFixed(2) : '—'}</td>
+            <td class="py-1 px-2 ${delta > 0 ? 'text-amber-400' : 'text-slate-400'}">${i > 0 ? (delta >= 0 ? '+' : '') + delta.toFixed(2) : (d.values.length > 1 ? (d.values[1] - d.values[0] >= 0 ? '+' : '') + (d.values[1] - d.values[0]).toFixed(2) + ' (init)' : '0.00')}</td>
             <td class="py-1 px-2 text-purple-300">${Math.round(note.freq)} Hz</td>
           </tr>
         `;

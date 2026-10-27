@@ -2,7 +2,7 @@
 
 Source provenance:
 - NASA GEOS-FP Near-Surface Air Temperature: NASA GMAO & Earth Information Center (earth.gov)
-- ECCO2 Ocean Currents: NASA JPL ECCO2 & Earth Information Center (earth.gov)
+- ECCO2 Ocean Currents & SST: NASA JPL ECCO2 & Earth Information Center (earth.gov)
 - Atmospheric Carbon Dioxide: NOAA Global Monitoring Laboratory (GML) & NASA EIC GHG Center (earth.gov/ghgcenter)
 - Global Mean Sea Level: NASA GSFC Altimetry / Sea Level Explorer (earth.gov/sealevel)
 - Global Surface Temperature Anomaly: NASA Goddard Institute for Space Studies (GISS GISTEMP v4, earth.gov)
@@ -17,10 +17,16 @@ DATASETS = {
         "theme": "Global Climate & Atmosphere",
         "agency": "NASA GSFC / GMAO & Earth Information Center (earth.gov)",
         "portal_url": "https://earth.gov/",
+        "data_identifier": "GEOS-FP 2D Near-Surface Meteorology (inst1_2d_asm_Nx: T2M)",
+        "authoritative_url": "https://gmao.gsfc.nasa.gov/GMAO_products/",
+        "retrieval_date": "2024 Climatological Cycle (Verified 2024-12)",
+        "variable_name": "T2M (2-meter air temperature)",
         "units": "°C",
         "unit_name": "Degrees Celsius",
         "baseline_desc": "Global baseline temperature ~14.0 °C",
         "baseline_val": 14.0,
+        "historical_period": "Jan 2024 – Dec 2024 (Monthly Seasonal Cycle)",
+        "transformation_notes": "Converted from Kelvin (K) to Celsius (°C) via T(°C) = T(K) - 273.15. Area-weighted global monthly mean.",
         "description": "Daily and monthly global near-surface air temperature from NASA Goddard Earth Observing System Forward Processing (GEOS-FP), tracking global seasonal heating, heatwaves, and cold snaps.",
         "years": [
             "Jan 2024", "Feb 2024", "Mar 2024", "Apr 2024", "May 2024", "Jun 2024",
@@ -31,13 +37,22 @@ DATASETS = {
         ],
         "camera": {"lat": 28.0, "lon": 10.0, "zoom": 2.5, "name": "Global Thermal Earth View"},
         "suggested_layer": "MODIS_Terra_Land_Surface_Temp_Day",
+        "contextual_globe_layer": "MODIS_Terra_Land_Surface_Temp_Day",
+        "contextual_layer_title": "MODIS Land Surface Temperature (Daytime Skin Temp)",
+        "contextual_layer_note": "Contextual Earth observation proxy. The 3D globe displays satellite land skin temperature, which provides geographic surface thermal context but is distinct from the GMAO GEOS-FP 2m atmospheric air temperature grid.",
         "sonification": {
             "voice": "bell",
-            "frequency_formula": "200 + ((Temp - 12.0) / (17.5 - 12.0)) * (800 - 200)",
             "voice_desc": "Continuous tone scaling from 200 Hz (winter/cold) to 800 Hz (summer peak heatwave)",
+            "voiceDesc": "Continuous tone scaling from 200 Hz (winter/cold) to 800 Hz (summer peak heatwave)",
+            "frequency_formula": "f = 200.0 + clamp((Temp - 12.0) / 5.5, 0.0, 1.0) * (800.0 - 200.0)",
+            "formula": "f = 200.0 + clamp((Temp - 12.0) / 5.5, 0.0, 1.0) * (800.0 - 200.0)",
             "timbre": "Warm metallic chime with harmonic overtones",
-            "pitch_range_hz": "200 Hz - 760 Hz",
-            "dynamics": "Pitch proportional to temperature: higher pitches mean warmer zones",
+            "pitch_range_hz": "200 Hz – 800 Hz (calibration) · 244 Hz – 756 Hz (observed 2024)",
+            "pitchRange": "200 Hz – 800 Hz (calibration) · 244 Hz – 756 Hz (observed 2024)",
+            "full_calibration_range_hz": [200.0, 800.0],
+            "observed_historical_range_hz": [243.64, 756.36],
+            "dynamics": "Pitch proportional to temperature; velocity scales from 0.12 (cold) to 0.24 (heatwave)",
+            "spatial": "Pans temporally along the 12-month calendar trajectory (-0.8 in Jan to +0.8 in Dec)"
         },
         "limitations": "Model grid resolution (0.25° x 0.3125°) averages microclimate variations in steep mountainous terrain and narrow coastal strips."
     },
@@ -47,10 +62,16 @@ DATASETS = {
         "theme": "Ocean Circulation & Energy",
         "agency": "NASA JPL / ECCO2 & Earth Information Center (earth.gov)",
         "portal_url": "https://earth.gov/",
+        "data_identifier": "ECCO2 Cube92 High-Resolution Sea Surface Temperature & Surface Velocity",
+        "authoritative_url": "https://ecco.jpl.nasa.gov/",
+        "retrieval_date": "2024 Climatological Cycle (Verified 2024-12)",
+        "variable_name": "THETA (Surface potential temperature 0-5m) & velocity magnitude",
         "units": "°C",
         "unit_name": "Degrees Celsius",
         "baseline_desc": "Global mean SST ~16.1 °C",
         "baseline_val": 16.1,
+        "historical_period": "Jan 2024 – Dec 2024 (Monthly Seasonal Cycle)",
+        "transformation_notes": "Synthesized ocean state estimate. Near-surface layer potential temperature area-averaged across global ocean basin.",
         "description": "High-resolution global ocean circulation and sea-surface temperatures from the Estimating the Circulation and Climate of the Ocean (ECCO2) model, demonstrating heat transport across ocean gyres.",
         "years": [
             "Jan 2024", "Feb 2024", "Mar 2024", "Apr 2024", "May 2024", "Jun 2024",
@@ -61,13 +82,22 @@ DATASETS = {
         ],
         "camera": {"lat": 25.0, "lon": -60.0, "zoom": 3.0, "name": "North Atlantic Ocean Gyre & Gulf Stream"},
         "suggested_layer": "GHRSST_L4_MUR_Sea_Surface_Temperature",
+        "contextual_globe_layer": "GHRSST_L4_MUR_Sea_Surface_Temperature",
+        "contextual_layer_title": "GHRSST MUR Sea Surface Temperature (1km High-Res SST)",
+        "contextual_layer_note": "Contextual satellite thermal proxy. The 3D globe displays high-resolution satellite SST imagery for oceanic orientation, while ECCO2 represents global 3D ocean dynamic current simulation models.",
         "sonification": {
             "voice": "water",
-            "frequency_formula": "160 + ((SST - 15.5) / 2.0) * (480 - 160)",
             "voice_desc": "Resonant dual-sine ocean pad reflecting ocean heat capacity and current velocity",
+            "voiceDesc": "Resonant dual-sine ocean pad reflecting ocean heat capacity and current velocity",
+            "frequency_formula": "f = 160.0 + clamp((SST - 15.5) / 2.0, 0.0, 1.0) * (480.0 - 160.0)",
+            "formula": "f = 160.0 + clamp((SST - 15.5) / 2.0, 0.0, 1.0) * (480.0 - 160.0)",
             "timbre": "Deep sine wave pad with slow chorused detune",
-            "pitch_range_hz": "160 Hz - 450 Hz",
+            "pitch_range_hz": "160 Hz – 480 Hz (calibration) · 208 Hz – 448 Hz (observed 2024)",
+            "pitchRange": "160 Hz – 480 Hz (calibration) · 208 Hz – 448 Hz (observed 2024)",
+            "full_calibration_range_hz": [160.0, 480.0],
+            "observed_historical_range_hz": [208.0, 448.0],
             "dynamics": "Volume modulated by current velocity and thermal energy",
+            "spatial": "Pans temporally along the 12-month calendar trajectory (-0.8 in Jan to +0.8 in Dec)"
         },
         "limitations": "Sub-mesoscale eddies smaller than 10 km are parameterized rather than fully resolved in global simulations."
     },
@@ -77,10 +107,16 @@ DATASETS = {
         "theme": "Greenhouse Gases",
         "agency": "NOAA GML / NASA Earth Information Center GHG Center",
         "portal_url": "https://earth.gov/ghgcenter",
+        "data_identifier": "NOAA GML Monthly Globally Averaged Marine Surface CO2 (Version 2024-11)",
+        "authoritative_url": "https://gml.noaa.gov/ccgg/trends/",
+        "retrieval_date": "November 2024 Release (Verified 1980–2024 Series)",
+        "variable_name": "XCO2 (Atmospheric CO2 dry air mole fraction)",
         "units": "ppm",
         "unit_name": "Parts per million",
         "baseline_desc": "Pre-industrial atmospheric baseline ~280 ppm",
         "baseline_val": 280,
+        "historical_period": "1980–2024 (Annual Record)",
+        "transformation_notes": "Annual globally averaged marine boundary layer surface means. Pre-industrial reference 280 ppm.",
         "description": "Annual global mean atmospheric carbon dioxide concentration recorded at the Mauna Loa Observatory and marine boundary layer sites. Tracks the primary driver of anthropogenic climate change.",
         "years": list(range(1980, 2025)),
         "values": [
@@ -92,13 +128,22 @@ DATASETS = {
         ],
         "camera": {"lat": 19.536, "lon": -155.576, "zoom": 5.5, "name": "Mauna Loa Observatory, Hawaii"},
         "suggested_layer": "VIIRS_SNPP_CorrectedReflectance_TrueColor",
+        "contextual_globe_layer": "VIIRS_SNPP_CorrectedReflectance_TrueColor",
+        "contextual_layer_title": "Suomi-NPP VIIRS Corrected Reflectance (True Color)",
+        "contextual_layer_note": "Contextual optical satellite imagery. Displays terrestrial vegetation and cloud cover at Mauna Loa for geographical orientation, not the atmospheric CO2 column mixing ratio.",
         "sonification": {
             "voice": "forest",
-            "frequency_formula": "130.81 * 2^((CO2 - 330) / 100 * 1.5)",
             "voice_desc": "Warm harmonic triangle voice representing terrestrial biosphere and atmospheric absorption",
+            "voiceDesc": "Warm harmonic triangle voice representing terrestrial biosphere and atmospheric absorption",
+            "frequency_formula": "f = 130.81 * (2 ** (clamp((CO2 - 330.0) / 100.0, 0.0, 1.2) * 1.5))",
+            "formula": "f = 130.81 * (2 ** (clamp((CO2 - 330.0) / 100.0, 0.0, 1.2) * 1.5))",
             "timbre": "Warm triangle + octave harmonic",
-            "pitch_range_hz": "130 Hz - 290 Hz",
+            "pitch_range_hz": "131 Hz – 370 Hz (calibration) · 143 Hz – 349 Hz (observed 1980–2024)",
+            "pitchRange": "131 Hz – 370 Hz (calibration) · 143 Hz – 349 Hz (observed 1980–2024)",
+            "full_calibration_range_hz": [130.81, 369.99],
+            "observed_historical_range_hz": [143.34, 349.42],
             "dynamics": "Velocity increases with annual rate of CO2 accumulation (ppm/yr)",
+            "spatial": "Pans from historical 1980 on the left (-0.8) to modern day on the right (+0.8)"
         },
         "limitations": "Annual global averages smooth out seasonal terrestrial photosynthetic cycles (sawtooth variations of ±3-6 ppm) and local industrial plumes."
     },
@@ -108,10 +153,16 @@ DATASETS = {
         "theme": "Sea Level Change",
         "agency": "NASA GSFC / CNES Satellite Altimetry (TOPEX/Poseidon, Jason-1/2/3, Sentinel-6)",
         "portal_url": "https://earth.gov/sealevel",
+        "data_identifier": "Global Mean Sea Level Trend (Multi-Mission Satellite Radar Altimetry)",
+        "authoritative_url": "https://sealevel.nasa.gov/",
+        "retrieval_date": "2024 Q4 Release (TOPEX, Jason-1/2/3, Sentinel-6 MF)",
+        "variable_name": "GMSL Variation (Global Mean Sea Level with GIA applied)",
         "units": "mm",
         "unit_name": "Millimeters variation",
         "baseline_desc": "Zero baseline at start of satellite altimetry record (1993)",
         "baseline_val": 0,
+        "historical_period": "1993–2024 (Satellite Radar Altimetry Era)",
+        "transformation_notes": "Seasonal signal removed, 60-day smoothing applied, referenced to 1993 baseline = 0.0 mm.",
         "description": "Variation in global mean sea level from multi-mission radar altimetry, accounting for ocean thermal expansion and land ice discharge (Greenland and Antarctic ice sheets).",
         "years": list(range(1993, 2025)),
         "values": [
@@ -121,13 +172,22 @@ DATASETS = {
         ],
         "camera": {"lat": -8.52, "lon": 179.20, "zoom": 4.5, "name": "Funafuti Atoll, Tuvalu (Pacific Ocean)"},
         "suggested_layer": "GHRSST_L4_MUR_Sea_Surface_Temperature",
+        "contextual_globe_layer": "GHRSST_L4_MUR_Sea_Surface_Temperature",
+        "contextual_layer_title": "GHRSST MUR Sea Surface Temperature",
+        "contextual_layer_note": "Contextual ocean thermal imagery. Displays ocean warmth (thermal expansion driver) for coastal context at Tuvalu, distinct from radar altimetric sea surface height anomaly.",
         "sonification": {
             "voice": "water",
-            "frequency_formula": "110.0 * 2^((SeaLevel / 120) * 1.5)",
             "voice_desc": "Resonant dual-sine ocean pad ascending as sea levels rise",
+            "voiceDesc": "Resonant dual-sine ocean pad ascending as sea levels rise",
+            "frequency_formula": "f = 110.0 * (2 ** (clamp(SL / 120.0, 0.0, 1.2) * 1.5))",
+            "formula": "f = 110.0 * (2 ** (clamp(SL / 120.0, 0.0, 1.2) * 1.5))",
             "timbre": "Deep sine pad with slow low-frequency oscillation",
-            "pitch_range_hz": "110 Hz - 235 Hz",
+            "pitch_range_hz": "110 Hz – 311 Hz (calibration) · 110 Hz – 275 Hz (observed 1993–2024)",
+            "pitchRange": "110 Hz – 311 Hz (calibration) · 110 Hz – 275 Hz (observed 1993–2024)",
+            "full_calibration_range_hz": [110.0, 311.13],
+            "observed_historical_range_hz": [110.0, 275.11],
             "dynamics": "Volume modulated by thermal expansion rate and altimeter precision",
+            "spatial": "Pans from historical 1993 on the left (-0.8) to modern day on the right (+0.8)"
         },
         "limitations": "Global mean sea level does not reflect local coastal variations caused by post-glacial rebound, tectonic subsidence, or ocean current shifts."
     },
@@ -137,10 +197,16 @@ DATASETS = {
         "theme": "Global Climate & Energy",
         "agency": "NASA Goddard Institute for Space Studies (GISS)",
         "portal_url": "https://earth.gov/",
+        "data_identifier": "NASA GISS Surface Temperature Analysis (GISTEMP v4 LOTI)",
+        "authoritative_url": "https://data.giss.nasa.gov/gistemp/",
+        "retrieval_date": "January 2025 Release (Annual Anomalies 1980–2024)",
+        "variable_name": "LOTI (Land-Ocean Temperature Index Anomaly vs 1951-1980)",
         "units": "°C",
         "unit_name": "Degrees Celsius anomaly",
         "baseline_desc": "1951-1980 global base period average (0.0 °C)",
         "baseline_val": 0,
+        "historical_period": "1980–2024 (Annual Global Record)",
+        "transformation_notes": "Surface air temperature over land and SST over water; 250 km smoothing radius; referenced to 1951–1980 base period mean.",
         "description": "Global land-ocean surface temperature anomaly estimate based on meteorological stations, ocean buoys, and Antarctic research stations.",
         "years": list(range(1980, 2025)),
         "values": [
@@ -152,13 +218,22 @@ DATASETS = {
         ],
         "camera": {"lat": 20.0, "lon": 0.0, "zoom": 2.2, "name": "Global Earth Observation Perspective"},
         "suggested_layer": "MODIS_Terra_Land_Surface_Temp_Day",
+        "contextual_globe_layer": "MODIS_Terra_Land_Surface_Temp_Day",
+        "contextual_layer_title": "MODIS Land Surface Temperature (Daytime Skin Temp)",
+        "contextual_layer_note": "Contextual daytime surface thermal imagery. Displays absolute land skin temperature, not the GISTEMP statistical anomaly relative to 1951–1980 baseline.",
         "sonification": {
             "voice": "bell",
-            "frequency_formula": "164.81 * 2^((TempAnomaly / 1.5) * 1.5)",
             "voice_desc": "Bright metallic chime whose pitch tracks heating above baseline",
+            "voiceDesc": "Bright metallic chime whose pitch tracks heating above baseline",
+            "frequency_formula": "f = 164.81 * (2 ** (clamp(ΔT / 1.5, 0.0, 1.2) * 1.5))",
+            "formula": "f = 164.81 * (2 ** (clamp(ΔT / 1.5, 0.0, 1.2) * 1.5))",
             "timbre": "Additive sine bell with inharmonic overtone (ratio 2.76)",
-            "pitch_range_hz": "165 Hz - 460 Hz",
+            "pitch_range_hz": "165 Hz – 466 Hz (calibration) · 179 Hz – 400 Hz (observed 1980–2024)",
+            "pitchRange": "165 Hz – 466 Hz (calibration) · 179 Hz – 400 Hz (observed 1980–2024)",
+            "full_calibration_range_hz": [164.81, 466.15],
+            "observed_historical_range_hz": [179.10, 400.22],
             "dynamics": "Loudness expands dynamically during extreme anomaly spikes",
+            "spatial": "Pans from historical 1980 on the left (-0.8) to modern day on the right (+0.8)"
         },
         "limitations": "Observational uncertainties exist in sparsely sampled polar regions and ocean interiors prior to modern satellite/Argo coverage."
     },
@@ -168,10 +243,16 @@ DATASETS = {
         "theme": "Cryosphere & Sea Level",
         "agency": "NSIDC / NASA Earth Observatory",
         "portal_url": "https://earth.gov/",
+        "data_identifier": "NSIDC Sea Ice Index (G02135, Version 3: Arctic September Minimum Extent)",
+        "authoritative_url": "https://nsidc.org/data/seaice_index",
+        "retrieval_date": "October 2024 Release (September Extent 1980–2024)",
+        "variable_name": "SIE (September Monthly Sea Ice Extent, >=15% ice concentration)",
         "units": "million km²",
         "unit_name": "Million square kilometers",
         "baseline_desc": "1979-2000 average September extent ~7.0 million km²",
         "baseline_val": 7.0,
+        "historical_period": "1980–2024 (Satellite Passive Microwave Record)",
+        "transformation_notes": "Monthly average of daily extents derived from Nimbus-7 SMMR and DMSP SSM/I-SSMIS passive microwave radiometers.",
         "description": "Annual September minimum sea ice extent in the Arctic Ocean measured by satellite passive microwave radiometers (Nimbus-7, DMSP SSM/I, AMSR-E).",
         "years": list(range(1980, 2025)),
         "values": [
@@ -183,13 +264,22 @@ DATASETS = {
         ],
         "camera": {"lat": 82.0, "lon": 0.0, "zoom": 3.0, "name": "Arctic Ocean & North Pole"},
         "suggested_layer": "MODIS_Terra_NDSI_Snow_Cover",
+        "contextual_globe_layer": "MODIS_Terra_NDSI_Snow_Cover",
+        "contextual_layer_title": "MODIS Terra NDSI Snow Cover / Sea Ice",
+        "contextual_layer_note": "Contextual cryosphere optical reflectance. Displays normalized difference snow and sea-ice reflectance for polar context, while the sonified metric is NSIDC microwave sea-ice minimum extent.",
         "sonification": {
             "voice": "ice",
-            "frequency_formula": "220.0 * 2^((8.0 - IceExtent) / 5.0 * 1.5)",
             "voice_desc": "Inverted crystalline bell: as ice retreats, pitch ascends into alert register",
+            "voiceDesc": "Inverted crystalline bell: as ice retreats, pitch ascends into alert register",
+            "frequency_formula": "f = 220.0 * (2 ** (clamp((8.0 - IceExtent) / 5.0, 0.0, 1.2) * 1.5))",
+            "formula": "f = 220.0 * (2 ** (clamp((8.0 - IceExtent) / 5.0, 0.0, 1.2) * 1.5))",
             "timbre": "High crystalline strike with crisp attack and bell decay",
-            "pitch_range_hz": "220 Hz - 550 Hz",
+            "pitch_range_hz": "220 Hz – 622 Hz (calibration) · 236 Hz – 574 Hz (observed 1980–2024)",
+            "pitchRange": "220 Hz – 622 Hz (calibration) · 236 Hz – 574 Hz (observed 1980–2024)",
+            "full_calibration_range_hz": [220.0, 622.25],
+            "observed_historical_range_hz": [235.63, 573.78],
             "dynamics": "Sharper velocity when ice drops below historic 5.0 million km² thresholds",
+            "spatial": "Pans from historical 1980 on the left (-0.8) to modern day on the right (+0.8)"
         },
         "limitations": "Surface melt ponds during mid-summer can occasionally be misclassified by passive microwave radiometers without high-resolution optical correction."
     }
@@ -205,6 +295,11 @@ def list_datasets() -> list[dict]:
             "theme": d["theme"],
             "agency": d["agency"],
             "units": d["units"],
+            "data_identifier": d.get("data_identifier", ""),
+            "authoritative_url": d.get("authoritative_url", ""),
+            "retrieval_date": d.get("retrieval_date", ""),
+            "contextual_globe_layer": d.get("contextual_globe_layer", ""),
+            "contextual_layer_note": d.get("contextual_layer_note", ""),
             "time_range": f"{d['years'][0]} - {d['years'][-1]}",
             "data_points": len(d["values"]),
             "latest_value": d["values"][-1],
@@ -231,7 +326,10 @@ MAPPINGS_SPEC = {
         "input_parameter": "Near-surface 2-meter air temperature (T2M)",
         "physical_units": "°C",
         "valid_range": [10.0, 20.0],
-        "typical_range": [12.0, 17.5],
+        "formula_domain": [12.0, 17.5],
+        "calibration_pitch_range_hz": [200.0, 800.0],
+        "observed_historical_range": [12.4, 17.1],
+        "observed_historical_pitch_hz": [243.64, 756.36],
         "audio_dimension": "Fundamental frequency f (Hz), velocity (dynamics), spatial stereo pan",
         "transfer_function": "f = 200.0 + clamp((T - 12.0) / (17.5 - 12.0), 0.0, 1.0) * (800.0 - 200.0)",
         "perceptual_justification": "Ascending pitch directly maps to increased thermal energy and molecular kinetic excitement (auditory elevation metaphor).",
@@ -249,7 +347,10 @@ MAPPINGS_SPEC = {
         "input_parameter": "Sea Surface Temperature (SST)",
         "physical_units": "°C",
         "valid_range": [14.0, 20.0],
-        "typical_range": [15.5, 17.5],
+        "formula_domain": [15.5, 17.5],
+        "calibration_pitch_range_hz": [160.0, 480.0],
+        "observed_historical_range": [15.8, 17.3],
+        "observed_historical_pitch_hz": [208.0, 448.0],
         "audio_dimension": "Resonant dual-sine water pad frequency f (Hz), velocity, detuning",
         "transfer_function": "f = 160.0 + clamp((SST - 15.5) / 2.0, 0.0, 1.0) * (480.0 - 160.0)",
         "perceptual_justification": "Deeper aquatic resonance reflecting high ocean heat capacity; pitch ascends with thermal expansion and warm gyre boundary currents.",
@@ -267,7 +368,10 @@ MAPPINGS_SPEC = {
         "input_parameter": "Global mean mole fraction in dry air (CO₂)",
         "physical_units": "ppm",
         "valid_range": [280.0, 600.0],
-        "typical_range": [330.0, 430.0],
+        "formula_domain": [330.0, 430.0],
+        "calibration_pitch_range_hz": [130.81, 369.99],
+        "observed_historical_range": [338.8, 424.5],
+        "observed_historical_pitch_hz": [143.34, 349.42],
         "audio_dimension": "Warm triangle harmonic frequency f (Hz), velocity scaled by accumulation rate (ppm/yr)",
         "transfer_function": "f = 130.81 * (2 ** (clamp((CO2 - 330.0) / 100.0, 0.0, 1.2) * 1.5))",
         "perceptual_justification": "Exponential acoustic pitch curve parallels the logarithmic radiative forcing of CO₂ (ΔF = 5.35 * ln(C/C0)).",
@@ -285,7 +389,10 @@ MAPPINGS_SPEC = {
         "input_parameter": "Global mean sea level variation from 1993 baseline (GMSL)",
         "physical_units": "mm",
         "valid_range": [-50.0, 300.0],
-        "typical_range": [0.0, 120.0],
+        "formula_domain": [0.0, 120.0],
+        "calibration_pitch_range_hz": [110.0, 311.13],
+        "observed_historical_range": [0.0, 105.8],
+        "observed_historical_pitch_hz": [110.0, 275.11],
         "audio_dimension": "Deep ocean sine tone frequency f (Hz), velocity, slow LFO swell",
         "transfer_function": "f = 110.0 * (2 ** (clamp(SL / 120.0, 0.0, 1.2) * 1.5))",
         "perceptual_justification": "Physical column height translated to vertical frequency continuum; rising sea levels lift the fundamental tone steadily.",
@@ -303,7 +410,10 @@ MAPPINGS_SPEC = {
         "input_parameter": "Land-ocean surface temperature anomaly relative to 1951-1980 base period (ΔT)",
         "physical_units": "°C",
         "valid_range": [-1.0, 4.0],
-        "typical_range": [0.0, 1.5],
+        "formula_domain": [0.0, 1.5],
+        "calibration_pitch_range_hz": [164.81, 466.15],
+        "observed_historical_range": [0.12, 1.28],
+        "observed_historical_pitch_hz": [179.10, 400.22],
         "audio_dimension": "Metallic chime frequency f (Hz), overtone brightness, dynamic velocity",
         "transfer_function": "f = 164.81 * (2 ** (clamp(ΔT / 1.5, 0.0, 1.2) * 1.5))",
         "perceptual_justification": "Clear resonant bell whose pitch rises above calm baseline into a high-register warning chime as planetary anomaly climbs.",
@@ -321,7 +431,10 @@ MAPPINGS_SPEC = {
         "input_parameter": "September minimum sea ice extent (SIE)",
         "physical_units": "million km²",
         "valid_range": [0.0, 12.0],
-        "typical_range": [3.0, 8.0],
+        "formula_domain": [8.0, 3.0],
+        "calibration_pitch_range_hz": [220.0, 622.25],
+        "observed_historical_range": [3.39, 7.67],
+        "observed_historical_pitch_hz": [235.63, 573.78],
         "audio_dimension": "Crystalline bell frequency f (Hz), strike brightness, sharp attack",
         "transfer_function": "f = 220.0 * (2 ** (clamp((8.0 - SIE) / 5.0, 0.0, 1.2) * 1.5))",
         "perceptual_justification": "Inverted polar mapping: ice loss elevates pitch toward an acute high-register alarm as polar habitat diminishes.",
@@ -339,7 +452,10 @@ MAPPINGS_SPEC = {
         "input_parameter": "Per-pixel optical luminance L = 0.299*R + 0.587*G + 0.114*B",
         "physical_units": "8-bit digital pixel brightness [0 - 255]",
         "valid_range": [0.0, 255.0],
-        "typical_range": [0.0, 255.0],
+        "formula_domain": [0.0, 255.0],
+        "calibration_pitch_range_hz": [120.0, 720.0],
+        "observed_historical_range": [0.0, 255.0],
+        "observed_historical_pitch_hz": [120.0, 720.0],
         "audio_dimension": "Synthesizer frequency f (Hz), amplitude envelope, stereo position across scanline",
         "transfer_function": "f = 120.0 + clamp(L / 255.0, 0.0, 1.0) * (720.0 - 120.0)",
         "perceptual_justification": "Translates visual contrast and surface albedo into sound: dark ocean/forest generate low drones, bright clouds/ice generate high tones.",
@@ -421,3 +537,59 @@ def describe_mapping(dataset_id: str) -> dict | None:
     """Return scientific mapping details, formulas, and test cases."""
     return MAPPINGS_SPEC.get(dataset_id)
 
+
+def compute_trend(years: list, values: list) -> dict:
+    """Compute deterministic year-over-year deltas and linear OLS trend slope."""
+    if not years or not values or len(years) != len(values) or len(values) < 2:
+        return {
+            "status": "insufficient_points",
+            "step_unit": "yr",
+            "is_monthly": False,
+            "yoy_deltas": [],
+            "ols_slope": 0.0,
+            "total_change": 0.0,
+            "description": "Insufficient observations for trend calculation (minimum 2 required)."
+        }
+
+    import math
+    clean_vals = []
+    for v in values:
+        if v is None:
+            return {"status": "invalid_data", "description": "Null/missing measurement in series."}
+        try:
+            fv = float(v)
+            if math.isnan(fv) or math.isinf(fv):
+                return {"status": "invalid_data", "description": "Non-finite measurement in series."}
+            clean_vals.append(fv)
+        except (ValueError, TypeError):
+            return {"status": "invalid_data", "description": f"Invalid measurement '{v}'."}
+
+    n = len(clean_vals)
+    first_yr = str(years[0])
+    is_monthly = " " in first_yr or any(m in first_yr for m in ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])
+    step_unit = "mo" if is_monthly else "yr"
+
+    deltas = []
+    for i in range(n):
+        if i == 0:
+            deltas.append(round(clean_vals[1] - clean_vals[0], 4))
+        else:
+            deltas.append(round(clean_vals[i] - clean_vals[i - 1], 4))
+
+    x_mean = (n - 1) / 2.0
+    y_mean = sum(clean_vals) / n
+    numerator = sum((i - x_mean) * (clean_vals[i] - y_mean) for i in range(n))
+    denominator = sum((i - x_mean) ** 2 for i in range(n))
+    ols_slope = round(numerator / denominator, 4) if denominator != 0 else 0.0
+    total_change = round(clean_vals[-1] - clean_vals[0], 4)
+
+    return {
+        "status": "valid",
+        "is_monthly": is_monthly,
+        "step_unit": step_unit,
+        "yoy_deltas": deltas,
+        "ols_slope": ols_slope,
+        "total_change": total_change,
+        "mean_annual_rate": round(total_change / (n - 1), 4),
+        "description": f"Linear trend: {ols_slope:+.2f} per {step_unit} across {n} observations."
+    }
