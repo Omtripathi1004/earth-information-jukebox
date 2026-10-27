@@ -190,10 +190,10 @@
   <div class="flex items-start justify-between gap-3 pb-3 border-b border-sky-500/20">
     <div>
       <div class="flex items-center gap-2 flex-wrap">
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-950/80 border border-sky-400/50 text-[11px] font-mono text-sky-200 shadow-sm">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#0b3d91"/><path d="M3 15l18-6M6 7l12 10" stroke="#fc3d21" stroke-width="1.8"/><circle cx="12" cy="12" r="2" fill="#ffffff"/></svg>
-          <span class="font-bold tracking-wider">NASA</span>
-          <span class="text-sky-300 font-mono text-[10px]">earth.gov</span>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-900/90 border border-amber-400/50 text-[11px] font-mono text-amber-200 shadow-sm">
+          <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20M12 2a14.5 14.5 0 0 1 0 20M2 12h20"/></svg>
+          <span class="font-bold tracking-wider">NASA Space Apps 2026</span>
+          <span class="text-slate-300 font-mono text-[10px]">earth.gov Data</span>
         </span>
         <span id="eic-theme" class="text-xs text-amber-300 font-medium font-mono"></span>
       </div>
@@ -328,8 +328,9 @@
       ⚠️ <b>Scientific Limitations & Missing-Data Caveats:</b>
       <span id="eic-sound-limits" class="text-slate-400"></span>
     </div>
-    <div class="text-[10px] text-slate-400 bg-sky-950/30 p-2 rounded border border-sky-800/40">
-      💡 <b>Measurement vs. Heuristic Notice:</b> Unlike image color scanlines which interpret optical RGB contrast, this EIC sonification is synthesized directly from verified, calibrated physical measurements archived by NASA and NOAA.
+    <div class="text-[10px] text-slate-400 bg-slate-900/70 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+      <div>💡 <b>Pipeline Classification:</b> <b>Mode A</b> sonifies verified physical time series (NASA/NOAA earth.gov); <b>Mode B</b> performs scanline optical feature extraction on GIBS raster imagery; <b>Mode C</b> sonifies NASA POWER point meteorology.</div>
+      <div class="text-[9px] text-slate-400 border-t border-slate-800/80 pt-1"><b>Disclaimer:</b> Independent prototype developed for the NASA Space Apps Challenge 2026. Utilizes open scientific data from NASA, NOAA, and partners; not officially endorsed by or affiliated with NASA.</div>
     </div>
     </div>
   </div>

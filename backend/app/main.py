@@ -141,6 +141,17 @@ def create_app() -> Flask:
             raise ApiError(f"unknown EIC dataset '{dataset_id}'", 404)
         return jsonify(ds)
 
+    @app.get("/api/eic/mappings")
+    def eic_mappings():
+        return jsonify(mappings=eic_data.MAPPINGS_SPEC)
+
+    @app.get("/api/eic/mapping/<dataset_id>")
+    def eic_mapping_detail(dataset_id):
+        mapping = eic_data.describe_mapping(dataset_id)
+        if not mapping:
+            raise ApiError(f"unknown sonification mapping '{dataset_id}'", 404)
+        return jsonify(mapping)
+
     @app.get("/api/health")
     def health():
         return jsonify(ok=True, service="earth-information-jukebox", layers=sorted(nasa.LAYERS))

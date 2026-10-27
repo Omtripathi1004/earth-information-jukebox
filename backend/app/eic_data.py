@@ -217,3 +217,207 @@ def list_datasets() -> list[dict]:
 def get_dataset(dataset_id: str) -> dict | None:
     """Return complete dataset with verified time series and metadata."""
     return DATASETS.get(dataset_id)
+
+
+# ---------------------------------------------------------------------------
+# Scientific Sonification Mapping Specifications & Testable Calibration Layer
+# ---------------------------------------------------------------------------
+
+MAPPINGS_SPEC = {
+    "geos_fp_temp": {
+        "dataset_id": "geos_fp_temp",
+        "title": "NASA GEOS-FP Near-Surface Temperature (2m Air Temp)",
+        "pipeline_mode": "Mode A: Verified Numerical Physical Sonification",
+        "input_parameter": "Near-surface 2-meter air temperature (T2M)",
+        "physical_units": "°C",
+        "valid_range": [10.0, 20.0],
+        "typical_range": [12.0, 17.5],
+        "audio_dimension": "Fundamental frequency f (Hz), velocity (dynamics), spatial stereo pan",
+        "transfer_function": "f = 200.0 + clamp((T - 12.0) / (17.5 - 12.0), 0.0, 1.0) * (800.0 - 200.0)",
+        "perceptual_justification": "Ascending pitch directly maps to increased thermal energy and molecular kinetic excitement (auditory elevation metaphor).",
+        "edge_case_handling": "Values below 12.0 °C clamp to 200 Hz; values above 17.5 °C clamp to 800 Hz; NaN/null/inf raise ValueError.",
+        "test_cases": [
+            {"input_val": 12.0, "expected_freq_hz": 200.0, "note": "Winter / cold baseline minimum"},
+            {"input_val": 14.75, "expected_freq_hz": 500.0, "note": "Mid-season global average"},
+            {"input_val": 17.5, "expected_freq_hz": 800.0, "note": "Summer peak heatwave maximum"}
+        ]
+    },
+    "ecco2_ocean_currents": {
+        "dataset_id": "ecco2_ocean_currents",
+        "title": "ECCO2 Ocean Currents & Sea Surface Temperature",
+        "pipeline_mode": "Mode A: Verified Numerical Physical Sonification",
+        "input_parameter": "Sea Surface Temperature (SST)",
+        "physical_units": "°C",
+        "valid_range": [14.0, 20.0],
+        "typical_range": [15.5, 17.5],
+        "audio_dimension": "Resonant dual-sine water pad frequency f (Hz), velocity, detuning",
+        "transfer_function": "f = 160.0 + clamp((SST - 15.5) / 2.0, 0.0, 1.0) * (480.0 - 160.0)",
+        "perceptual_justification": "Deeper aquatic resonance reflecting high ocean heat capacity; pitch ascends with thermal expansion and warm gyre boundary currents.",
+        "edge_case_handling": "SST below 15.5 °C clamps to 160 Hz; above 17.5 °C clamps to 480 Hz; NaN/null/inf raise ValueError.",
+        "test_cases": [
+            {"input_val": 15.5, "expected_freq_hz": 160.0, "note": "Winter baseline ocean surface"},
+            {"input_val": 16.5, "expected_freq_hz": 320.0, "note": "Global ocean mean SST"},
+            {"input_val": 17.5, "expected_freq_hz": 480.0, "note": "Peak seasonal ocean warming"}
+        ]
+    },
+    "co2": {
+        "dataset_id": "co2",
+        "title": "Atmospheric Carbon Dioxide (CO₂)",
+        "pipeline_mode": "Mode A: Verified Numerical Physical Sonification",
+        "input_parameter": "Global mean mole fraction in dry air (CO₂)",
+        "physical_units": "ppm",
+        "valid_range": [280.0, 600.0],
+        "typical_range": [330.0, 430.0],
+        "audio_dimension": "Warm triangle harmonic frequency f (Hz), velocity scaled by accumulation rate (ppm/yr)",
+        "transfer_function": "f = 130.81 * (2 ** (clamp((CO2 - 330.0) / 100.0, 0.0, 1.2) * 1.5))",
+        "perceptual_justification": "Exponential acoustic pitch curve parallels the logarithmic radiative forcing of CO₂ (ΔF = 5.35 * ln(C/C0)).",
+        "edge_case_handling": "CO₂ below 330 ppm clamps to norm=0 (130.81 Hz); values exceeding 450 ppm clamp at norm=1.2 (370+ Hz); NaN/null/inf raise ValueError.",
+        "test_cases": [
+            {"input_val": 330.0, "expected_freq_hz": 130.81, "note": "Historical base reference (1975-1980 baseline C3)"},
+            {"input_val": 380.0, "expected_freq_hz": 220.00, "note": "Midpoint concentration (~2005 level A3)"},
+            {"input_val": 430.0, "expected_freq_hz": 369.99, "note": "Present day record concentration approaching F#4"}
+        ]
+    },
+    "sea_level": {
+        "dataset_id": "sea_level",
+        "title": "Global Mean Sea Level Variation",
+        "pipeline_mode": "Mode A: Verified Numerical Physical Sonification",
+        "input_parameter": "Global mean sea level variation from 1993 baseline (GMSL)",
+        "physical_units": "mm",
+        "valid_range": [-50.0, 300.0],
+        "typical_range": [0.0, 120.0],
+        "audio_dimension": "Deep ocean sine tone frequency f (Hz), velocity, slow LFO swell",
+        "transfer_function": "f = 110.0 * (2 ** (clamp(SL / 120.0, 0.0, 1.2) * 1.5))",
+        "perceptual_justification": "Physical column height translated to vertical frequency continuum; rising sea levels lift the fundamental tone steadily.",
+        "edge_case_handling": "SL <= 0 mm maps to 110.0 Hz (A2); SL >= 144 mm clamps to norm=1.2; NaN/null/inf raise ValueError.",
+        "test_cases": [
+            {"input_val": 0.0, "expected_freq_hz": 110.00, "note": "Start of satellite altimetry record (1993 baseline A2)"},
+            {"input_val": 60.0, "expected_freq_hz": 185.02, "note": "Mid-record ~60 mm rise (~2011 level F#3)"},
+            {"input_val": 120.0, "expected_freq_hz": 311.13, "note": "120 mm rise threshold (Eb4)"}
+        ]
+    },
+    "temperature_anomaly": {
+        "dataset_id": "temperature_anomaly",
+        "title": "Global Surface Temperature Anomaly (GISTEMP)",
+        "pipeline_mode": "Mode A: Verified Numerical Physical Sonification",
+        "input_parameter": "Land-ocean surface temperature anomaly relative to 1951-1980 base period (ΔT)",
+        "physical_units": "°C",
+        "valid_range": [-1.0, 4.0],
+        "typical_range": [0.0, 1.5],
+        "audio_dimension": "Metallic chime frequency f (Hz), overtone brightness, dynamic velocity",
+        "transfer_function": "f = 164.81 * (2 ** (clamp(ΔT / 1.5, 0.0, 1.2) * 1.5))",
+        "perceptual_justification": "Clear resonant bell whose pitch rises above calm baseline into a high-register warning chime as planetary anomaly climbs.",
+        "edge_case_handling": "ΔT <= 0.0 °C maps to 164.81 Hz (E3); ΔT >= 1.8 °C clamps to norm=1.2; NaN/null/inf raise ValueError.",
+        "test_cases": [
+            {"input_val": 0.0, "expected_freq_hz": 164.81, "note": "1951-1980 base climatology (0.0 °C anomaly E3)"},
+            {"input_val": 0.75, "expected_freq_hz": 277.19, "note": "Moderate +0.75 °C anomaly (C#4)"},
+            {"input_val": 1.5, "expected_freq_hz": 466.15, "note": "Paris Agreement +1.5 °C warming threshold (Bb4)"}
+        ]
+    },
+    "arctic_sea_ice": {
+        "dataset_id": "arctic_sea_ice",
+        "title": "Arctic Sea Ice Minimum Extent (September)",
+        "pipeline_mode": "Mode A: Verified Numerical Physical Sonification",
+        "input_parameter": "September minimum sea ice extent (SIE)",
+        "physical_units": "million km²",
+        "valid_range": [0.0, 12.0],
+        "typical_range": [3.0, 8.0],
+        "audio_dimension": "Crystalline bell frequency f (Hz), strike brightness, sharp attack",
+        "transfer_function": "f = 220.0 * (2 ** (clamp((8.0 - SIE) / 5.0, 0.0, 1.2) * 1.5))",
+        "perceptual_justification": "Inverted polar mapping: ice loss elevates pitch toward an acute high-register alarm as polar habitat diminishes.",
+        "edge_case_handling": "SIE >= 8.0 maps to 220.0 Hz (A3); SIE <= 2.0 maps to norm=1.2; NaN/null/inf raise ValueError.",
+        "test_cases": [
+            {"input_val": 8.0, "expected_freq_hz": 220.00, "note": "Robust 1980 ice extent (8.0 M km² A3)"},
+            {"input_val": 5.5, "expected_freq_hz": 370.04, "note": "Moderate retreat (5.5 M km² F#4)"},
+            {"input_val": 3.0, "expected_freq_hz": 622.25, "note": "Historic low extent (3.0 M km² Eb5 alert)"}
+        ]
+    },
+    "scanline_sonification": {
+        "dataset_id": "scanline_sonification",
+        "title": "NASA GIBS Raster Imagery Scanline Feature Sonification",
+        "pipeline_mode": "Mode B: Image-Derived Optical Feature Sonification",
+        "input_parameter": "Per-pixel optical luminance L = 0.299*R + 0.587*G + 0.114*B",
+        "physical_units": "8-bit digital pixel brightness [0 - 255]",
+        "valid_range": [0.0, 255.0],
+        "typical_range": [0.0, 255.0],
+        "audio_dimension": "Synthesizer frequency f (Hz), amplitude envelope, stereo position across scanline",
+        "transfer_function": "f = 120.0 + clamp(L / 255.0, 0.0, 1.0) * (720.0 - 120.0)",
+        "perceptual_justification": "Translates visual contrast and surface albedo into sound: dark ocean/forest generate low drones, bright clouds/ice generate high tones.",
+        "edge_case_handling": "Black pixels (0) map to 120.0 Hz; saturated white (255) maps to 720.0 Hz; invalid inputs clamp within [120.0, 720.0] Hz.",
+        "test_cases": [
+            {"input_val": 0.0, "expected_freq_hz": 120.0, "note": "Abyssal ocean / dark surface (minimum pitch)"},
+            {"input_val": 127.5, "expected_freq_hz": 420.0, "note": "Midtone land surface / vegetation"},
+            {"input_val": 255.0, "expected_freq_hz": 720.0, "note": "Glacial ice sheet / thick cloud top (maximum pitch)"}
+        ]
+    }
+}
+
+
+def validate_measurement(dataset_id: str, value: float | int | None) -> tuple[bool, str]:
+    """Validate a physical measurement against sensor limits and numerical sanity."""
+    if value is None:
+        return False, "Measurement value is missing (None)"
+    try:
+        val = float(value)
+    except (TypeError, ValueError):
+        return False, f"Measurement '{value}' cannot be converted to float"
+
+    import math
+    if math.isnan(val) or math.isinf(val):
+        return False, f"Measurement value is non-finite: {val}"
+
+    spec = MAPPINGS_SPEC.get(dataset_id)
+    if not spec:
+        return False, f"Unknown dataset id '{dataset_id}'"
+
+    valid_min, valid_max = spec["valid_range"]
+    if not (valid_min <= val <= valid_max):
+        return False, f"Value {val} {spec['physical_units']} outside realistic bounds [{valid_min}, {valid_max}]"
+
+    return True, "Valid measurement"
+
+
+def calculate_pitch(dataset_id: str, value: float | int) -> float:
+    """Calculate the deterministic sonification pitch (Hz) according to verified scientific formulas."""
+    is_valid, reason = validate_measurement(dataset_id, value)
+    if not is_valid:
+        raise ValueError(reason)
+
+    val = float(value)
+
+    if dataset_id == "geos_fp_temp":
+        norm = max(0.0, min(1.0, (val - 12.0) / (17.5 - 12.0)))
+        return round(200.0 + norm * (800.0 - 200.0), 2)
+
+    elif dataset_id == "ecco2_ocean_currents":
+        norm = max(0.0, min(1.0, (val - 15.5) / 2.0))
+        return round(160.0 + norm * (480.0 - 160.0), 2)
+
+    elif dataset_id == "co2":
+        norm = max(0.0, min(1.2, (val - 330.0) / 100.0))
+        return round(130.81 * (2.0 ** (norm * 1.5)), 2)
+
+    elif dataset_id == "sea_level":
+        norm = max(0.0, min(1.2, val / 120.0))
+        return round(110.0 * (2.0 ** (norm * 1.5)), 2)
+
+    elif dataset_id == "temperature_anomaly":
+        norm = max(0.0, min(1.2, val / 1.5))
+        return round(164.81 * (2.0 ** (norm * 1.5)), 2)
+
+    elif dataset_id == "arctic_sea_ice":
+        loss_norm = max(0.0, min(1.2, (8.0 - val) / 5.0))
+        return round(220.0 * (2.0 ** (loss_norm * 1.5)), 2)
+
+    elif dataset_id == "scanline_sonification":
+        norm = max(0.0, min(1.0, val / 255.0))
+        return round(120.0 + norm * (720.0 - 120.0), 2)
+
+    else:
+        raise ValueError(f"No sonification mapping implemented for '{dataset_id}'")
+
+
+def describe_mapping(dataset_id: str) -> dict | None:
+    """Return scientific mapping details, formulas, and test cases."""
+    return MAPPINGS_SPEC.get(dataset_id)
+

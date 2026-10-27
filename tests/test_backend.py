@@ -88,6 +88,34 @@ class ApiTests(unittest.TestCase):
         # 404 for nonexistent dataset
         self.assertEqual(self.c.get("/api/eic/dataset/nonexistent").status_code, 404)
 
+        # Mappings catalogue and detail
+        r_maps = self.c.get("/api/eic/mappings")
+        self.assertEqual(r_maps.status_code, 200)
+        self.assertIn("geos_fp_temp", r_maps.get_json()["mappings"])
+
+        r_map_detail = self.c.get("/api/eic/mapping/geos_fp_temp")
+        self.assertEqual(r_map_detail.status_code, 200)
+        self.assertEqual(r_map_detail.get_json()["physical_units"], "°C")
+
+    def test_eic_sonification_calculations(self):
+        from backend.app import eic_data
+        for ds_id, spec in eic_data.MAPPINGS_SPEC.items():
+            for tc in spec["test_cases"]:
+                inp = tc["input_val"]
+                expected = tc["expected_freq_hz"]
+                actual = eic_data.calculate_pitch(ds_id, inp)
+                self.assertAlmostEqual(actual, expected, delta=0.1)
+
+            # Edge cases
+            valid_none, _ = eic_data.validate_measurement(ds_id, None)
+            self.assertFalse(valid_none)
+            valid_nan, _ = eic_data.validate_measurement(ds_id, float("nan"))
+            self.assertFalse(valid_nan)
+            valid_inf, _ = eic_data.validate_measurement(ds_id, float("inf"))
+            self.assertFalse(valid_inf)
+            with self.assertRaises(ValueError):
+                eic_data.calculate_pitch(ds_id, float("nan"))
+
     def test_health_and_static(self):
         j = self.c.get("/api/health").get_json()
         self.assertTrue(j["ok"])
