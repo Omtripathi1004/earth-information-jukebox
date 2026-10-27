@@ -65,7 +65,7 @@ DATASETS = {
         "data_identifier": "ECCO2 Cube92 High-Resolution Sea Surface Temperature & Surface Velocity",
         "authoritative_url": "https://ecco.jpl.nasa.gov/",
         "retrieval_date": "2024 Climatological Cycle (Verified 2024-12)",
-        "variable_name": "THETA (Surface potential temperature 0-5m) & velocity magnitude",
+        "variable_name": "THETA (Surface potential temperature 0–5m)",
         "units": "°C",
         "unit_name": "Degrees Celsius",
         "baseline_desc": "Global mean SST ~16.1 °C",
@@ -145,7 +145,7 @@ DATASETS = {
             "dynamics": "Velocity increases with annual rate of CO2 accumulation (ppm/yr)",
             "spatial": "Pans from historical 1980 on the left (-0.8) to modern day on the right (+0.8)"
         },
-        "limitations": "Annual global averages smooth out seasonal terrestrial photosynthetic cycles (sawtooth variations of ±3-6 ppm) and local industrial plumes."
+        "limitations": "Annual arithmetic means at Mauna Loa smooth out within-year seasonal photosynthetic cycles (sawtooth oscillations of ±3 to 6 ppm between spring drawdown and autumn release). As an in-situ high-altitude mountaintop record (3,397 m), it reflects well-mixed hemispheric background air and may slightly differ from the global marine boundary layer surface average (422.8 ppm in 2024)."
     },
     "sea_level": {
         "id": "sea_level",
@@ -193,6 +193,13 @@ DATASETS = {
             "observed_historical_range_hz": [110.0, 275.11],
             "dynamics": "Volume modulated by annual sea-level rise rate (delta mm/yr); pan follows temporal timeline (-0.8 in 1993 to +0.8 in 2024)",
             "spatial": "Pans from historical 1993 on the left (-0.8) to modern day on the right (+0.8)"
+        },
+        "missions": {
+            "1993-2001": "TOPEX/Poseidon (NASA/CNES)",
+            "2002-2007": "Jason-1 (NASA/CNES)",
+            "2008-2015": "OSTM/Jason-2 (NASA/CNES/NOAA/EUMETSAT)",
+            "2016-2019": "Jason-3 (NOAA/NASA/CNES/EUMETSAT)",
+            "2020-2024": "Sentinel-6 Michael Freilich (ESA/NASA/NOAA/EUMETSAT)"
         },
         "limitations": "Global mean sea level does not reflect local coastal variations caused by post-glacial rebound, tectonic subsidence, or ocean current shifts."
     },
@@ -347,9 +354,9 @@ MAPPINGS_SPEC = {
     },
     "ecco2_ocean_currents": {
         "dataset_id": "ecco2_ocean_currents",
-        "title": "ECCO2 Ocean Currents & Sea Surface Temperature",
+        "title": "ECCO2 Sea Surface Potential Temperature",
         "pipeline_mode": "Mode A: Verified Numerical Physical Sonification",
-        "input_parameter": "Sea Surface Temperature (SST)",
+        "input_parameter": "Sea Surface Potential Temperature (THETA 0–5m)",
         "physical_units": "°C",
         "valid_range": [14.0, 20.0],
         "formula_domain": [15.5, 17.5],
@@ -370,7 +377,7 @@ MAPPINGS_SPEC = {
         "dataset_id": "co2",
         "title": "Atmospheric Carbon Dioxide (CO₂)",
         "pipeline_mode": "Mode A: Verified Numerical Physical Sonification",
-        "input_parameter": "Global mean mole fraction in dry air (CO₂)",
+        "input_parameter": "Mauna Loa Observatory annual mean atmospheric CO2 dry air mole fraction",
         "physical_units": "ppm",
         "valid_range": [280.0, 600.0],
         "formula_domain": [330.0, 430.0],
@@ -426,7 +433,7 @@ MAPPINGS_SPEC = {
         "test_cases": [
             {"input_val": 0.0, "expected_freq_hz": 164.81, "note": "1951-1980 base climatology (0.0 °C anomaly E3)"},
             {"input_val": 0.75, "expected_freq_hz": 277.19, "note": "Moderate +0.75 °C anomaly (C#4)"},
-            {"input_val": 1.5, "expected_freq_hz": 466.15, "note": "Paris Agreement +1.5 °C warming threshold (Bb4)"}
+            {"input_val": 1.5, "expected_freq_hz": 466.15, "note": "+1.5 °C sonification reference upper limit (Bb4)"}
         ]
     },
     "arctic_sea_ice": {

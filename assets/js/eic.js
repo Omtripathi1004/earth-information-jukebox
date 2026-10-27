@@ -50,7 +50,7 @@
     },
     ecco2_ocean_currents: {
       id: 'ecco2_ocean_currents',
-      title: 'ECCO2 Ocean Currents & Sea Surface Temperature',
+      title: 'ECCO2 Sea Surface Potential Temperature',
       theme: 'Ocean Circulation & Energy',
       agency: 'NASA JPL / ECCO2 & Earth Information Center (earth.gov)',
       portalUrl: 'https://earth.gov/',
@@ -125,7 +125,7 @@
         dynamics: 'Loudness expands with higher annual accumulation rates (+ppm/yr).',
         spatial: 'Pans from historical 1980 on the left (-0.8) to modern day on the right (+0.8).'
       },
-      limitations: 'Annual global means smooth out seasonal vegetation cycles (sawtooth ±3-6 ppm) and local industrial plumes.'
+      limitations: 'Annual arithmetic means at Mauna Loa smooth out within-year seasonal photosynthetic cycles (sawtooth oscillations of ±3 to 6 ppm between spring drawdown and autumn release). As an in-situ high-altitude mountaintop record (3,397 m), it reflects well-mixed hemispheric background air and may slightly differ from the global marine boundary layer surface average (422.8 ppm in 2024).'
     },
     sea_level: {
       id: 'sea_level',
@@ -167,6 +167,13 @@
         frequency_formula: 'f = 110.0 * (2 ** (clamp(SL / 120.0, 0.0, 1.2) * 1.5))',
         dynamics: 'Volume modulated by annual sea-level rise rate (delta mm/yr); pan follows temporal timeline (-0.8 in 1993 to +0.8 in 2024).',
         spatial: 'Spatial panning from 1993 on the left to 2024 on the right.'
+      },
+      missions: {
+        '1993-2001': 'TOPEX/Poseidon (NASA/CNES)',
+        '2002-2007': 'Jason-1 (NASA/CNES)',
+        '2008-2015': 'OSTM/Jason-2 (NASA/CNES/NOAA/EUMETSAT)',
+        '2016-2019': 'Jason-3 (NOAA/NASA/CNES/EUMETSAT)',
+        '2020-2024': 'Sentinel-6 Michael Freilich (ESA/NASA/NOAA/EUMETSAT)'
       },
       limitations: 'Global mean values do not capture regional coastline dynamics influenced by post-glacial rebound or land subsidence.'
     },
@@ -1005,6 +1012,29 @@
       setText('eic-title', d.title);
       setText('eic-theme', d.theme);
       setText('eic-agency', d.agency);
+
+      // Active visualization & observation platform badge
+      let visMeta = '';
+      if (d.id === 'sea_level') {
+        const yNum = parseInt(year, 10);
+        let mission = 'Sentinel-6 Michael Freilich';
+        if (yNum <= 2001) mission = 'TOPEX/Poseidon (NASA/CNES)';
+        else if (yNum <= 2007) mission = 'Jason-1 (NASA/CNES)';
+        else if (yNum <= 2015) mission = 'OSTM/Jason-2 (NASA/CNES/NOAA/EUMETSAT)';
+        else if (yNum <= 2019) mission = 'Jason-3 (NOAA/NASA/CNES/EUMETSAT)';
+        visMeta = `🛰️ Active Altimeter: ${mission} · Official EIC Resource #332 (1993–2024)`;
+      } else if (d.id === 'geos_fp_temp') {
+        visMeta = '🌡️ NASA GMAO GEOS-FP 2m Air Temp Model (2024 Climatological Cycle)';
+      } else if (d.id === 'co2') {
+        visMeta = '🌱 NOAA GML Mauna Loa Baseline Observatory · In-Situ Record (Hawaii, 3,397m)';
+      } else if (d.id === 'ecco2_ocean_currents') {
+        visMeta = '🌊 NASA JPL ECCO2 Cube92 High-Res Sea Surface Potential Temperature';
+      } else if (d.id === 'temperature_anomaly') {
+        visMeta = '📈 NASA GISS GISTEMP v4 Land-Ocean Temperature Index (1951–1980 Baseline)';
+      } else if (d.id === 'arctic_sea_ice') {
+        visMeta = '❄️ NSIDC / NASA Passive Microwave Satellite Sea Ice Index (September Minimum)';
+      }
+      setText('eic-vis-asset-meta', visMeta);
       setText('eic-desc', d.description);
       setText('eic-year-display', String(year));
       setText('eic-val-display', `${val.toFixed(1)} ${d.units}`);

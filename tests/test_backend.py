@@ -222,11 +222,17 @@ class ApiTests(unittest.TestCase):
         self.assertIn("attachment", r.headers["Content-Disposition"])
         with wave.open(io.BytesIO(r.data)) as w:
             self.assertEqual(w.getnchannels(), 2)
+            self.assertEqual(w.getframerate(), 22050)
+            self.assertGreater(w.getnframes(), 0)
 
     def test_climate_wav_and_reverse(self):
         with patch.object(nasa, "get_json", return_value=power_payload()):
             r = self.c.get("/api/sonify/climate.wav?lat=0&lon=0")
         self.assertEqual(r.mimetype, "audio/wav")
+        with wave.open(io.BytesIO(r.data)) as w:
+            self.assertEqual(w.getnchannels(), 2)
+            self.assertEqual(w.getframerate(), 22050)
+            self.assertGreater(w.getnframes(), 0)
         with patch.object(nasa, "get_json", return_value={"display_name": "A, B, C"}):
             self.assertEqual(self.c.get("/api/reverse?lat=1&lon=2&zoom=10").get_json()["display_name"], "A, B, C")
 
@@ -357,6 +363,29 @@ class ApiTests(unittest.TestCase):
         finally:
             if orig_cesium: os.environ["CESIUM_ION_TOKEN"] = orig_cesium
             if orig_mapillary: os.environ["MAPILLARY_TOKEN"] = orig_mapillary
+
+    def test_scientific_metadata_integrity_and_missions(self):
+        # 1. Sea Level missions platform check
+        sl = eic_data.get_dataset("sea_level")
+        self.assertIn("missions", sl)
+        self.assertIn("TOPEX/Poseidon", sl["missions"]["1993-2001"])
+        self.assertIn("Sentinel-6", sl["missions"]["2020-2024"])
+
+        # 2. CO2 limitations station check
+        co2 = eic_data.get_dataset("co2")
+        self.assertNotIn("Annual global averages", co2["limitations"])
+        self.assertIn("Mauna Loa", co2["limitations"])
+
+        # 3. ECCO2 variable name check
+        ecco = eic_data.get_dataset("ecco2_ocean_currents")
+        self.assertNotIn("velocity", ecco["variable_name"].lower())
+
+        # 4. GISTEMP test case reference note check
+        g_spec = eic_data.describe_mapping("temperature_anomaly")
+        for tc in g_spec["test_cases"]:
+            if tc["input_val"] == 1.5:
+                self.assertNotIn("Paris Agreement", tc["note"])
+                self.assertIn("sonification reference", tc["note"])
 
 
 if __name__ == "__main__":
