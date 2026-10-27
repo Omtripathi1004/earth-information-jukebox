@@ -303,9 +303,9 @@ class ApiTests(unittest.TestCase):
         ds = eic_data.get_dataset("co2")
         self.assertIsNotNone(ds)
         self.assertIn("Mauna Loa Record", ds["title"])
-        self.assertIn("424.6", ds["transformation_notes"])
+        self.assertIn("424.61", ds["transformation_notes"])
         self.assertIn("422.8", ds["transformation_notes"])
-        self.assertEqual(ds["values"][-1], 424.6)
+        self.assertEqual(ds["values"][-1], 424.61)
 
     def test_eic_baseline_pitch_reconciliation(self):
         # GEOS-FP near-surface air temp baseline 14.0 °C maps to 418.18 Hz, not 500 Hz
@@ -414,8 +414,8 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(len(co2["years"]), 45)
         self.assertEqual(co2["years"][0], 1980)
         self.assertEqual(co2["years"][-1], 2024)
-        self.assertEqual(co2["values"][0], 338.8)
-        self.assertEqual(co2["values"][-1], 424.6)
+        self.assertEqual(co2["values"][0], 338.76)
+        self.assertEqual(co2["values"][-1], 424.61)
         self.assertEqual(co2["baseline_val"], 280.0)
         self.assertIn("Fixed Annual Reference Window", co2["historical_period"])
 
@@ -504,22 +504,159 @@ class ApiTests(unittest.TestCase):
     def test_co2_metadata_and_mapping_consistency(self):
         # 1. Direct dataset inspection
         ds = eic_data.get_dataset("co2")
-        self.assertEqual(ds["values"][-1], 424.6)
+        self.assertEqual(ds["values"][-1], 424.61)
         self.assertIn("424.61", ds["transformation_notes"])
 
         # 2. Derived mapping inspection
         mapping = eic_data.describe_mapping("co2")
-        self.assertEqual(mapping["observed_historical_range"], [338.8, 424.6])
-        self.assertAlmostEqual(mapping["observed_historical_pitch_hz"][1], 349.79, places=1)
+        self.assertEqual(mapping["observed_historical_range"], [338.76, 424.61])
+        self.assertAlmostEqual(mapping["observed_historical_pitch_hz"][1], 349.82, places=1)
 
         # 3. HTTP API endpoint verification
         r_ds = self.c.get("/api/eic/dataset/co2")
         self.assertEqual(r_ds.status_code, 200)
-        self.assertEqual(r_ds.get_json()["values"][-1], 424.6)
+        self.assertEqual(r_ds.get_json()["values"][-1], 424.61)
 
         r_map = self.c.get("/api/eic/mapping/co2")
         self.assertEqual(r_map.status_code, 200)
-        self.assertEqual(r_map.get_json()["observed_historical_range"], [338.8, 424.6])
+        self.assertEqual(r_map.get_json()["observed_historical_range"], [338.76, 424.61])
+
+
+
+
+class TestNOAACO2ScientificReconciliation(unittest.TestCase):
+    """Phase 4: Comprehensive regression testing against authoritative NOAA GML annual-mean CO2 data."""
+
+    EXPECTED_NOAA_OBSERVATIONS = {
+        1980: 338.76, 1981: 340.12, 1982: 341.48, 1983: 343.15, 1984: 344.87,
+        1985: 346.35, 1986: 347.61, 1987: 349.31, 1988: 351.69, 1989: 353.20,
+        1990: 354.45, 1991: 355.70, 1992: 356.54, 1993: 357.21, 1994: 358.96,
+        1995: 360.97, 1996: 362.74, 1997: 363.88, 1998: 366.84, 1999: 368.54,
+        2000: 369.71, 2001: 371.32, 2002: 373.45, 2003: 375.98, 2004: 377.70,
+        2005: 379.98, 2006: 382.09, 2007: 384.02, 2008: 385.83, 2009: 387.64,
+        2010: 390.10, 2011: 391.85, 2012: 394.06, 2013: 396.74, 2014: 398.81,
+        2015: 401.01, 2016: 404.41, 2017: 406.76, 2018: 408.72, 2019: 411.65,
+        2020: 414.21, 2021: 416.41, 2022: 418.53, 2023: 421.08, 2024: 424.61
+    }
+
+    def setUp(self):
+        self.ds = eic_data.get_dataset("co2")
+
+    def test_1_contains_exactly_45_observations_1980_2024(self):
+        self.assertEqual(len(self.ds["years"]), 45)
+        self.assertEqual(len(self.ds["values"]), 45)
+        self.assertEqual(self.ds["years"][0], 1980)
+        self.assertEqual(self.ds["years"][-1], 2024)
+
+    def test_2_year_ordering_complete_sequential_and_aligned(self):
+        expected_years = list(range(1980, 2025))
+        self.assertEqual(self.ds["years"], expected_years)
+        for i in range(len(self.ds["years"]) - 1):
+            self.assertEqual(self.ds["years"][i + 1] - self.ds["years"][i], 1)
+
+    def test_3_compare_every_annual_observation_against_checked_in_noaa_snapshot(self):
+        import os
+        fixture_path = os.path.join(os.path.dirname(__file__), "fixtures", "noaa_co2_annmean_mlo.csv")
+        self.assertTrue(os.path.exists(fixture_path), "NOAA CSV fixture must be present")
+        csv_data = {}
+        with open(fixture_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                parts = [p.strip() for p in line.split(",")]
+                if len(parts) >= 2 and parts[0].isdigit():
+                    csv_data[int(parts[0])] = float(parts[1])
+        
+        for yr, val in zip(self.ds["years"], self.ds["values"]):
+            self.assertIn(yr, csv_data, f"Year {yr} must be in NOAA authoritative CSV")
+            self.assertAlmostEqual(val, csv_data[yr], places=2, msg=f"Year {yr} mismatch with NOAA CSV")
+            self.assertAlmostEqual(val, self.EXPECTED_NOAA_OBSERVATIONS[yr], places=2)
+
+    def test_4_exact_representative_checkpoints(self):
+        val_map = dict(zip(self.ds["years"], self.ds["values"]))
+        self.assertEqual(val_map[1980], 338.76)
+        self.assertEqual(val_map[1982], 341.48)
+        self.assertEqual(val_map[1983], 343.15)
+        self.assertEqual(val_map[2016], 404.41)
+        self.assertEqual(val_map[2024], 424.61)
+
+    def test_5_derived_min_max_and_observed_pitch_range_from_canonical_array(self):
+        min_v = min(self.ds["values"])
+        max_v = max(self.ds["values"])
+        self.assertEqual(min_v, 338.76)
+        self.assertEqual(max_v, 424.61)
+
+        p_min = eic_data.calculate_pitch("co2", min_v)
+        p_max = eic_data.calculate_pitch("co2", max_v)
+        self.assertEqual(p_min, 143.28)
+        self.assertEqual(p_max, 349.82)
+
+        mapping = eic_data.describe_mapping("co2")
+        self.assertEqual(mapping["observed_historical_range"], [338.76, 424.61])
+        self.assertEqual(mapping["observed_historical_pitch_hz"], [143.28, 349.82])
+
+    def test_6_linear_trend_recalculated_against_independent_computation(self):
+        trend = eic_data.compute_trend(self.ds["years"], self.ds["values"])
+        self.assertEqual(trend["status"], "valid")
+        # Independent linear regression calculation
+        years = self.ds["years"]
+        vals = self.ds["values"]
+        n = len(years)
+        x_m = sum(years) / n
+        y_m = sum(vals) / n
+        expected_slope = sum((x - x_m) * (y - y_m) for x, y in zip(years, vals)) / sum((x - x_m) ** 2 for x in years)
+        expected_total_change = vals[-1] - vals[0]
+
+        self.assertAlmostEqual(trend["ols_slope"], expected_slope, places=3)
+        self.assertAlmostEqual(trend["ols_slope"], 1.9158, places=3)
+        self.assertAlmostEqual(trend["total_change"], expected_total_change, places=3)
+        self.assertAlmostEqual(trend["total_change"], 85.85, places=2)
+        self.assertAlmostEqual(trend["mean_annual_rate"], 85.85 / 44, places=3)
+
+    def test_7_first_observation_no_delta_subsequent_deltas_consecutive(self):
+        trend = eic_data.compute_trend(self.ds["years"], self.ds["values"])
+        deltas = trend["yoy_deltas"]
+        self.assertIsNone(deltas[0])
+        self.assertEqual(trend["first_point_delta"], None)
+        self.assertIn("No prior observation", trend["first_point_note"])
+        
+        # Verify subsequent deltas
+        for i in range(1, len(self.ds["values"])):
+            expected_delta = round(self.ds["values"][i] - self.ds["values"][i - 1], 4)
+            self.assertAlmostEqual(deltas[i], expected_delta, places=4)
+        
+        # Check specific consecutive deltas
+        self.assertAlmostEqual(deltas[1], 1.36, places=2)   # 340.12 - 338.76
+        self.assertAlmostEqual(deltas[44], 3.53, places=2)  # 424.61 - 421.08
+
+    def test_8_api_and_frontend_consistency(self):
+        import json, os
+        # Check frontend JS values match backend values exactly
+        fe_path = os.path.join(os.path.dirname(__file__), "..", "assets", "js", "eic.js")
+        with open(fe_path, "r", encoding="utf-8") as f:
+            fe_code = f.read()
+        for val in [338.76, 340.12, 341.48, 404.41, 421.08, 424.61]:
+            self.assertIn(f"{val:.2f}", fe_code, f"Frontend must contain canonical value {val}")
+
+    def test_9_sonification_transfer_function_boundaries_and_checkpoints(self):
+        # f = 130.81 * (2 ** (clamp((val - 330) / 100, 0, 1.2) * 1.5))
+        # 1. Below / at calibration floor (330 ppm)
+        self.assertEqual(eic_data.calculate_pitch("co2", 300.0), 130.81)
+        self.assertEqual(eic_data.calculate_pitch("co2", 330.0), 130.81)
+        # 2. Midpoint (380 ppm)
+        self.assertEqual(eic_data.calculate_pitch("co2", 380.0), 220.00)
+        # 3. Calibration ceiling (430 ppm)
+        self.assertEqual(eic_data.calculate_pitch("co2", 430.0), 369.99)
+        # 4. Corrected 2024 observation (424.61 ppm)
+        self.assertEqual(eic_data.calculate_pitch("co2", 424.61), 349.82)
+        # 5. Clamping upper threshold (450+ ppm -> norm=1.2)
+        self.assertEqual(eic_data.calculate_pitch("co2", 500.0), 455.51)
+
+    def test_10_outdated_approximate_or_inconsistent_values_fail(self):
+        outdated_approximations = [338.8, 341.2, 342.9, 344.4, 404.2, 424.5, 424.6]
+        for val in outdated_approximations:
+            self.assertNotIn(val, self.ds["values"], f"Outdated approximate value {val} must not be in canonical array")
 
 
 if __name__ == "__main__":

@@ -94,7 +94,7 @@
       unitName: 'Parts per million',
       baselineDesc: 'Pre-industrial baseline ~280 ppm',
       baselineVal: 280,
-      description: 'Annual mean atmospheric carbon dioxide concentration recorded at NOAA Global Monitoring Laboratory Mauna Loa Observatory in Hawaii (424.61 ppm in 2024, rounded to 424.6 ppm; NOAA Climate.gov checkpoint; global marine boundary average is 422.8 ppm). Serves as the longest continuous in-situ record of atmospheric CO2.',
+      description: 'Annual mean atmospheric carbon dioxide concentration recorded at NOAA Global Monitoring Laboratory Mauna Loa Observatory in Hawaii (1980–2024, 338.76 ppm to 424.61 ppm; global marine boundary average is ~422.8 ppm). Serves as the longest continuous in-situ record of atmospheric CO2.',
       years: [
         1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989,
         1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
@@ -103,11 +103,11 @@
         2020, 2021, 2022, 2023, 2024
       ],
       values: [
-        338.8, 340.1, 341.2, 342.9, 344.4, 345.9, 347.2, 348.9, 351.5, 352.9,
-        354.2, 355.6, 356.4, 357.1, 358.8, 360.8, 362.6, 363.7, 366.7, 368.4,
-        369.5, 371.1, 373.3, 375.8, 377.5, 379.8, 381.9, 383.8, 385.6, 387.4,
-        389.9, 391.7, 393.9, 396.5, 398.7, 401.0, 404.2, 406.8, 408.5, 411.4,
-        414.2, 416.5, 418.6, 421.1, 424.6
+        338.76, 340.12, 341.48, 343.15, 344.87, 346.35, 347.61, 349.31, 351.69, 353.20,
+        354.45, 355.70, 356.54, 357.21, 358.96, 360.97, 362.74, 363.88, 366.84, 368.54,
+        369.71, 371.32, 373.45, 375.98, 377.70, 379.98, 382.09, 384.02, 385.83, 387.64,
+        390.10, 391.85, 394.06, 396.74, 398.81, 401.01, 404.41, 406.76, 408.72, 411.65,
+        414.21, 416.41, 418.53, 421.08, 424.61
       ],
       camera: { lat: 19.536, lon: -155.576, zoom: 5.2, name: 'Mauna Loa Observatory, Hawaii' },
       suggestedLayer: 'VIIRS_SNPP_CorrectedReflectance_TrueColor',
@@ -1165,7 +1165,7 @@
         return `
           <tr class="${isCurrent ? 'bg-sky-500/20 text-white font-bold' : 'hover:bg-slate-900'} cursor-pointer" onclick="window.EICJukebox.PlaybackState.seek(${i}, true)">
             <td class="py-1 px-2">${isCurrent ? '▶ ' : ''}${yr}</td>
-            <td class="py-1 px-2">${val.toFixed(1)} ${d.units}</td>
+            <td class="py-1 px-2">${(d.id === 'co2' ? val.toFixed(2) : val.toFixed(1))} ${d.units}</td>
             <td class="py-1 px-2 ${delta > 0 ? 'text-amber-400' : 'text-slate-400'}">${(i === 0 || delta === null || delta === undefined) ? '— (start of record)' : ((delta >= 0 ? '+' : '') + delta.toFixed(2))}</td>
             <td class="py-1 px-2 text-purple-300">${Math.round(note.freq)} Hz</td>
           </tr>

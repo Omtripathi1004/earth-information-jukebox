@@ -137,9 +137,32 @@ assert(!ecco.sonification.voice_desc.toLowerCase().includes('velocity'), 'ECCO2 
 assert(!ecco.description.toLowerCase().includes('heat transport'), 'ECCO2 description does not claim heat transport encoding');
 assert(ecco.sonification.spatial.includes('calendar trajectory'), 'ECCO2 spatial panning tracks calendar trajectory');
 
-// CO2 Audit
-assert(datasets.co2.values[44] === 424.6, 'CO2 2024 value is 424.6 ppm (NOAA Climate.gov 424.61 ppm checkpoint)');
-assert(datasets.co2.description.includes('424.61'), 'CO2 description notes 424.61 ppm checkpoint');
+// CO2 Audit & NOAA Scientific Data Reconciliation
+const co2 = datasets.co2;
+assert(co2.values.length === 45, 'CO2 contains exactly 45 annual observations (1980–2024)');
+assert(co2.years[0] === 1980 && co2.years[44] === 2024, 'CO2 years span 1980 to 2024');
+assert(co2.values[0] === 338.76, 'CO2 1980 baseline checkpoint is 338.76 ppm');
+assert(co2.values[2] === 341.48, 'CO2 1982 checkpoint is 341.48 ppm');
+assert(co2.values[3] === 343.15, 'CO2 1983 checkpoint is 343.15 ppm');
+assert(co2.values[36] === 404.41, 'CO2 2016 checkpoint is 404.41 ppm');
+assert(co2.values[44] === 424.61, 'CO2 2024 value is 424.61 ppm');
+assert(Number(co2.values[44].toFixed(1)) === 424.6, 'CO2 2024 displays as 424.6 ppm at 1-decimal UI precision');
+assert(co2.description.includes('424.61'), 'CO2 description notes 424.61 ppm checkpoint');
+
+// Verify NOAA CO2 stats and linear trend
+const co2Stats = DataPrep.computeStats(co2);
+assert(co2Stats.min === 338.76, 'CO2 min is 338.76 ppm');
+assert(co2Stats.max === 424.61, 'CO2 max is 424.61 ppm');
+assert(Math.abs(co2Stats.olsSlope - 1.9158) < 0.01, `CO2 OLS slope (${co2Stats.olsSlope.toFixed(4)}) is approximately +1.92 ppm/yr`);
+assert(co2Stats.deltas[0] === null, 'CO2 first delta is null (no prior observation)');
+assert(Math.abs(co2Stats.deltas[1] - 1.36) < 0.001, 'CO2 1981 delta is +1.36 ppm');
+assert(Math.abs(co2Stats.deltas[44] - 3.53) < 0.001, 'CO2 2024 delta is +3.53 ppm');
+
+// Verify CO2 note calculation
+const co2Note0 = Sonifier.calculateNote(co2, 0, co2Stats);
+assert(Math.abs(co2Note0.freq - 143.28) < 0.1, `CO2 1980 pitch (${co2Note0.freq.toFixed(2)} Hz) matches 143.28 Hz`);
+const co2Note44 = Sonifier.calculateNote(co2, 44, co2Stats);
+assert(Math.abs(co2Note44.freq - 349.82) < 0.1, `CO2 2024 pitch (${co2Note44.freq.toFixed(2)} Hz) matches 349.82 Hz`);
 
 // GISTEMP Audit
 const gLabels = Sonifier.generateDynamicPitchLabels(datasets.temperature_anomaly);
@@ -152,6 +175,23 @@ UI.render(state, slNote0);
 assert(mockElement('eic-vis-status-banner').hidden === false, 'EIC status banner is visible for sea level');
 assert(mockElement('eic-vis-status-text').innerHTML.includes('NOT synchronized') || mockElement('eic-vis-status-text').innerHTML.includes('BLOCKED'), 'EIC status banner displays unsynchronized / BLOCKED notice');
 
+// Render CO2 to test headline 1-decimal and table 2-decimal formatting
+state.setDataset('co2');
+state.currentIndex = 44;
+UI.render(state, co2Note44);
+assert(mockElement('eic-val-display').textContent.includes('424.6 ppm'), 'Headline display formats CO2 2024 to 1-decimal (424.6 ppm)');
+assert(mockElement('eic-year-display').textContent === '2024', 'Year display shows 2024');
+
+// Also test index 0 (1980)
+state.currentIndex = 0;
+UI.render(state, co2Note0);
+assert(mockElement('eic-val-display').textContent.includes('338.8 ppm'), 'Headline display formats CO2 1980 to 1-decimal (338.8 ppm)');
+assert(mockElement('eic-year-display').textContent === '1980', 'Year display shows 1980');
+
+UI.renderDataTable();
+const tableHtml = mockElement('eic-data-table-body').innerHTML;
+assert(tableHtml.includes('424.61 ppm'), 'Data table retains 2-decimal source precision (424.61 ppm)');
+assert(tableHtml.includes('338.76 ppm'), 'Data table retains 2-decimal source precision (338.76 ppm)');
+
 console.log(`Frontend EIC Tests Completed: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);
-
