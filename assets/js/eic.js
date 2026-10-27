@@ -70,14 +70,14 @@
       suggestedLayer: 'GHRSST_L4_MUR_Sea_Surface_Temperature',
       sonification: {
         voice: 'water',
-        voiceDesc: 'Resonant dual-sine ocean pad reflecting ocean heat capacity and current velocity.',
+        voiceDesc: 'Resonant dual-sine ocean pad reflecting ocean heat capacity and surface thermal energy.',
         formula: 'f = 160 + ((SST - 15.5) / 2.0) * (480 - 160)',
         contextualGlobeLayer: 'GHRSST_L4_MUR_Sea_Surface_Temperature',
         contextualLayerTitle: 'GHRSST MUR Sea Surface Temperature (1km High-Res SST)',
         contextualLayerNote: 'Contextual satellite thermal proxy. The 3D globe displays high-resolution satellite SST imagery for oceanic orientation, while ECCO2 represents global 3D ocean dynamic current simulation models.',
         pitchRange: '160 Hz – 480 Hz (calibration) · 208 Hz – 448 Hz (observed 2024)',
         fullCalibrationRange: '160 Hz – 480 Hz',
-        voice_desc: 'Resonant dual-sine ocean pad reflecting ocean heat capacity and current velocity',
+        voice_desc: 'Resonant dual-sine ocean pad reflecting ocean heat capacity and surface thermal energy',
         frequency_formula: 'f = 160.0 + clamp((SST - 15.5) / 2.0, 0.0, 1.0) * (480.0 - 160.0)',
         dynamics: 'Volume scales with thermal energy magnitude (0.14–0.24); pan follows 12-month calendar trajectory (-0.8 in Jan to +0.8 in Dec).',
         spatial: 'Spatial panning tracking ocean current direction.'
@@ -135,6 +135,18 @@
       portalUrl: 'https://earth.gov/sealevel/resources/332/global-mean-sea-level-1993-2024/',
       eic_resource_id: '332',
       eic_resource_url: 'https://earth.gov/sealevel/resources/332/global-mean-sea-level-1993-2024/',
+      svs_id: '5516',
+      svs_url: 'https://svs.gsfc.nasa.gov/5516',
+      visual_asset_creator: 'Mark SubbaRao, NASA Scientific Visualization Studio',
+      visual_asset_attribution: "Credit: NASA's Scientific Visualization Studio",
+      frame_integration_status: 'BLOCKED',
+      frame_integration_blocker: 'NASA SVS #5516 / Earth.gov Resource #332 distributes the official visualization solely as a continuous 4K MP4 animation file (seaLevelRise_2024_English.mp4, 22.2 MB) and a single summary poster image (seaLevelRise_2024.jpg), with no decomposing timestamp lookup table or individual annual frame image slices provided. In-app chart sparkline and 3D globe tiles are explicitly labeled as real-time sonification visualizations and contextual thermal imagery, not official NASA animation frames.',
+      official_media: {
+        video_url: 'https://earth.gov/sealevel/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBdThKIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--720266cb6099f28ace3c1100c68a300f35486919/seaLevelRise_2024_English.mp4?disposition=inline',
+        poster_url: 'https://earth.gov/sealevel/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBbU1LIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--338dc18fecd6592e1d3f984d79e5aa424100127f/seaLevelRise_2024.jpg?disposition=inline',
+        svs_url: 'https://svs.gsfc.nasa.gov/5516',
+        earth_gov_url: 'https://earth.gov/sealevel/resources/332/global-mean-sea-level-1993-2024/'
+      },
       units: 'mm',
       unitName: 'Millimeters variation',
       baselineDesc: 'Zero baseline at start of satellite altimetry record (1993)',
@@ -218,7 +230,7 @@
         dynamics: 'Loudness expands during record-setting heat years (e.g. 2016, 2020, 2023, 2024).',
         spatial: 'Pans from left to right along the 45-year timeline.'
       },
-      limitations: 'Observational station density is lower in southern oceans and Antarctic interior than in continental mid-latitudes.'
+      limitations: 'Observational station density is lower in southern oceans and Antarctic interior than in continental mid-latitudes. Note: GISTEMP anomaly is referenced to 1951–1980 baseline (0.0 °C), which differs from pre-industrial baselines (1850–1900, ~0.2–0.3 °C cooler) cited in international climate policy.'
     },
     arctic_sea_ice: {
       id: 'arctic_sea_ice',
@@ -473,7 +485,7 @@
         return [
           `1951-80 Base (0 ${u} → ${pBase} Hz)`,
           `+0.75 ${u} Anomaly (${pMid} Hz)`,
-          `+1.5 ${u} Policy Ref (${pLimit} Hz)`
+          `+1.5 ${u} Sonification Ref (${pLimit} Hz)`
         ];
       } else if (id === 'arctic_sea_ice') {
         const pMaxExt = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 8.0).freq);
@@ -1040,6 +1052,20 @@
       setText('eic-val-display', `${val.toFixed(1)} ${d.units}`);
       setText('eic-baseline-display', `${baselineDiff >= 0 ? '+' : ''}${baselineDiff.toFixed(1)} ${d.units} vs baseline`);
       setText('eic-delta-display', deltaText);
+
+      // Official EIC media status banner
+      const banner = document.getElementById('eic-vis-status-banner');
+      const bannerTxt = document.getElementById('eic-vis-status-text');
+      const bannerLnk = document.getElementById('eic-vis-official-link');
+      if (banner && bannerTxt) {
+        if (d.id === 'sea_level') {
+          banner.hidden = false;
+          bannerTxt.innerHTML = '<span class="text-amber-400 font-semibold">⚠️ Official EIC Media (NASA SVS #5516 / Earth.gov #332):</span> Distributed as 4K video (by Mark SubbaRao). Frame-level sequence integration is <strong>BLOCKED</strong> due to lack of decomposed annual frames from NASA SVS; chart below is an interactive real-time sonification model.';
+          if (bannerLnk) bannerLnk.href = 'https://svs.gsfc.nasa.gov/5516';
+        } else {
+          banner.hidden = true;
+        }
+      }
 
       // Long-term trend summary
       const startYr = d.years[0];

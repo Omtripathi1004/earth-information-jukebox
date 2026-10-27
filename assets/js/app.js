@@ -18,8 +18,20 @@ loadConfig();
 fetch(API + '/api/health').then(r => r.ok ? r.json() : null).then(j => {
   BACKEND = !!(j && j.ok);
   $('#pc').disabled = $('#cw').disabled = !BACKEND;
+  if (BACKEND) {
+    if ($('#pc')) $('#pc').title = 'Download current satellite view as a .wav sonic postcard';
+    if ($('#cw')) $('#cw').title = 'Download 40-year NASA POWER climate melody as a .wav file';
+  } else {
+    if ($('#pc')) $('#pc').title = 'Python backend offline: .wav export unavailable';
+    if ($('#cw')) $('#cw').title = 'Python backend offline: .wav export unavailable';
+  }
   loadConfig();
-}).catch(() => {});
+}).catch(() => {
+  BACKEND = false;
+  $('#pc').disabled = $('#cw').disabled = true;
+  if ($('#pc')) $('#pc').title = 'Python backend offline: .wav export unavailable';
+  if ($('#cw')) $('#cw').title = 'Python backend offline: .wav export unavailable';
+});
 const Z0 = 1.1, Z1 = 19.6;
 const LBL = [], LM = [['Taj Mahal', 27.1751, 78.0421, 'The Taj Mahal in Agra, a marble mausoleum completed in the 17th century.'], ['Eiffel Tower', 48.8584, 2.2945, 'The Eiffel Tower in Paris, completed in 1889.'], ['Giza pyramids', 29.9792, 31.1342, 'The pyramids of Giza in Egypt, more than 4,500 years old.'], ['Statue of Liberty', 40.6892, -74.0445, 'The Statue of Liberty in New York Harbor, dedicated in 1886.'], ['Statue of Unity', 21.8380, 73.7191, 'The Statue of Unity in Gujarat, India, the tallest statue in the world at 182 metres.'], ['Colosseum', 41.8902, 12.4922, 'The Colosseum in Rome, which opened in the year 80.'], ['Burj Khalifa', 25.1972, 55.2744, 'The Burj Khalifa in Dubai, the tallest building in the world at 828 metres.'], ['Machu Picchu', -13.1631, -72.545, 'Machu Picchu, a 15th-century Inca citadel high in the Peruvian Andes.'], ['Sydney Opera House', -33.8568, 151.2153, 'The Sydney Opera House, which opened in 1973.']];
 const FACTS = { 'Statue of Unity': 'The Statue of Unity in Gujarat, India, the tallest statue in the world at 182 metres.', 'Amazon': 'The Amazon rainforest, the largest tropical rainforest on Earth.', 'Himalaya': 'The Himalaya, home to Mount Everest, the highest mountain above sea level.', 'Sundarbans': 'The Sundarbans, the largest mangrove forest in the world, shared by Bangladesh and India.', 'Nile Delta': 'The Nile Delta, where Egypt\u2019s great river meets the Mediterranean.', 'Aral Sea': 'The Aral Sea, once one of the four largest lakes in the world, has shrunk dramatically since the 1960s.', 'Greenland ice': 'The Greenland ice sheet, whose melting adds to sea level rise.', 'Great Barrier Reef': 'The Great Barrier Reef, the largest coral reef system in the world.', 'Dubai': 'Dubai, a city that has grown out of the desert coast.', 'Central Valley Farms': 'California\u2019s Central Valley, one of the world\u2019s most productive agricultural valleys producing over 250 crops.', 'Punjab Farmlands': 'Punjab, India\u2019s agrarian breadbasket with fertile irrigated fields.', 'Lucas do Rio Verde': 'Lucas do Rio Verde in Mato Grosso, Brazil: a major agricultural center surrounded by vast grain and soybean fields.', 'Iowa Farmland': 'The Iowa Corn Belt, expansive cultivated agricultural grids in the American Midwest.' };
@@ -38,6 +50,11 @@ const PLACES = [
   ['Iowa Farmland', 42.03, -93.63, 17.2]
 ];
 $('#dt').value = $('#dt').max = new Date(Date.now() - 3 * 864e5).toISOString().slice(0, 10);
+const syncDateDisplays = () => {
+  if ($('#dt-cur')) $('#dt-cur').textContent = $('#dt').value;
+  if ($('#dt-max')) $('#dt-max').textContent = $('#dt').max;
+};
+syncDateDisplays();
 const lyr = () => $('#lyr').value.split('|'), isData = () => lyr()[1] !== '9' && lyr()[0] !== 'GOOGLE_SATELLITE' && lyr()[0] !== 'ESRI_World_Imagery';
 const gibs = () => {
   const [id, lv, ext] = lyr();
@@ -107,7 +124,7 @@ function applyLayer() {   /* NASA data layers sit on a greyscale base so every c
     $('#hear').textContent = `${friendly} (press Listen to scan)`;
   }
 }
-['lyr', 'dt'].forEach(id => $('#' + id).onchange = applyLayer);
+['lyr', 'dt'].forEach(id => $('#' + id).onchange = () => { syncDateDisplays(); applyLayer(); });
 
 /* ---------- scroll = zoom toward the centred place ---------- */
 let zs = Z0, busy = false, lastZ = -1, terrainOn = false;
@@ -563,9 +580,47 @@ if ($('#narrative-close')) $('#narrative-close').onclick = stopSpeech;
 addEventListener('keydown', e => { if (!/INPUT|SELECT/.test(e.target.tagName) && (e.key === 'l' || e.key === 'L')) $('#listen').click(); });
 $('#gnd').onclick = () => scrollToZ(18.9);
 $('#lg').onclick = () => { const l = $('#legend'); l.hidden = !l.hidden; $('#lg').setAttribute('aria-expanded', String(!l.hidden)); };
-const download = path => { const a = document.createElement('a'); a.href = API + path; a.download = ''; document.body.appendChild(a); a.click(); a.remove(); };
-$('#pc').onclick = () => { const c = map.getCenter(); download(`/api/sonify/frame.wav?layer=${lyr()[0]}&date=${$('#dt').value}&lat=${c.lat.toFixed(4)}&lon=${c.lng.toFixed(4)}&zoom=${clamp(Math.round(map.getZoom()), 2, 9)}`); };
-$('#cw').onclick = () => { const c = map.getCenter(); download(`/api/sonify/climate.wav?lat=${c.lat.toFixed(3)}&lon=${c.lng.toFixed(3)}`); };
+const downloadWav = async (btn, path, filename) => {
+  if (!BACKEND) return;
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span aria-hidden="true">⏳</span> Generating .wav...';
+  try {
+    const res = await fetch(API + path);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    btn.innerHTML = '<span aria-hidden="true">✓</span> Saved!';
+    setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 2000);
+  } catch (err) {
+    console.error('WAV export error:', err);
+    btn.innerHTML = '<span aria-hidden="true">⚠️</span> Export failed';
+    setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 3000);
+  }
+};
+$('#pc').onclick = () => {
+  const c = map.getCenter();
+  downloadWav(
+    $('#pc'),
+    `/api/sonify/frame.wav?layer=${lyr()[0]}&date=${$('#dt').value}&lat=${c.lat.toFixed(4)}&lon=${c.lng.toFixed(4)}&zoom=${clamp(Math.round(map.getZoom()), 2, 9)}`,
+    `sonic_postcard_${lyr()[0]}_${$('#dt').value}.wav`
+  );
+};
+$('#cw').onclick = () => {
+  const c = map.getCenter();
+  downloadWav(
+    $('#cw'),
+    `/api/sonify/climate.wav?lat=${c.lat.toFixed(3)}&lon=${c.lng.toFixed(3)}`,
+    `climate_melody_${c.lat.toFixed(2)}_${c.lng.toFixed(2)}.wav`
+  );
+};
 
 /* ---------- keys (kept only in this browser, or handed over by the backend) ---------- */
 const key = k => {

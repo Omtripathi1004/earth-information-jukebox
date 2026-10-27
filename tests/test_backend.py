@@ -387,6 +387,115 @@ class ApiTests(unittest.TestCase):
                 self.assertNotIn("Paris Agreement", tc["note"])
                 self.assertIn("sonification reference", tc["note"])
 
+    def test_exact_source_series_checkpoints(self):
+        # 1. GEOS-FP
+        geos = eic_data.get_dataset("geos_fp_temp")
+        self.assertEqual(len(geos["years"]), 12)
+        self.assertEqual(geos["years"][0], "Jan 2024")
+        self.assertEqual(geos["years"][-1], "Dec 2024")
+        self.assertEqual(geos["values"][0], 12.4)
+        self.assertEqual(geos["values"][-1], 12.6)
+        self.assertEqual(geos["units"], "°C")
+        self.assertEqual(geos["baseline_val"], 14.0)
+
+        # 2. ECCO2
+        ecco = eic_data.get_dataset("ecco2_ocean_currents")
+        self.assertEqual(len(ecco["years"]), 12)
+        self.assertEqual(ecco["values"][0], 15.8)
+        self.assertEqual(ecco["values"][-1], 15.9)
+        self.assertEqual(ecco["baseline_val"], 16.1)
+        self.assertNotIn("velocity", ecco["data_identifier"].lower())
+        self.assertNotIn("velocity", ecco["sonification"]["voice_desc"].lower())
+
+        # 3. CO2 Mauna Loa station record
+        co2 = eic_data.get_dataset("co2")
+        self.assertEqual(len(co2["years"]), 45)
+        self.assertEqual(co2["years"][0], 1980)
+        self.assertEqual(co2["years"][-1], 2024)
+        self.assertEqual(co2["values"][0], 338.8)
+        self.assertEqual(co2["values"][-1], 424.5)
+        self.assertEqual(co2["baseline_val"], 280.0)
+
+        # 4. Sea Level Altimetry
+        sl = eic_data.get_dataset("sea_level")
+        self.assertEqual(len(sl["years"]), 32)
+        self.assertEqual(sl["years"][0], 1993)
+        self.assertEqual(sl["years"][-1], 2024)
+        self.assertEqual(sl["values"][0], 0.0)
+        self.assertEqual(sl["values"][-1], 105.8)
+        self.assertEqual(sl["baseline_val"], 0.0)
+        self.assertEqual(sl["frame_integration_status"], "BLOCKED")
+        self.assertEqual(sl["svs_id"], "5516")
+        self.assertEqual(sl["eic_resource_id"], "332")
+
+        # 5. GISTEMP v4
+        gt = eic_data.get_dataset("temperature_anomaly")
+        self.assertEqual(len(gt["years"]), 45)
+        self.assertEqual(gt["years"][0], 1980)
+        self.assertEqual(gt["years"][-1], 2024)
+        self.assertEqual(gt["values"][0], 0.26)
+        self.assertEqual(gt["values"][-1], 1.28)
+        self.assertEqual(gt["baseline_val"], 0.0)
+
+        # 6. Arctic Sea Ice
+        ice = eic_data.get_dataset("arctic_sea_ice")
+        self.assertEqual(len(ice["years"]), 45)
+        self.assertEqual(ice["years"][0], 1980)
+        self.assertEqual(ice["years"][-1], 2024)
+        self.assertEqual(ice["values"][0], 7.67)
+        self.assertEqual(ice["values"][-1], 4.28)
+        self.assertEqual(ice["baseline_val"], 7.0)
+
+    def test_pitch_clamping_and_boundaries(self):
+        # Valid measurements within bounds that fall outside formula domain clamp deterministically
+        self.assertEqual(eic_data.calculate_pitch("geos_fp_temp", 11.0), 200.0)
+        self.assertEqual(eic_data.calculate_pitch("geos_fp_temp", 19.0), 800.0)
+        self.assertEqual(eic_data.calculate_pitch("sea_level", -10.0), 110.0)
+        self.assertAlmostEqual(eic_data.calculate_pitch("sea_level", 0.0), 110.0, places=1)
+        self.assertEqual(eic_data.calculate_pitch("temperature_anomaly", -0.5), 164.81)
+        self.assertEqual(eic_data.calculate_pitch("arctic_sea_ice", 9.0), 220.0)
+
+        # Measurements outside physical validity bounds raise ValueError
+        with self.assertRaises(ValueError):
+            eic_data.calculate_pitch("geos_fp_temp", 5.0)
+        with self.assertRaises(ValueError):
+            eic_data.calculate_pitch("geos_fp_temp", 25.0)
+
+    def test_gistemp_labels_sonification_ref(self):
+        labels = eic_data.generate_pitch_labels("temperature_anomaly")
+        self.assertEqual(len(labels), 3)
+        self.assertIn("Sonification Ref", labels[2])
+        self.assertNotIn("Policy Ref", labels[2])
+
+    def test_api_404_error_handling(self):
+        r1 = self.c.get("/api/eic/dataset/unknown_metric")
+        self.assertEqual(r1.status_code, 404)
+        r2 = self.c.get("/api/eic/trend/unknown_metric")
+        self.assertEqual(r2.status_code, 404)
+        r3 = self.c.get("/api/eic/mapping/unknown_metric")
+        self.assertEqual(r3.status_code, 404)
+
+    def test_mocked_offline_wav_generation(self):
+        # 1. Climate WAV route
+        with patch.object(nasa, "get_json", return_value=power_payload()):
+            r = self.c.get("/api/sonify/climate.wav?lat=20.0&lon=10.0")
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.mimetype, "audio/wav")
+            with wave.open(io.BytesIO(r.data), "rb") as w:
+                self.assertEqual(w.getnchannels(), 2)
+                self.assertEqual(w.getframerate(), 22050)
+                self.assertGreater(w.getnframes(), 0)
+
+        # 2. Frame WAV route
+        with patch.object(nasa, "get_bytes", return_value=tile_bytes()):
+            r = self.c.get("/api/sonify/frame.wav?layer=MODIS_Terra_CorrectedReflectance_TrueColor&date=2024-01-01&lat=20.0&lon=10.0&zoom=3")
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.mimetype, "audio/wav")
+            with wave.open(io.BytesIO(r.data), "rb") as w:
+                self.assertEqual(w.getnchannels(), 2)
+                self.assertEqual(w.getframerate(), 22050)
+                self.assertGreater(w.getnframes(), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

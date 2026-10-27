@@ -62,7 +62,7 @@ DATASETS = {
         "theme": "Ocean Circulation & Energy",
         "agency": "NASA JPL / ECCO2 & Earth Information Center (earth.gov)",
         "portal_url": "https://earth.gov/",
-        "data_identifier": "ECCO2 Cube92 High-Resolution Sea Surface Temperature & Surface Velocity",
+        "data_identifier": "ECCO2 Cube92 High-Resolution Sea Surface Potential Temperature",
         "authoritative_url": "https://ecco.jpl.nasa.gov/",
         "retrieval_date": "2024 Climatological Cycle (Verified 2024-12)",
         "variable_name": "THETA (Surface potential temperature 0–5m)",
@@ -87,8 +87,8 @@ DATASETS = {
         "contextual_layer_note": "Contextual satellite thermal proxy. The 3D globe displays high-resolution satellite SST imagery for oceanic orientation, while ECCO2 represents global 3D ocean dynamic current simulation models.",
         "sonification": {
             "voice": "water",
-            "voice_desc": "Resonant dual-sine ocean pad reflecting ocean heat capacity and current velocity",
-            "voiceDesc": "Resonant dual-sine ocean pad reflecting ocean heat capacity and current velocity",
+            "voice_desc": "Resonant dual-sine ocean pad reflecting ocean heat capacity and surface thermal energy",
+            "voiceDesc": "Resonant dual-sine ocean pad reflecting ocean heat capacity and surface thermal energy",
             "frequency_formula": "f = 160.0 + clamp((SST - 15.5) / 2.0, 0.0, 1.0) * (480.0 - 160.0)",
             "formula": "f = 160.0 + clamp((SST - 15.5) / 2.0, 0.0, 1.0) * (480.0 - 160.0)",
             "timbre": "Deep sine wave pad with slow chorused detune",
@@ -156,6 +156,18 @@ DATASETS = {
         "eic_resource_id": "332",
         "eic_resource_url": "https://earth.gov/sealevel/resources/332/global-mean-sea-level-1993-2024/",
         "eic_resource_title": "Global Mean Sea Level 1993-2024 (Official EIC Resource #332)",
+        "svs_id": "5516",
+        "svs_url": "https://svs.gsfc.nasa.gov/5516",
+        "visual_asset_creator": "Mark SubbaRao, NASA Scientific Visualization Studio",
+        "visual_asset_attribution": "Credit: NASA's Scientific Visualization Studio",
+        "frame_integration_status": "BLOCKED",
+        "frame_integration_blocker": "NASA SVS #5516 / Earth.gov Resource #332 distributes the official visualization solely as a continuous 4K MP4 animation file (seaLevelRise_2024_English.mp4, 22.2 MB) and a single summary poster image (seaLevelRise_2024.jpg), with no decomposing timestamp lookup table or individual annual frame image slices provided. In-app chart sparkline and 3D globe tiles are explicitly labeled as real-time sonification visualizations and contextual thermal imagery, not official NASA animation frames.",
+        "official_media": {
+            "video_url": "https://earth.gov/sealevel/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBdThKIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--720266cb6099f28ace3c1100c68a300f35486919/seaLevelRise_2024_English.mp4?disposition=inline",
+            "poster_url": "https://earth.gov/sealevel/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBbU1LIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--338dc18fecd6592e1d3f984d79e5aa424100127f/seaLevelRise_2024.jpg?disposition=inline",
+            "svs_url": "https://svs.gsfc.nasa.gov/5516",
+            "earth_gov_url": "https://earth.gov/sealevel/resources/332/global-mean-sea-level-1993-2024/"
+        },
         "reuse_conditions": "Public Domain (NASA Open Science Data Policy & US Government Work)",
         "integration_mode": "Mode A (Numerical Sonification of Authoritative Observation Timeseries) with synchronized contextual globe vantage",
         "data_identifier": "Global Mean Sea Level Trend (Multi-Mission Satellite Radar Altimetry)",
@@ -218,7 +230,7 @@ DATASETS = {
         "baseline_desc": "1951-1980 global base period average (0.0 °C)",
         "baseline_val": 0,
         "historical_period": "1980–2024 (Annual Global Record)",
-        "transformation_notes": "Surface air temperature over land and SST over water; 250 km smoothing radius; referenced to 1951–1980 base period mean.",
+        "transformation_notes": "Surface air temperature over land and SST over water; 250 km smoothing radius; referenced to 1951–1980 base period mean. Scientific note: GISTEMP 0.0 °C baseline represents the 1951–1980 climatological mean, which is approximately 0.2–0.3 °C warmer than the pre-industrial reference (1850–1900) used in international policy. The +1.5 °C sonification reference point (Bb4, 466.15 Hz) is an acoustic upper reference, not the pre-industrial threshold.",
         "description": "Global land-ocean surface temperature anomaly estimate based on meteorological stations, ocean buoys, and Antarctic research stations.",
         "years": list(range(1980, 2025)),
         "values": [
@@ -247,7 +259,7 @@ DATASETS = {
             "dynamics": "Loudness expands dynamically during extreme anomaly spikes",
             "spatial": "Pans from historical 1980 on the left (-0.8) to modern day on the right (+0.8)"
         },
-        "limitations": "Observational uncertainties exist in sparsely sampled polar regions and ocean interiors prior to modern satellite/Argo coverage."
+        "limitations": "Observational uncertainties exist in sparsely sampled polar regions prior to modern satellite coverage. Furthermore, GISTEMP anomalies are referenced to 1951–1980, distinct from pre-industrial baselines used in international policy agreements."
     },
     "arctic_sea_ice": {
         "id": "arctic_sea_ice",
@@ -363,7 +375,7 @@ MAPPINGS_SPEC = {
         "calibration_pitch_range_hz": [160.0, 480.0],
         "observed_historical_range": [15.8, 17.3],
         "observed_historical_pitch_hz": [208.0, 448.0],
-        "audio_dimension": "Resonant dual-sine water pad frequency f (Hz), velocity, detuning",
+        "audio_dimension": "Resonant dual-sine water pad frequency f (Hz), dynamic gain, detuning",
         "transfer_function": "f = 160.0 + clamp((SST - 15.5) / 2.0, 0.0, 1.0) * (480.0 - 160.0)",
         "perceptual_justification": "Deeper aquatic resonance reflecting high ocean heat capacity; pitch ascends with thermal expansion and warm gyre boundary currents.",
         "edge_case_handling": "SST below 15.5 °C clamps to 160 Hz; above 17.5 °C clamps to 480 Hz; NaN/null/inf raise ValueError.",
@@ -577,7 +589,7 @@ def generate_pitch_labels(dataset_id: str) -> list[str]:
         p_base = round(calculate_pitch(dataset_id, 0.0))
         p_mid = round(calculate_pitch(dataset_id, 0.75))
         p_limit = round(calculate_pitch(dataset_id, 1.5))
-        return [f"1951-80 Base (0 {u} → {p_base} Hz)", f"+0.75 {u} Anomaly ({p_mid} Hz)", f"+1.5 {u} Policy Ref ({p_limit} Hz)"]
+        return [f"1951-80 Base (0 {u} → {p_base} Hz)", f"+0.75 {u} Anomaly ({p_mid} Hz)", f"+1.5 {u} Sonification Ref ({p_limit} Hz)"]
     elif dataset_id == "arctic_sea_ice":
         p_max = round(calculate_pitch(dataset_id, 8.0))
         p_mid = round(calculate_pitch(dataset_id, 5.5))
