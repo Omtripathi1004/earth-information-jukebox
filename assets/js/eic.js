@@ -58,7 +58,7 @@
       unitName: 'Degrees Celsius',
       baselineDesc: 'Global mean SST ~16.1 °C',
       baselineVal: 16.1,
-      description: 'High-resolution global ocean circulation and sea-surface temperatures from the Estimating the Circulation and Climate of the Ocean (ECCO2) model, demonstrating heat transport across global ocean gyres.',
+      description: 'High-resolution sea surface potential temperature (0–5m) area-averaged across global oceans from the Estimating the Circulation and Climate of the Ocean (ECCO2) state estimate, tracking seasonal thermal storage.',
       years: [
         'Jan 2024', 'Feb 2024', 'Mar 2024', 'Apr 2024', 'May 2024', 'Jun 2024',
         'Jul 2024', 'Aug 2024', 'Sep 2024', 'Oct 2024', 'Nov 2024', 'Dec 2024'
@@ -80,7 +80,7 @@
         voice_desc: 'Resonant dual-sine ocean pad reflecting ocean heat capacity and surface thermal energy',
         frequency_formula: 'f = 160.0 + clamp((SST - 15.5) / 2.0, 0.0, 1.0) * (480.0 - 160.0)',
         dynamics: 'Volume scales with thermal energy magnitude (0.14–0.24); pan follows 12-month calendar trajectory (-0.8 in Jan to +0.8 in Dec).',
-        spatial: 'Spatial panning tracking ocean current direction.'
+        spatial: 'Pans temporally along the 12-month calendar trajectory (-0.8 in Jan to +0.8 in Dec).'
       },
       limitations: 'Sub-mesoscale eddies smaller than 10 km are parameterized rather than directly resolved.'
     },
@@ -94,7 +94,7 @@
       unitName: 'Parts per million',
       baselineDesc: 'Pre-industrial baseline ~280 ppm',
       baselineVal: 280,
-      description: 'Annual mean atmospheric carbon dioxide concentration recorded at NOAA Global Monitoring Laboratory Mauna Loa Observatory in Hawaii (424.5 ppm in 2024; global marine boundary average is 422.8 ppm). Serves as the longest continuous in-situ record of atmospheric CO2.',
+      description: 'Annual mean atmospheric carbon dioxide concentration recorded at NOAA Global Monitoring Laboratory Mauna Loa Observatory in Hawaii (424.61 ppm in 2024, rounded to 424.6 ppm; NOAA Climate.gov checkpoint; global marine boundary average is 422.8 ppm). Serves as the longest continuous in-situ record of atmospheric CO2.',
       years: [
         1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989,
         1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
@@ -107,7 +107,7 @@
         354.2, 355.6, 356.4, 357.1, 358.8, 360.8, 362.6, 363.7, 366.7, 368.4,
         369.5, 371.1, 373.3, 375.8, 377.5, 379.8, 381.9, 383.8, 385.6, 387.4,
         389.9, 391.7, 393.9, 396.5, 398.7, 401.0, 404.2, 406.8, 408.5, 411.4,
-        414.2, 416.5, 418.6, 421.1, 424.5
+        414.2, 416.5, 418.6, 421.1, 424.6
       ],
       camera: { lat: 19.536, lon: -155.576, zoom: 5.2, name: 'Mauna Loa Observatory, Hawaii' },
       suggestedLayer: 'VIIRS_SNPP_CorrectedReflectance_TrueColor',
@@ -125,7 +125,7 @@
         dynamics: 'Loudness expands with higher annual accumulation rates (+ppm/yr).',
         spatial: 'Pans from historical 1980 on the left (-0.8) to modern day on the right (+0.8).'
       },
-      limitations: 'Annual arithmetic means at Mauna Loa smooth out within-year seasonal photosynthetic cycles (sawtooth oscillations of ±3 to 6 ppm between spring drawdown and autumn release). As an in-situ high-altitude mountaintop record (3,397 m), it reflects well-mixed hemispheric background air and may slightly differ from the global marine boundary layer surface average (422.8 ppm in 2024).'
+      limitations: 'Annual arithmetic means at Mauna Loa smooth out within-year seasonal photosynthetic cycles (sawtooth oscillations of ±3 to 6 ppm between spring drawdown and autumn release). As an in-situ high-altitude mountaintop record (3,397 m), it reflects well-mixed hemispheric background air (424.61 ppm annual mean in 2024 via NOAA Climate.gov) and differs slightly from the marine boundary layer surface average (422.8 ppm).'
     },
     sea_level: {
       id: 'sea_level',
@@ -140,7 +140,7 @@
       visual_asset_creator: 'Mark SubbaRao, NASA Scientific Visualization Studio',
       visual_asset_attribution: "Credit: NASA's Scientific Visualization Studio",
       frame_integration_status: 'BLOCKED',
-      frame_integration_blocker: 'NASA SVS #5516 / Earth.gov Resource #332 distributes the official visualization solely as a continuous 4K MP4 animation file (seaLevelRise_2024_English.mp4, 22.2 MB) and a single summary poster image (seaLevelRise_2024.jpg), with no decomposing timestamp lookup table or individual annual frame image slices provided. In-app chart sparkline and 3D globe tiles are explicitly labeled as real-time sonification visualizations and contextual thermal imagery, not official NASA animation frames.',
+      frame_integration_blocker: 'NASA SVS #5516 / Earth.gov Resource #332 distributes the official visualization solely as a continuous 20-second 4K MP4 animation file (seaLevelRise_2024_English.mp4, 601 frames at 30 fps, 22.2 MB) and a summary poster image (seaLevelRise_2024.jpg). Because the video contains non-linear visual presentation elements (title intro and hold cards) without an official decomposing timestamp lookup table or individual annual frame slices, year-to-video-time mapping cannot be verified without unverifiable timestamp inference. In-app chart sparkline and 3D globe tiles are explicitly labeled as real-time sonification visualizations and contextual thermal imagery, not official NASA animation frames.',
       official_media: {
         video_url: 'https://earth.gov/sealevel/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBdThKIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--720266cb6099f28ace3c1100c68a300f35486919/seaLevelRise_2024_English.mp4?disposition=inline',
         poster_url: 'https://earth.gov/sealevel/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBbU1LIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--338dc18fecd6592e1d3f984d79e5aa424100127f/seaLevelRise_2024.jpg?disposition=inline',

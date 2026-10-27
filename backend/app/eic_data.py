@@ -58,7 +58,7 @@ DATASETS = {
     },
     "ecco2_ocean_currents": {
         "id": "ecco2_ocean_currents",
-        "title": "ECCO2 Ocean Currents & Sea Surface Temperature",
+        "title": "ECCO2 Sea Surface Potential Temperature",
         "theme": "Ocean Circulation & Energy",
         "agency": "NASA JPL / ECCO2 & Earth Information Center (earth.gov)",
         "portal_url": "https://earth.gov/",
@@ -72,7 +72,7 @@ DATASETS = {
         "baseline_val": 16.1,
         "historical_period": "Jan 2024 – Dec 2024 (Monthly Seasonal Cycle)",
         "transformation_notes": "Synthesized ocean state estimate. Near-surface layer potential temperature area-averaged across global ocean basin.",
-        "description": "High-resolution global ocean circulation and sea-surface temperatures from the Estimating the Circulation and Climate of the Ocean (ECCO2) model, demonstrating heat transport across ocean gyres.",
+        "description": "High-resolution sea surface potential temperature (0–5m) area-averaged across global oceans from the Estimating the Circulation and Climate of the Ocean (ECCO2) state estimate, tracking seasonal thermal storage.",
         "years": [
             "Jan 2024", "Feb 2024", "Mar 2024", "Apr 2024", "May 2024", "Jun 2024",
             "Jul 2024", "Aug 2024", "Sep 2024", "Oct 2024", "Nov 2024", "Dec 2024"
@@ -107,7 +107,7 @@ DATASETS = {
         "theme": "Greenhouse Gases",
         "agency": "NOAA GML / NASA Earth Information Center GHG Center",
         "portal_url": "https://earth.gov/ghgcenter",
-        "data_identifier": "NOAA GML Mauna Loa Atmospheric CO2 In-Situ Record (Reference comparison: marine surface global mean 422.8 ppm in 2024)",
+        "data_identifier": "NOAA GML Mauna Loa Atmospheric CO2 In-Situ Record (2024: 424.61 ppm via NOAA Climate.gov; marine surface global mean 422.8 ppm)",
         "authoritative_url": "https://gml.noaa.gov/ccgg/trends/",
         "retrieval_date": "November 2024 Release (Verified 1980–2024 Series)",
         "variable_name": "XCO2 (Atmospheric CO2 dry air mole fraction)",
@@ -115,16 +115,16 @@ DATASETS = {
         "unit_name": "Parts per million",
         "baseline_desc": "Pre-industrial atmospheric baseline ~280 ppm",
         "baseline_val": 280,
-        "historical_period": "1980–2024 (Annual Record)",
-        "transformation_notes": "Annual in-situ atmospheric CO2 dry air mole fractions from NOAA GML Mauna Loa Baseline Observatory, Hawaii (424.5 ppm in 2024). Note: The globally averaged marine boundary layer surface mean for 2024 is 422.8 ppm. Pre-industrial reference: 280 ppm.",
-        "description": "Annual mean atmospheric carbon dioxide concentration recorded at NOAA Global Monitoring Laboratory's Mauna Loa Baseline Observatory in Hawaii (424.5 ppm in 2024; global marine boundary average is 422.8 ppm). Serves as the longest continuous in-situ record of atmospheric CO2.",
+        "historical_period": "1980–2024 (Fixed Annual Reference Window)",
+        "transformation_notes": "Annual in-situ atmospheric CO2 dry air mole fractions from NOAA GML Mauna Loa Baseline Observatory, Hawaii (424.61 ppm in 2024, rounded to 424.6 ppm; NOAA Climate.gov checkpoint). Note: The globally averaged marine boundary layer surface mean for 2024 is 422.8 ppm. Pre-industrial reference: 280 ppm.",
+        "description": "Annual mean atmospheric carbon dioxide concentration recorded at NOAA Global Monitoring Laboratory's Mauna Loa Baseline Observatory in Hawaii (424.61 ppm in 2024; NOAA Climate.gov checkpoint; global marine boundary average is 422.8 ppm). Serves as the longest continuous in-situ record of atmospheric CO2.",
         "years": list(range(1980, 2025)),
         "values": [
             338.8, 340.1, 341.2, 342.9, 344.4, 345.9, 347.2, 348.9, 351.5, 352.9,
             354.2, 355.6, 356.4, 357.1, 358.8, 360.8, 362.6, 363.7, 366.7, 368.4,
             369.5, 371.1, 373.3, 375.8, 377.5, 379.8, 381.9, 383.8, 385.6, 387.4,
             389.9, 391.7, 393.9, 396.5, 398.7, 401.0, 404.2, 406.8, 408.5, 411.4,
-            414.2, 416.5, 418.6, 421.1, 424.5
+            414.2, 416.5, 418.6, 421.1, 424.6
         ],
         "camera": {"lat": 19.536, "lon": -155.576, "zoom": 5.5, "name": "Mauna Loa Observatory, Hawaii"},
         "suggested_layer": "VIIRS_SNPP_CorrectedReflectance_TrueColor",
@@ -161,7 +161,7 @@ DATASETS = {
         "visual_asset_creator": "Mark SubbaRao, NASA Scientific Visualization Studio",
         "visual_asset_attribution": "Credit: NASA's Scientific Visualization Studio",
         "frame_integration_status": "BLOCKED",
-        "frame_integration_blocker": "NASA SVS #5516 / Earth.gov Resource #332 distributes the official visualization solely as a continuous 4K MP4 animation file (seaLevelRise_2024_English.mp4, 22.2 MB) and a single summary poster image (seaLevelRise_2024.jpg), with no decomposing timestamp lookup table or individual annual frame image slices provided. In-app chart sparkline and 3D globe tiles are explicitly labeled as real-time sonification visualizations and contextual thermal imagery, not official NASA animation frames.",
+        "frame_integration_blocker": "NASA SVS #5516 / Earth.gov Resource #332 distributes the official visualization solely as a continuous 20-second 4K MP4 animation file (seaLevelRise_2024_English.mp4, 601 frames at 30 fps, 22.2 MB) and a summary poster image (seaLevelRise_2024.jpg). Because the video contains non-linear visual presentation elements (title intro and hold cards) without an official decomposing timestamp lookup table or individual annual frame slices, year-to-video-time mapping cannot be verified without unverifiable timestamp inference. In-app chart sparkline and 3D globe tiles are explicitly labeled as real-time sonification visualizations and contextual thermal imagery, not official NASA animation frames.",
         "official_media": {
             "video_url": "https://earth.gov/sealevel/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBdThKIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--720266cb6099f28ace3c1100c68a300f35486919/seaLevelRise_2024_English.mp4?disposition=inline",
             "poster_url": "https://earth.gov/sealevel/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBbU1LIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--338dc18fecd6592e1d3f984d79e5aa424100127f/seaLevelRise_2024.jpg?disposition=inline",
@@ -178,7 +178,7 @@ DATASETS = {
         "unit_name": "Millimeters variation",
         "baseline_desc": "Zero baseline at start of satellite altimetry record (1993)",
         "baseline_val": 0,
-        "historical_period": "1993–2024 (Satellite Radar Altimetry Era)",
+        "historical_period": "1993–2024 (Satellite Radar Altimetry Era Reference Series)",
         "transformation_notes": "Seasonal signal removed, 60-day smoothing applied, referenced to 1993 baseline = 0.0 mm.",
         "description": "Variation in global mean sea level from multi-mission radar altimetry, accounting for ocean thermal expansion and land ice discharge (Greenland and Antarctic ice sheets).",
         "years": list(range(1993, 2025)),
@@ -229,7 +229,7 @@ DATASETS = {
         "unit_name": "Degrees Celsius anomaly",
         "baseline_desc": "1951-1980 global base period average (0.0 °C)",
         "baseline_val": 0,
-        "historical_period": "1980–2024 (Annual Global Record)",
+        "historical_period": "1980–2024 (Fixed Annual Reference Window)",
         "transformation_notes": "Surface air temperature over land and SST over water; 250 km smoothing radius; referenced to 1951–1980 base period mean. Scientific note: GISTEMP 0.0 °C baseline represents the 1951–1980 climatological mean, which is approximately 0.2–0.3 °C warmer than the pre-industrial reference (1850–1900) used in international policy. The +1.5 °C sonification reference point (Bb4, 466.15 Hz) is an acoustic upper reference, not the pre-industrial threshold.",
         "description": "Global land-ocean surface temperature anomaly estimate based on meteorological stations, ocean buoys, and Antarctic research stations.",
         "years": list(range(1980, 2025)),
@@ -377,7 +377,7 @@ MAPPINGS_SPEC = {
         "observed_historical_pitch_hz": [208.0, 448.0],
         "audio_dimension": "Resonant dual-sine water pad frequency f (Hz), dynamic gain, detuning",
         "transfer_function": "f = 160.0 + clamp((SST - 15.5) / 2.0, 0.0, 1.0) * (480.0 - 160.0)",
-        "perceptual_justification": "Deeper aquatic resonance reflecting high ocean heat capacity; pitch ascends with thermal expansion and warm gyre boundary currents.",
+        "perceptual_justification": "Deeper aquatic resonance reflecting high ocean heat capacity; pitch ascends with seasonal surface thermal energy.",
         "edge_case_handling": "SST below 15.5 °C clamps to 160 Hz; above 17.5 °C clamps to 480 Hz; NaN/null/inf raise ValueError.",
         "test_cases": [
             {"input_val": 15.5, "expected_freq_hz": 160.0, "note": "Winter baseline ocean surface"},

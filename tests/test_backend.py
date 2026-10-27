@@ -303,9 +303,9 @@ class ApiTests(unittest.TestCase):
         ds = eic_data.get_dataset("co2")
         self.assertIsNotNone(ds)
         self.assertIn("Mauna Loa Record", ds["title"])
-        self.assertIn("424.5", ds["transformation_notes"])
+        self.assertIn("424.6", ds["transformation_notes"])
         self.assertIn("422.8", ds["transformation_notes"])
-        self.assertEqual(ds["values"][-1], 424.5)
+        self.assertEqual(ds["values"][-1], 424.6)
 
     def test_eic_baseline_pitch_reconciliation(self):
         # GEOS-FP near-surface air temp baseline 14.0 °C maps to 418.18 Hz, not 500 Hz
@@ -400,12 +400,14 @@ class ApiTests(unittest.TestCase):
 
         # 2. ECCO2
         ecco = eic_data.get_dataset("ecco2_ocean_currents")
+        self.assertEqual(ecco["title"], "ECCO2 Sea Surface Potential Temperature")
         self.assertEqual(len(ecco["years"]), 12)
         self.assertEqual(ecco["values"][0], 15.8)
         self.assertEqual(ecco["values"][-1], 15.9)
         self.assertEqual(ecco["baseline_val"], 16.1)
         self.assertNotIn("velocity", ecco["data_identifier"].lower())
         self.assertNotIn("velocity", ecco["sonification"]["voice_desc"].lower())
+        self.assertNotIn("heat transport", ecco["description"].lower())
 
         # 3. CO2 Mauna Loa station record
         co2 = eic_data.get_dataset("co2")
@@ -413,8 +415,9 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(co2["years"][0], 1980)
         self.assertEqual(co2["years"][-1], 2024)
         self.assertEqual(co2["values"][0], 338.8)
-        self.assertEqual(co2["values"][-1], 424.5)
+        self.assertEqual(co2["values"][-1], 424.6)
         self.assertEqual(co2["baseline_val"], 280.0)
+        self.assertIn("Fixed Annual Reference Window", co2["historical_period"])
 
         # 4. Sea Level Altimetry
         sl = eic_data.get_dataset("sea_level")

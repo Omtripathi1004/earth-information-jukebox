@@ -5,7 +5,8 @@
 
 [![Live on Vercel](https://img.shields.io/badge/Live%20App-nasa3--pi.vercel.app-0ea5e9?style=flat&logo=vercel)](https://nasa3-pi.vercel.app/)
 [![NASA Space Apps](https://img.shields.io/badge/NASA%20Space%20Apps-2026%20Challenge-blue?style=flat)](https://www.spaceappschallenge.org/2026/challenges/the-earth-information-jukebox/)
-[![Tests](https://img.shields.io/badge/Tests-14%2F14%20Passing-emerald?style=flat)](tests/test_backend.py)
+[![Tests](https://img.shields.io/badge/Tests-30%2F30%20Passing-emerald?style=flat)](tests/test_backend.py)
+[![CI](https://github.com/Omtripathi1004/earth-information-jukebox/actions/workflows/test.yml/badge.svg)](https://github.com/Omtripathi1004/earth-information-jukebox/actions)
 
 ---
 
