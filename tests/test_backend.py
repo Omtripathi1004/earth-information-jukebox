@@ -6,7 +6,7 @@ from unittest.mock import patch
 import numpy as np
 from PIL import Image
 
-from backend.app import nasa, sonify
+from backend.app import nasa, sonify, eic_data
 from backend.app.main import app
 
 
@@ -283,6 +283,49 @@ class ApiTests(unittest.TestCase):
         r_404 = self.c.get("/api/eic/trend/nonexistent")
         self.assertEqual(r_404.status_code, 404)
 
+    def test_eic_sea_level_official_resource_332(self):
+        ds = eic_data.get_dataset("sea_level")
+        self.assertIsNotNone(ds)
+        self.assertEqual(ds.get("eic_resource_id"), "332")
+        self.assertIn("332/global-mean-sea-level-1993-2024", ds.get("portal_url", ""))
+        self.assertIn("Public Domain", ds.get("reuse_conditions", ""))
+        dyn = ds["sonification"].get("dynamics", "")
+        self.assertNotIn("altimeter precision", dyn)
+        self.assertIn("Volume modulated by annual sea-level rise rate", dyn)
+
+    def test_eic_co2_provenance_and_discrepancy_resolution(self):
+        ds = eic_data.get_dataset("co2")
+        self.assertIsNotNone(ds)
+        self.assertIn("Mauna Loa Record", ds["title"])
+        self.assertIn("424.5", ds["transformation_notes"])
+        self.assertIn("422.8", ds["transformation_notes"])
+        self.assertEqual(ds["values"][-1], 424.5)
+
+    def test_eic_baseline_pitch_reconciliation(self):
+        # GEOS-FP near-surface air temp baseline 14.0 °C maps to 418.18 Hz, not 500 Hz
+        p_base = eic_data.calculate_pitch("geos_fp_temp", 14.0)
+        self.assertAlmostEqual(p_base, 418.18, places=1)
+        self.assertAlmostEqual(eic_data.calculate_pitch("geos_fp_temp", 12.0), 200.0, places=1)
+        self.assertAlmostEqual(eic_data.calculate_pitch("geos_fp_temp", 17.5), 800.0, places=1)
+
+    def test_eic_trend_first_point_and_dynamic_span(self):
+        sl = eic_data.get_dataset("sea_level")
+        trend = eic_data.compute_trend(sl["years"], sl["values"])
+        self.assertEqual(trend["status"], "valid")
+        self.assertIsNone(trend["first_point_delta"])
+        self.assertIsNone(trend["yoy_deltas"][0])
+        self.assertEqual(trend["trend_period"], "1993–2024")
+        self.assertEqual(trend["trend_label"], "Linear trend, 1993–2024")
+        self.assertGreater(trend["ols_slope"], 3.0)
+
+        # Check API endpoint returns the updated structure
+        r = self.c.get("/api/eic/trend/sea_level")
+        self.assertEqual(r.status_code, 200)
+        j = r.get_json()
+        self.assertIsNone(j["yoy_deltas"][0])
+        self.assertEqual(j["trend_period"], "1993–2024")
+
 
 if __name__ == "__main__":
     unittest.main()
+

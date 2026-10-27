@@ -96,18 +96,18 @@ DATASETS = {
             "pitchRange": "160 Hz – 480 Hz (calibration) · 208 Hz – 448 Hz (observed 2024)",
             "full_calibration_range_hz": [160.0, 480.0],
             "observed_historical_range_hz": [208.0, 448.0],
-            "dynamics": "Volume modulated by current velocity and thermal energy",
+            "dynamics": "Volume scales with thermal energy magnitude (0.14–0.24); pan follows 12-month calendar trajectory (-0.8 in Jan to +0.8 in Dec)",
             "spatial": "Pans temporally along the 12-month calendar trajectory (-0.8 in Jan to +0.8 in Dec)"
         },
         "limitations": "Sub-mesoscale eddies smaller than 10 km are parameterized rather than fully resolved in global simulations."
     },
     "co2": {
         "id": "co2",
-        "title": "Atmospheric Carbon Dioxide (CO₂)",
+        "title": "Atmospheric Carbon Dioxide (CO₂) — NOAA GML Mauna Loa Record",
         "theme": "Greenhouse Gases",
         "agency": "NOAA GML / NASA Earth Information Center GHG Center",
         "portal_url": "https://earth.gov/ghgcenter",
-        "data_identifier": "NOAA GML Monthly Globally Averaged Marine Surface CO2 (Version 2024-11)",
+        "data_identifier": "NOAA GML Mauna Loa Atmospheric CO2 In-Situ Record (Reference comparison: marine surface global mean 422.8 ppm in 2024)",
         "authoritative_url": "https://gml.noaa.gov/ccgg/trends/",
         "retrieval_date": "November 2024 Release (Verified 1980–2024 Series)",
         "variable_name": "XCO2 (Atmospheric CO2 dry air mole fraction)",
@@ -116,8 +116,8 @@ DATASETS = {
         "baseline_desc": "Pre-industrial atmospheric baseline ~280 ppm",
         "baseline_val": 280,
         "historical_period": "1980–2024 (Annual Record)",
-        "transformation_notes": "Annual globally averaged marine boundary layer surface means. Pre-industrial reference 280 ppm.",
-        "description": "Annual global mean atmospheric carbon dioxide concentration recorded at the Mauna Loa Observatory and marine boundary layer sites. Tracks the primary driver of anthropogenic climate change.",
+        "transformation_notes": "Annual in-situ atmospheric CO2 dry air mole fractions from NOAA GML Mauna Loa Baseline Observatory, Hawaii (424.5 ppm in 2024). Note: The globally averaged marine boundary layer surface mean for 2024 is 422.8 ppm. Pre-industrial reference: 280 ppm.",
+        "description": "Annual mean atmospheric carbon dioxide concentration recorded at NOAA Global Monitoring Laboratory's Mauna Loa Baseline Observatory in Hawaii (424.5 ppm in 2024; global marine boundary average is 422.8 ppm). Serves as the longest continuous in-situ record of atmospheric CO2.",
         "years": list(range(1980, 2025)),
         "values": [
             338.8, 340.1, 341.2, 342.9, 344.4, 345.9, 347.2, 348.9, 351.5, 352.9,
@@ -151,8 +151,13 @@ DATASETS = {
         "id": "sea_level",
         "title": "Global Mean Sea Level Variation",
         "theme": "Sea Level Change",
-        "agency": "NASA GSFC / CNES Satellite Altimetry (TOPEX/Poseidon, Jason-1/2/3, Sentinel-6)",
-        "portal_url": "https://earth.gov/sealevel",
+        "agency": "NASA GSFC / CNES Satellite Altimetry (TOPEX/Poseidon, Jason-1/2/3, Sentinel-6 MF)",
+        "portal_url": "https://earth.gov/sealevel/resources/332/global-mean-sea-level-1993-2024/",
+        "eic_resource_id": "332",
+        "eic_resource_url": "https://earth.gov/sealevel/resources/332/global-mean-sea-level-1993-2024/",
+        "eic_resource_title": "Global Mean Sea Level 1993-2024 (Official EIC Resource #332)",
+        "reuse_conditions": "Public Domain (NASA Open Science Data Policy & US Government Work)",
+        "integration_mode": "Mode A (Numerical Sonification of Authoritative Observation Timeseries) with synchronized contextual globe vantage",
         "data_identifier": "Global Mean Sea Level Trend (Multi-Mission Satellite Radar Altimetry)",
         "authoritative_url": "https://sealevel.nasa.gov/",
         "retrieval_date": "2024 Q4 Release (TOPEX, Jason-1/2/3, Sentinel-6 MF)",
@@ -186,7 +191,7 @@ DATASETS = {
             "pitchRange": "110 Hz – 311 Hz (calibration) · 110 Hz – 275 Hz (observed 1993–2024)",
             "full_calibration_range_hz": [110.0, 311.13],
             "observed_historical_range_hz": [110.0, 275.11],
-            "dynamics": "Volume modulated by thermal expansion rate and altimeter precision",
+            "dynamics": "Volume modulated by annual sea-level rise rate (delta mm/yr); pan follows temporal timeline (-0.8 in 1993 to +0.8 in 2024)",
             "spatial": "Pans from historical 1993 on the left (-0.8) to modern day on the right (+0.8)"
         },
         "limitations": "Global mean sea level does not reflect local coastal variations caused by post-glacial rebound, tectonic subsidence, or ocean current shifts."
@@ -572,7 +577,7 @@ def compute_trend(years: list, values: list) -> dict:
     deltas = []
     for i in range(n):
         if i == 0:
-            deltas.append(round(clean_vals[1] - clean_vals[0], 4))
+            deltas.append(None)
         else:
             deltas.append(round(clean_vals[i] - clean_vals[i - 1], 4))
 
@@ -582,14 +587,19 @@ def compute_trend(years: list, values: list) -> dict:
     denominator = sum((i - x_mean) ** 2 for i in range(n))
     ols_slope = round(numerator / denominator, 4) if denominator != 0 else 0.0
     total_change = round(clean_vals[-1] - clean_vals[0], 4)
+    trend_period = f"{first_yr}–{years[-1]}"
 
     return {
         "status": "valid",
         "is_monthly": is_monthly,
         "step_unit": step_unit,
         "yoy_deltas": deltas,
+        "first_point_delta": None,
+        "first_point_note": "No prior observation (start of record)",
         "ols_slope": ols_slope,
         "total_change": total_change,
+        "trend_period": trend_period,
+        "trend_label": f"Linear trend, {trend_period}",
         "mean_annual_rate": round(total_change / (n - 1), 4),
-        "description": f"Linear trend: {ols_slope:+.2f} per {step_unit} across {n} observations."
+        "description": f"Linear trend, {trend_period}: {ols_slope:+.2f} per {step_unit} across {n} observations."
     }

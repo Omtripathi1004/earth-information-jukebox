@@ -79,14 +79,14 @@
         fullCalibrationRange: '160 Hz – 480 Hz',
         voice_desc: 'Resonant dual-sine ocean pad reflecting ocean heat capacity and current velocity',
         frequency_formula: 'f = 160.0 + clamp((SST - 15.5) / 2.0, 0.0, 1.0) * (480.0 - 160.0)',
-        dynamics: 'Volume modulated by current velocity and thermal energy.',
+        dynamics: 'Volume scales with thermal energy magnitude (0.14–0.24); pan follows 12-month calendar trajectory (-0.8 in Jan to +0.8 in Dec).',
         spatial: 'Spatial panning tracking ocean current direction.'
       },
       limitations: 'Sub-mesoscale eddies smaller than 10 km are parameterized rather than directly resolved.'
     },
     co2: {
       id: 'co2',
-      title: 'Atmospheric Carbon Dioxide (CO₂)',
+      title: 'Atmospheric Carbon Dioxide (CO₂) — NOAA GML Mauna Loa Record',
       theme: 'Greenhouse Gases',
       agency: 'NOAA GML / NASA Earth Information Center GHG Center',
       portalUrl: 'https://earth.gov/ghgcenter',
@@ -94,7 +94,7 @@
       unitName: 'Parts per million',
       baselineDesc: 'Pre-industrial baseline ~280 ppm',
       baselineVal: 280,
-      description: 'Annual global mean atmospheric carbon dioxide concentration recorded at Mauna Loa Observatory and marine boundary stations. Tracks the primary driver of anthropogenic climate change.',
+      description: 'Annual mean atmospheric carbon dioxide concentration recorded at NOAA Global Monitoring Laboratory Mauna Loa Observatory in Hawaii (424.5 ppm in 2024; global marine boundary average is 422.8 ppm). Serves as the longest continuous in-situ record of atmospheric CO2.',
       years: [
         1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989,
         1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
@@ -131,8 +131,10 @@
       id: 'sea_level',
       title: 'Global Mean Sea Level Variation',
       theme: 'Sea Level Change',
-      agency: 'NASA GSFC / CNES Satellite Altimetry (TOPEX/Poseidon, Jason, Sentinel-6)',
-      portalUrl: 'https://earth.gov/sealevel',
+      agency: 'NASA GSFC / CNES Satellite Altimetry (TOPEX/Poseidon, Jason, Sentinel-6 MF · EIC #332)',
+      portalUrl: 'https://earth.gov/sealevel/resources/332/global-mean-sea-level-1993-2024/',
+      eic_resource_id: '332',
+      eic_resource_url: 'https://earth.gov/sealevel/resources/332/global-mean-sea-level-1993-2024/',
       units: 'mm',
       unitName: 'Millimeters variation',
       baselineDesc: 'Zero baseline at start of satellite altimetry record (1993)',
@@ -163,7 +165,7 @@
         fullCalibrationRange: '110 Hz – 311 Hz',
         voice_desc: 'Resonant dual-sine ocean pad ascending as sea levels rise',
         frequency_formula: 'f = 110.0 * (2 ** (clamp(SL / 120.0, 0.0, 1.2) * 1.5))',
-        dynamics: 'Volume modulated by thermal expansion rate and altimeter precision.',
+        dynamics: 'Volume modulated by annual sea-level rise rate (delta mm/yr); pan follows temporal timeline (-0.8 in 1993 to +0.8 in 2024).',
         spatial: 'Spatial panning from 1993 on the left to 2024 on the right.'
       },
       limitations: 'Global mean values do not capture regional coastline dynamics influenced by post-glacial rebound or land subsidence.'
@@ -316,7 +318,7 @@
       const min = Math.min(...vals);
       const max = Math.max(...vals);
       const range = max - min || 1;
-      const deltas = vals.map((v, i) => (i === 0 ? (n > 1 ? vals[1] - vals[0] : 0) : v - vals[i - 1]));
+      const deltas = vals.map((v, i) => (i === 0 ? null : v - vals[i - 1]));
 
       const firstYr = String(dataset.years[0]);
       const isMonthly = firstYr.includes(' ') || ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].some(m => firstYr.includes(m));
@@ -392,12 +394,14 @@
         const norm = Math.max(0, Math.min(1.2, (val - 330) / 100));
         freq = 130.81 * Math.pow(2, norm * 1.5);
         voiceType = 'forest';
-        vel = 0.12 + Math.min(0.12, Math.max(0, delta) / 3.0 * 0.12);
+        const dVal = (delta !== null && delta !== undefined) ? delta : 0;
+        vel = 0.12 + Math.min(0.12, Math.max(0, dVal) / 3.0 * 0.12);
       } else if (dataset.id === 'sea_level') {
         const norm = Math.max(0, Math.min(1.2, val / 120));
         freq = 110.0 * Math.pow(2, norm * 1.5);
         voiceType = 'water';
-        vel = 0.14 + Math.min(0.10, Math.max(0, delta) / 5.0 * 0.10);
+        const dVal = (delta !== null && delta !== undefined) ? delta : 0;
+        vel = 0.14 + Math.min(0.10, Math.max(0, dVal) / 5.0 * 0.10);
       } else if (dataset.id === 'temperature_anomaly') {
         const norm = Math.max(0, Math.min(1.2, val / 1.5));
         freq = 164.81 * Math.pow(2, norm * 1.5);
@@ -921,13 +925,10 @@
       setText('eic-delta-label', isMonthly ? 'Monthly Step Delta' : 'Year-over-Year Delta');
 
       let deltaText = '';
-      if (idx > 0) {
+      if (idx > 0 && delta !== null && delta !== undefined) {
         deltaText = `${delta >= 0 ? '+' : ''}${delta.toFixed(2)} ${d.units}/${stepUnit}`;
-      } else if (d.values.length > 1) {
-        const initDelta = d.values[1] - d.values[0];
-        deltaText = `${initDelta >= 0 ? '+' : ''}${initDelta.toFixed(2)} ${d.units}/${stepUnit} (initial)`;
       } else {
-        deltaText = `0.00 ${d.units}/${stepUnit}`;
+        deltaText = 'No prior observation';
       }
 
       setText('eic-title', d.title);
@@ -940,9 +941,11 @@
       setText('eic-delta-display', deltaText);
 
       // Long-term trend summary
+      const startYr = d.years[0];
+      const endYr = d.years[d.years.length - 1];
       const trendSummary = isMonthly
-        ? 'Seasonal Cycle'
-        : `45-Yr Trend: ${stats.olsSlope >= 0 ? '+' : ''}${stats.olsSlope.toFixed(2)} ${d.units}/yr`;
+        ? `Annual Cycle Amplitude: ${(stats.max - stats.min).toFixed(1)} ${d.units} (Peak: ${d.years[d.values.indexOf(stats.max)]})`
+        : `Linear trend, ${startYr}–${endYr}: ${stats.olsSlope >= 0 ? '+' : ''}${stats.olsSlope.toFixed(2)} ${d.units}/yr`;
       setText('eic-trend-summary', trendSummary);
 
       // Contextual globe imagery notice
@@ -951,12 +954,12 @@
 
       // Dynamic metric-specific pitch slider labels
       const pitchLabels = {
-        geos_fp_temp: ['Winter Cold (200 Hz)', 'Baseline Mean (~500 Hz)', 'Summer Peak Heatwave (800 Hz)'],
-        ecco2_ocean_currents: ['Winter Baseline (160 Hz)', 'Global SST Mean (320 Hz)', 'Peak Ocean Heat (480 Hz)'],
-        co2: ['1980 Baseline (131 Hz)', '2005 Level (~220 Hz)', 'Present Record (~370 Hz)'],
-        sea_level: ['1993 Baseline (110 Hz)', '+60 mm Rise (~185 Hz)', '+120 mm Rise (~311 Hz)'],
-        temperature_anomaly: ['1951-80 Base (165 Hz)', '+0.75 °C Anomaly (277 Hz)', '+1.5 °C Paris Limit (466 Hz)'],
-        arctic_sea_ice: ['1980 Ice Extent (220 Hz)', 'Moderate Melt (370 Hz)', 'Record Low Alert (622 Hz)']
+        geos_fp_temp: ['Min (12.0 °C → 200 Hz)', 'Baseline (14.0 °C → 418 Hz)', 'Max (17.5 °C → 800 Hz)'],
+        ecco2_ocean_currents: ['Min (15.5 °C → 160 Hz)', 'Baseline (16.5 °C → 320 Hz)', 'Max (17.5 °C → 480 Hz)'],
+        co2: ['1980 Base (330 ppm → 131 Hz)', 'Mid-Scale (380 ppm → 220 Hz)', 'Upper Bound (430 ppm → 370 Hz)'],
+        sea_level: ['1993 Base (0 mm → 110 Hz)', '+60 mm Rise (185 Hz)', '+120 mm Limit (311 Hz)'],
+        temperature_anomaly: ['1951-80 Base (0 °C → 165 Hz)', '+0.75 °C Anomaly (277 Hz)', '+1.5 °C Paris Goal (466 Hz)'],
+        arctic_sea_ice: ['1980 Extent (8.0 M km² → 220 Hz)', 'Mid-Melt (5.5 M km² → 370 Hz)', 'Record Low (3.0 M km² → 622 Hz)']
       };
       const curLabels = pitchLabels[d.id] || ['Low Pitch', 'Mid Baseline', 'High Pitch'];
       setText('eic-pitch-label-low', curLabels[0]);
@@ -1038,7 +1041,7 @@
           <tr class="${isCurrent ? 'bg-sky-500/20 text-white font-bold' : 'hover:bg-slate-900'} cursor-pointer" onclick="window.EICJukebox.PlaybackState.seek(${i}, true)">
             <td class="py-1 px-2">${isCurrent ? '▶ ' : ''}${yr}</td>
             <td class="py-1 px-2">${val.toFixed(1)} ${d.units}</td>
-            <td class="py-1 px-2 ${delta > 0 ? 'text-amber-400' : 'text-slate-400'}">${i > 0 ? (delta >= 0 ? '+' : '') + delta.toFixed(2) : (d.values.length > 1 ? (d.values[1] - d.values[0] >= 0 ? '+' : '') + (d.values[1] - d.values[0]).toFixed(2) + ' (init)' : '0.00')}</td>
+            <td class="py-1 px-2 ${delta > 0 ? 'text-amber-400' : 'text-slate-400'}">${(i === 0 || delta === null || delta === undefined) ? '— (start of record)' : ((delta >= 0 ? '+' : '') + delta.toFixed(2))}</td>
             <td class="py-1 px-2 text-purple-300">${Math.round(note.freq)} Hz</td>
           </tr>
         `;
