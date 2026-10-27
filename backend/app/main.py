@@ -54,12 +54,12 @@ if not os.environ.get("MAPILLARY_TOKEN") or not os.environ.get("CESIUM_ION_TOKEN
 _load_env_file(Path(".env"), override=True)
 
 try:
-    from backend.app import nasa, sonify
+    from backend.app import eic_data, nasa, sonify
 except (ImportError, ModuleNotFoundError, ValueError):
     try:
-        from . import nasa, sonify
+        from . import eic_data, nasa, sonify
     except (ImportError, ValueError):
-        import nasa, sonify  # type: ignore
+        import eic_data, nasa, sonify  # type: ignore
 
 DEFAULT_LAYER = "VIIRS_SNPP_CorrectedReflectance_TrueColor"
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -129,6 +129,17 @@ def create_app() -> Flask:
     @app.errorhandler(nasa.UpstreamError)
     def upstream_error(e):
         return jsonify(error=str(e)), 502
+
+    @app.get("/api/eic/datasets")
+    def eic_datasets():
+        return jsonify(datasets=eic_data.list_datasets())
+
+    @app.get("/api/eic/dataset/<dataset_id>")
+    def eic_dataset_detail(dataset_id):
+        ds = eic_data.get_dataset(dataset_id)
+        if not ds:
+            raise ApiError(f"unknown EIC dataset '{dataset_id}'", 404)
+        return jsonify(ds)
 
     @app.get("/api/health")
     def health():

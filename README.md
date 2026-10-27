@@ -5,6 +5,7 @@
 An interactive Earth observation jukebox that sonifies NASA satellite imagery (MODIS, VIIRS), NASA POWER climate data, terrain elevation, 3D buildings, Mapillary street views, and Cesium 3D tiles into audio scales and timbres.
 
 ## Features
+- **NASA Earth Information Center (EIC) Jukebox**: Multi-sensory, physically-calibrated sonification of verified planetary indicators (Atmospheric CO₂, Sea Level Rise, Surface Temperature Anomaly, and Arctic Sea Ice Extent) with interactive timeline scrubbers, dockable player mode, and accessible numerical tables.
 - **Interactive Earth Globe**: Smooth zoom from orbit down to ground level in 3D using MapLibre GL.
 - **Pixel Sonification**: A real-time scanline converts satellite imagery into audio via the Web Audio API and Flask backend.
 - **NASA POWER Climate Melodies**: 40 years of temperature data sonified into musical notes.

@@ -11,7 +11,7 @@
   /* 2. Escape closes the top-most open panel. */
   addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    const open = [['#no-street-modal', '#no-st-close'], ['#keys', '#kx'], ['#px', '#pxc'], ['#st', '#stx'], ['#legend', '#lg']].find(([p]) => !$(p).hidden);
+    const open = [['#eic-modal', '#eic-close'], ['#no-street-modal', '#no-st-close'], ['#keys', '#kx'], ['#px', '#pxc'], ['#st', '#stx'], ['#legend', '#lg']].find(([p]) => !$(p).hidden);
     if (open) $(open[1]).click();
   });
 

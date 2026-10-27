@@ -27,3 +27,4 @@ class VercelPathMiddleware:
 
 
 app.wsgi_app = VercelPathMiddleware(app.wsgi_app)
+

@@ -5,6 +5,7 @@ The Earth Information Jukebox is an independent prototype made for the NASA Spac
 ## Data and services
 | Source | Used for | Terms |
 |---|---|---|
+| NASA Earth Information Center (EIC) & NOAA GML | Thematic planetary datasets: Atmospheric CO₂ (`earth.gov/ghgcenter`), Sea Level Rise (`earth.gov/sealevel`), Global Surface Temperature Anomaly (GISTEMP v4), Arctic Sea Ice Extent | Open data (NASA / NOAA / US Federal open science) |
 | NASA EOSDIS GIBS | Satellite imagery and data layers (true colour, land temperature, aerosol, sea surface temperature, snow cover, night lights) | NASA open data |
 | NASA POWER | Local temperature and rain, 1985 to 2025 | NASA open data |
 | OpenStreetMap and Nominatim | Place search, building shapes, labels | ODbL 1.0, © OpenStreetMap contributors |

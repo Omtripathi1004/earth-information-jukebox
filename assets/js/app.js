@@ -196,6 +196,7 @@ function voice(c, f, v, pan) {
     .forEach(([m, ty, w]) => { const o = ac.createOscillator(), og = ac.createGain(); o.type = ty; o.frequency.value = f * m; og.gain.value = w; o.connect(og); og.connect(g); o.start(t); o.stop(t + dur + .05); });
   g.connect(lp); lp.connect(pn); pn.connect(mst); pn.connect(dly);
 }
+window.boot = boot; window.voice = voice; window.applyLayer = applyLayer; window.scaleF = scaleF;
 function dataScan(d) {   /* NASA data frame: colour (blue = low, red = high) becomes pitch; grey = no data = silence */
   let r = 0, g = 0, b = 0, n = 0;
   for (let i = 0; i < d.length; i += 4) { if (d[i + 3] >= 128 && Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) > 40) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } }

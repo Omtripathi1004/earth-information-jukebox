@@ -66,6 +66,26 @@ class ApiTests(unittest.TestCase):
         nasa.clear_caches()
         self.c = app.test_client()
 
+    def test_eic_endpoints(self):
+        r = self.c.get("/api/eic/datasets")
+        self.assertEqual(r.status_code, 200)
+        datasets = r.get_json()["datasets"]
+        self.assertGreaterEqual(len(datasets), 4)
+        ids = [d["id"] for d in datasets]
+        self.assertIn("co2", ids)
+        self.assertIn("sea_level", ids)
+
+        r_detail = self.c.get("/api/eic/dataset/co2")
+        self.assertEqual(r_detail.status_code, 200)
+        co2 = r_detail.get_json()
+        self.assertEqual(co2["units"], "ppm")
+        self.assertIn("years", co2)
+        self.assertIn("values", co2)
+        self.assertEqual(len(co2["years"]), len(co2["values"]))
+
+        # 404 for nonexistent dataset
+        self.assertEqual(self.c.get("/api/eic/dataset/nonexistent").status_code, 404)
+
     def test_health_and_static(self):
         j = self.c.get("/api/health").get_json()
         self.assertTrue(j["ok"])
