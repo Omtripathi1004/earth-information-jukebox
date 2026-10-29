@@ -297,18 +297,56 @@ async function run() {
   const compareCheck = await evaluate(`(async () => {
     const details = document.getElementById('eic-compare-details');
     if (details) details.open = true;
+    const selA = document.getElementById('eic-compare-a');
+    const selB = document.getElementById('eic-compare-b');
+    selA.value = 'co2';
+    selB.value = 'temperature_anomaly';
     window.EICJukebox.UI.renderCompare();
     const stats = document.getElementById('eic-compare-stats');
     const canvas = document.getElementById('eic-compare-canvas');
+    const hasAnnualStats = stats && stats.textContent.includes('Pearson correlation r =') && stats.textContent.includes('does not establish causation');
+
+    // Test incompatible resolution:
+    selA.value = 'geos_fp_temp';
+    selB.value = 'co2';
+    window.EICJukebox.UI.renderCompare();
+    const hasMismatch = stats && stats.textContent.includes('Time resolution mismatch');
+
     return {
-      hasStats: !!stats && stats.textContent.includes('correlation'),
+      hasAnnualStats,
+      hasMismatch,
       hasCanvas: !!canvas && canvas.width > 0
     };
   })()`);
-  assert(compareCheck && compareCheck.hasStats === true, 'Metric comparison calculates correlation stats');
+  assert(compareCheck && compareCheck.hasAnnualStats === true, 'Annual-annual comparison calculates correlation with non-causation disclaimer');
+  assert(compareCheck && compareCheck.hasMismatch === true, 'Monthly-annual comparison displays time resolution mismatch notice without false correlation');
   assert(compareCheck && compareCheck.hasCanvas === true, 'Comparison dual-curve canvas rendered');
 
-  // 10. Test Reviewer Walkthrough Trigger
+  // 10. Test Accessible Controls & Keyboard Shortcuts Modal
+  const uiCheck = await evaluate(`(() => {
+    const prevBtn = document.getElementById('eic-prev');
+    const nextBtn = document.getElementById('eic-next');
+    const stopBtn = document.getElementById('eic-stop');
+    const scBtn = document.getElementById('kshortcuts-btn');
+    const scModal = document.getElementById('kshortcuts-modal');
+    if (scBtn) scBtn.click();
+    const modalOpened = scModal && !scModal.hidden;
+    const okBtn = document.getElementById('kshortcuts-ok');
+    if (okBtn) okBtn.click();
+    const modalClosed = scModal && scModal.hidden;
+
+    return {
+      hasPrevAria: prevBtn && prevBtn.hasAttribute('aria-label'),
+      hasNextAria: nextBtn && nextBtn.hasAttribute('aria-label'),
+      hasStopAria: stopBtn && stopBtn.hasAttribute('aria-label'),
+      modalOpened,
+      modalClosed
+    };
+  })()`);
+  assert(uiCheck && uiCheck.hasPrevAria && uiCheck.hasNextAria && uiCheck.hasStopAria, 'Icon-only controls have accessible aria-label attributes');
+  assert(uiCheck && uiCheck.modalOpened && uiCheck.modalClosed, 'Keyboard shortcuts modal opens and closes properly');
+
+  // 11. Test Reviewer Walkthrough Trigger
   const tourCheck = await evaluate(`(async () => {
     const btn = document.getElementById('eic-start-walkthrough');
     if (btn) btn.click();

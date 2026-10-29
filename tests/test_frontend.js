@@ -462,14 +462,72 @@ async function runAudioEngineVerification() {
   assert(co2Labels[2].includes('430') && co2Labels[2].includes('370'), 'CO2 pitch label has 430 ppm nominal -> 370 Hz');
   assert(co2Labels[2].includes('450') && co2Labels[2].includes('456'), 'CO2 pitch label has 450 ppm headroom -> 456 Hz');
 
-  // 12. Compare Tool and Walkthrough Controller Methods
+  // 12. Compare Tool Alignment, Correlation Labeling & Incompatible Resolution Handling
   assert(typeof UI.renderCompare === 'function', 'UI.renderCompare exists');
   assert(typeof UI.playDualAudio === 'function', 'UI.playDualAudio exists');
   assert(typeof UI.toggleWalkthrough === 'function', 'UI.toggleWalkthrough exists');
   assert(typeof UI.startWalkthrough === 'function', 'UI.startWalkthrough exists');
   assert(typeof UI.stopWalkthrough === 'function', 'UI.stopWalkthrough exists');
 
-  // 13. Playback Mode Coordination: Starting Jukebox stops Satellite Scan
+  // Test Case A: Annual vs Annual (co2 vs temperature_anomaly)
+  UI.compareA = { value: 'co2' };
+  UI.compareB = { value: 'temperature_anomaly' };
+  UI.compareStats = mockElement('eic-compare-stats');
+  UI.compareRange = mockElement('eic-compare-overlap-range');
+  UI.compareCanvas = { getContext: () => ({ clearRect: () => {}, beginPath: () => {}, moveTo: () => {}, lineTo: () => {}, stroke: () => {}, fillText: () => {}, setLineDash: () => {} }), width: 620, height: 80 };
+  UI.renderCompare();
+  assert(UI.compareStats.textContent.includes('Pearson correlation r ='), 'Annual-annual comparison calculates Pearson correlation r');
+  assert(UI.compareStats.textContent.includes('1980–2024'), 'Annual-annual comparison reports exact overlapping period (1980–2024)');
+  assert(UI.compareStats.textContent.includes('n=45'), 'Annual-annual comparison reports sample size n=45');
+  assert(UI.compareStats.textContent.includes('does not establish causation'), 'Correlation label states non-causation disclaimer');
+  assert(!UI.compareStats.textContent.toLowerCase().includes('coupling'), 'Correlation label avoids misleading causal wording like Coupling');
+
+  // Test Case B: Annual vs Annual with different start year (sea_level 1993 vs co2 1980)
+  UI.compareA = { value: 'sea_level' };
+  UI.compareB = { value: 'co2' };
+  UI.renderCompare();
+  assert(UI.compareStats.textContent.includes('1993–2024'), 'Sea level vs CO2 correctly aligns on overlapping years 1993–2024');
+  assert(UI.compareStats.textContent.includes('n=32'), 'Sea level vs CO2 reports overlapping sample size n=32');
+
+  // Test Case C: Monthly vs Monthly (geos_fp_temp vs ecco2_ocean_currents)
+  UI.compareA = { value: 'geos_fp_temp' };
+  UI.compareB = { value: 'ecco2_ocean_currents' };
+  UI.renderCompare();
+  assert(UI.compareStats.textContent.includes('Pearson correlation r ='), 'Monthly-monthly comparison calculates Pearson correlation');
+  assert(UI.compareStats.textContent.includes('Jan 2024–Dec 2024'), 'Monthly-monthly comparison reports Jan 2024–Dec 2024 overlap');
+  assert(UI.compareStats.textContent.includes('n=12'), 'Monthly-monthly comparison reports sample size n=12');
+
+  // Test Case D: Monthly vs Annual (incompatible resolution: geos_fp_temp vs co2)
+  UI.compareA = { value: 'geos_fp_temp' };
+  UI.compareB = { value: 'co2' };
+  UI.renderCompare();
+  assert(UI.compareStats.textContent.includes('Time resolution mismatch'), 'Monthly vs annual prevents index-pairing and reports resolution mismatch');
+  assert(UI.compareStats.textContent.includes('Direct point-to-point correlation requires identical temporal resolution'), 'Explains reason for omitting correlation');
+  assert(!UI.compareStats.textContent.includes('Pearson correlation r ='), 'Does not calculate false Pearson correlation for mismatched resolutions');
+  assert(UI.compareRange.textContent.includes('Incompatible time resolutions'), 'Compare range notes incompatible time resolutions');
+
+  // Test Case E: Insufficient Overlap
+  const origYears = datasets.co2.years;
+  try {
+    datasets.co2.years = [1900, 1901]; // no overlap with sea_level 1993-2024
+    UI.compareA = { value: 'co2' };
+    UI.compareB = { value: 'sea_level' };
+    UI.renderCompare();
+    assert(UI.compareStats.textContent.includes('Insufficient overlapping data points'), 'Insufficient overlap reported when n < 3');
+  } finally {
+    datasets.co2.years = origYears;
+  }
+
+  // 13. Dynamic Delta Header & Accessibility
+  UI.state.setDataset('geos_fp_temp');
+  assert(document.getElementById('eic-delta-label').textContent === 'Month-over-Month Delta', 'Monthly dataset shows Month-over-Month Delta');
+  assert(document.getElementById('eic-table-delta-th').textContent === 'Monthly Delta', 'Monthly dataset updates table header to Monthly Delta');
+
+  UI.state.setDataset('co2');
+  assert(document.getElementById('eic-delta-label').textContent === 'Year-over-Year Delta', 'Annual dataset shows Year-over-Year Delta');
+  assert(document.getElementById('eic-table-delta-th').textContent === 'Annual Delta', 'Annual dataset updates table header to Annual Delta');
+
+  // 14. Playback Mode Coordination: Starting Jukebox stops Satellite Scan
   const listenBtn = mockElement('listen');
   listenBtn.classList.add('on');
   await state.play();

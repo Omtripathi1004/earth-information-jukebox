@@ -47,3 +47,42 @@
 | Requests | Apache-2.0 | Upstream HTTP client for NASA APIs |
 | Tailwind CSS | MIT | Responsive accessibility-focused UI styling |
 | Inter, JetBrains Mono, Space Grotesk | SIL OFL 1.1 | Typography |
+
+---
+
+## 4. Scientific Reproducibility & Data Classification
+
+To uphold rigorous scientific integrity, every dataset in the Earth Information Jukebox is classified by its observational and modeling origin:
+
+1. **Atmospheric Carbon Dioxide (CO₂)**:
+   - **Classification**: *In-Situ Observational Measurement* (NOAA Global Monitoring Laboratory, Mauna Loa Baseline Observatory, Hawaii).
+   - **Authoritative Source**: NOAA GML `co2_annmean_mlo.csv` ([Source Link](https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.csv)).
+   - **Coverage & Values**: 1980–2024 annual arithmetic means (45 observations: 338.76 ppm in 1980 to 424.61 ppm in 2024). Full source precision is retained.
+   - **Reproducibility**: Reconciled row-by-row against the authoritative NOAA GML CSV.
+
+2. **Global Mean Sea Level Variation**:
+   - **Classification**: *Satellite Radar Altimeter Observation* (NASA GSFC / CNES / NOAA / EUMETSAT).
+   - **Authoritative Source**: NASA Earth Information Center Resource #332 ([earth.gov Resource #332](https://earth.gov/sealevel/resources/332/global-mean-sea-level-1993-2024/)) and NASA SVS #5516 ([svs.gsfc.nasa.gov/5516](https://svs.gsfc.nasa.gov/5516)).
+   - **Coverage & Values**: 1993–2024 annual altimetry checkpoints (32 values: 0.0 mm baseline to 105.8 mm in 2024).
+   - **Note on Video Media**: NASA SVS #5516 is linked as reference media. Playback is **not synchronized** to annual steps because the official video is distributed as a continuous 4K MP4 animation without decomposed individual annual frame slices.
+
+3. **Global Surface Temperature Anomaly (GISTEMP v4)**:
+   - **Classification**: *Observational Surface Analysis* (NASA Goddard Institute for Space Studies).
+   - **Authoritative Source**: NASA GISS Land-Ocean Temperature Index (LOTI) ([data.giss.nasa.gov/gistemp/](https://data.giss.nasa.gov/gistemp/)).
+   - **Coverage & Values**: 1980–2024 annual anomalies (+0.12 °C in 1985 to +1.28 °C in 2024, relative to 1951–1980 baseline).
+
+4. **Arctic Sea Ice Minimum Extent (September)**:
+   - **Classification**: *Satellite Passive Microwave Radiometer Observation* (NSIDC / NASA).
+   - **Authoritative Source**: NSIDC Sea Ice Index (G02135, Version 3) ([nsidc.org/data/seaice_index](https://nsidc.org/data/seaice_index)).
+   - **Coverage & Values**: 1980–2024 September monthly minimum extents (7.67 M km² in 1980 to 4.28 M km² in 2024; record low 3.39 M km² in 2012).
+
+5. **NASA GEOS-FP Near-Surface Air Temperature**:
+   - **Classification**: *Atmospheric Assimilation Model Output* (NASA GSFC / GMAO).
+   - **Authoritative Source**: NASA GMAO GEOS-FP (`inst1_2d_asm_Nx: T2M`) ([gmao.gsfc.nasa.gov](https://gmao.gsfc.nasa.gov/GMAO_products/)).
+   - **Coverage & Values**: Jan–Dec 2024 global area-weighted monthly mean cycle (12.4 °C in Jan to 17.1 °C in Jul). Converted from Kelvin via $T(°C) = T(K) - 273.15$.
+
+6. **ECCO2 Sea Surface Potential Temperature**:
+   - **Classification**: *Synthesized Climatological Model Output* (NASA JPL / ECCO2).
+   - **Authoritative Source**: NASA JPL ECCO2 Cube92 High-Resolution Ocean State Estimate ([ecco.jpl.nasa.gov](https://ecco.jpl.nasa.gov/)).
+   - **Coverage & Values**: Jan–Dec 2024 synthesized global ocean basin-averaged surface potential temperature (0–5m layer, 15.8 °C in Jan to 17.3 °C in Jul; annual mean ~16.5 °C, amplitude ~1.5 °C).
+   - **Important Note**: Dynamic ocean current vectors, velocity, and circulation direction are **not** encoded in the audio—only scalar surface thermal storage is sonified.

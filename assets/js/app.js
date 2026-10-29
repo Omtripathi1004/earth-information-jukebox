@@ -663,6 +663,9 @@ $('#ks').onclick = () => {
 };
 $('#kx').onclick = () => { $('#keys').hidden = true; };
 if ($('#kb')) $('#kb').onclick = () => openKeys('');
+if ($('#kshortcuts-btn')) $('#kshortcuts-btn').onclick = () => { if ($('#kshortcuts-modal')) $('#kshortcuts-modal').hidden = false; };
+if ($('#kshortcuts-close')) $('#kshortcuts-close').onclick = () => { if ($('#kshortcuts-modal')) $('#kshortcuts-modal').hidden = true; };
+if ($('#kshortcuts-ok')) $('#kshortcuts-ok').onclick = () => { if ($('#kshortcuts-modal')) $('#kshortcuts-modal').hidden = true; };
 
 /* ---------- Global Ground Photos, 360° Street View & Interactive Photo Spots ---------- */
 const stc = $('#stc'), sg = stc ? stc.getContext('2d') : null;

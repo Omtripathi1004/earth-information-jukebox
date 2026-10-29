@@ -511,6 +511,10 @@ class ApiTests(unittest.TestCase):
         mapping = eic_data.describe_mapping("co2")
         self.assertEqual(mapping["observed_historical_range"], [338.76, 424.61])
         self.assertAlmostEqual(mapping["observed_historical_pitch_hz"][1], 349.82, places=1)
+        self.assertEqual(mapping["formula_domain"], [330.0, 430.0])
+        self.assertEqual(mapping["headroom_domain"], [430.0, 450.0])
+        self.assertEqual(mapping["calibration_pitch_range_hz"], [130.81, 369.99])
+        self.assertEqual(mapping["headroom_pitch_range_hz"], [369.99, 455.51])
 
         # 3. HTTP API endpoint verification
         r_ds = self.c.get("/api/eic/dataset/co2")

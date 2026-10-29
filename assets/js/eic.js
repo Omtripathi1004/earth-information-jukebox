@@ -121,7 +121,11 @@
         contextualGlobeLayer: 'VIIRS_SNPP_CorrectedReflectance_TrueColor',
         contextualLayerTitle: 'Suomi-NPP VIIRS Corrected Reflectance (True Color)',
         contextualLayerNote: 'Contextual optical satellite imagery. Displays terrestrial vegetation and cloud cover at Mauna Loa for geographical orientation, not the atmospheric CO2 column mixing ratio.',
-        pitchRange: '131 Hz – 370 Hz (330–430 ppm nominal calibration) · headroom to 456 Hz (450 ppm) · 143 Hz – 350 Hz (observed 1980–2024)',
+        pitchRange: '131 Hz – 370 Hz (330–430 ppm nominal) · 370 Hz – 456 Hz (430–450 ppm headroom) · 143 Hz – 350 Hz (observed 1980–2024)',
+        formula_domain: [330.0, 430.0],
+        headroom_domain: [430.0, 450.0],
+        full_calibration_range_hz: [130.81, 369.99],
+        headroom_pitch_range_hz: [369.99, 455.51],
         fullCalibrationRange: '131 Hz – 370 Hz',
         voice_desc: 'Warm harmonic triangle voice representing terrestrial biosphere and atmospheric absorption',
         frequency_formula: 'f = 130.81 * (2 ** (clamp((CO2 - 330.0) / 100.0, 0.0, 1.2) * 1.5))',
@@ -476,9 +480,9 @@
         const pUpper = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 430.0).freq);
         const pHead = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 450.0).freq);
         return [
-          `Base (330 ${u} → ${pFloor} Hz)`,
-          `Mid (380 ${u} → ${pMid} Hz)`,
-          `Nominal (430 ${u} → ${pUpper} Hz · Headroom 450 → ${pHead} Hz)`
+          `Nominal Min (330 ${u} → ${pFloor} Hz)`,
+          `Midpoint (380 ${u} → ${pMid} Hz)`,
+          `Nominal Max (430 ${u} → ${pUpper} Hz) · Headroom (450 ${u} → ${pHead} Hz)`
         ];
       } else if (id === 'sea_level') {
         const pBase = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 0.0).freq);
@@ -1099,7 +1103,9 @@
       const stats = state.stats;
       const isMonthly = stats.isMonthly;
       const stepUnit = stats.stepUnit;
-      setText('eic-delta-label', isMonthly ? 'Monthly Step Delta' : 'Year-over-Year Delta');
+      setText('eic-delta-label', isMonthly ? 'Month-over-Month Delta' : 'Year-over-Year Delta');
+      const thDelta = document.getElementById('eic-table-delta-th');
+      if (thDelta) thDelta.textContent = isMonthly ? 'Monthly Delta' : 'Annual Delta';
 
       let deltaText = '';
       if (idx > 0 && delta !== null && delta !== undefined) {
@@ -1363,27 +1369,60 @@
       const isMonthlyA = dsA.years[0] && String(dsA.years[0]).includes(' ');
       const isMonthlyB = dsB.years[0] && String(dsB.years[0]).includes(' ');
 
+      // Incompatible temporal resolution: monthly seasonal cycle vs multi-decadal annual series
+      if (isMonthlyA !== isMonthlyB) {
+        if (this.compareStats) {
+          this.compareStats.textContent = `Time resolution mismatch: Cannot calculate correlation. Metric A (${dsA.title}) is a 12-month seasonal cycle (2024) while Metric B (${dsB.title}) is a multi-decadal annual series (${dsB.years[0]}–${dsB.years[dsB.years.length - 1]}). Direct point-to-point correlation requires identical temporal resolution.`;
+        }
+        if (this.compareRange) {
+          this.compareRange.textContent = 'Incompatible time resolutions (Monthly vs Annual)';
+        }
+        const ctx = this.compareCanvas.getContext('2d');
+        const w = this.compareCanvas.width;
+        const h = this.compareCanvas.height;
+        ctx.clearRect(0, 0, w, h);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(14, h / 2);
+        ctx.lineTo(w - 14, h / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Differing temporal resolutions (12-month seasonal cycle vs multi-decadal annual series)', w / 2, h / 2 + 3);
+        return;
+      }
+
       let commonPoints = [];
       if (isMonthlyA && isMonthlyB) {
-        for (let i = 0; i < Math.min(dsA.years.length, dsB.years.length); i++) {
-          commonPoints.push({ label: dsA.years[i], valA: dsA.values[i], valB: dsB.values[i] });
-        }
-      } else if (!isMonthlyA && !isMonthlyB) {
-        const mapB = new Map(dsB.years.map((y, i) => [y, dsB.values[i]]));
-        dsA.years.forEach((yr, i) => {
-          if (mapB.has(yr)) {
-            commonPoints.push({ label: yr, valA: dsA.values[i], valB: mapB.get(yr) });
+        const mapB = new Map(dsB.years.map((m, i) => [String(m).trim(), dsB.values[i]]));
+        dsA.years.forEach((m, i) => {
+          const key = String(m).trim();
+          if (mapB.has(key)) {
+            commonPoints.push({ label: key, valA: dsA.values[i], valB: mapB.get(key) });
           }
         });
       } else {
-        const len = Math.min(dsA.values.length, dsB.values.length);
-        for (let i = 0; i < len; i++) {
-          commonPoints.push({ label: `Pt ${i+1}`, valA: dsA.values[i], valB: dsB.values[i] });
-        }
+        const mapB = new Map(dsB.years.map((y, i) => [String(y).trim(), dsB.values[i]]));
+        dsA.years.forEach((y, i) => {
+          const key = String(y).trim();
+          if (mapB.has(key)) {
+            commonPoints.push({ label: key, valA: dsA.values[i], valB: mapB.get(key) });
+          }
+        });
       }
 
-      if (commonPoints.length < 2) {
-        if (this.compareStats) this.compareStats.textContent = 'Insufficient overlapping period to correlate.';
+      if (commonPoints.length < 3) {
+        if (this.compareStats) {
+          this.compareStats.textContent = `Insufficient overlapping data points (n=${commonPoints.length} < 3) to calculate statistical correlation.`;
+        }
+        if (this.compareRange) {
+          this.compareRange.textContent = 'Insufficient data overlap';
+        }
+        const ctx = this.compareCanvas.getContext('2d');
+        ctx.clearRect(0, 0, this.compareCanvas.width, this.compareCanvas.height);
         return;
       }
 
@@ -1403,13 +1442,13 @@
       }
       const r = (varA > 0 && varB > 0) ? (cov / Math.sqrt(varA * varB)) : 0;
 
-      const strength = Math.abs(r) > 0.8 ? 'Strong' : Math.abs(r) > 0.5 ? 'Moderate' : 'Weak';
-      const dir = r >= 0 ? 'Positive' : 'Inverse';
+      const overlapStart = commonPoints[0].label;
+      const overlapEnd = commonPoints[commonPoints.length - 1].label;
       if (this.compareStats) {
-        this.compareStats.textContent = `Pearson correlation r = ${r >= 0 ? '+' : ''}${r.toFixed(2)} (${strength} ${dir} Coupling · n=${commonPoints.length})`;
+        this.compareStats.textContent = `Pearson correlation r = ${r >= 0 ? '+' : ''}${r.toFixed(2)} (${overlapStart}–${overlapEnd}, n=${commonPoints.length}). Note: Correlation indicates statistical association and does not establish causation.`;
       }
       if (this.compareRange) {
-        this.compareRange.textContent = `Overlap: ${commonPoints[0].label} – ${commonPoints[commonPoints.length - 1].label}`;
+        this.compareRange.textContent = `Overlap: ${overlapStart} – ${overlapEnd} (n=${commonPoints.length})`;
       }
 
       // Draw dual sparklines on compare canvas

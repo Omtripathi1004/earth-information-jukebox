@@ -47,7 +47,8 @@
       <button id="lb" class="btn pe w-full text-left justify-start" title="Place, street and landmark names"><span aria-hidden="true">🏷</span> Labels</button>
       <button id="pc" class="btn pe w-full text-left justify-start" disabled title="Connecting to Python backend for audio export..."><span aria-hidden="true">⬇</span> Sonic postcard</button>
       <button id="sh" class="btn pe w-full text-left justify-start" title="Copy a link to this exact view"><span aria-hidden="true">🔗</span> Share</button>
-      <button id="kb" class="btn pe w-full text-left justify-start" title="Tokens for street photos and photoreal 3D"><span aria-hidden="true">⚙</span> Keys</button>
+      <button id="kb" class="btn pe w-full text-left justify-start" title="Optional API tokens for street photos and photoreal 3D" aria-label="API Tokens Settings"><span aria-hidden="true">🔑</span> API Tokens</button>
+      <button id="kshortcuts-btn" class="btn pe w-full text-left justify-start" title="View keyboard shortcuts and accessible navigation" aria-label="Keyboard Shortcuts Help"><span aria-hidden="true">⌨</span> Keyboard Shortcuts</button>
       <button id="cmob" class="btn pe w-full text-left justify-start sm:hidden" aria-pressed="false"><span aria-hidden="true">🌡</span> Local climate</button>
       <button id="b3" class="btn pe w-full text-left justify-start" aria-pressed="false" title="Extruded OpenStreetMap building boxes at ground level"><span aria-hidden="true">🏙</span> 3D building boxes</button>
       <button id="ab" class="btn pe w-full text-left justify-start"><span aria-hidden="true">ℹ</span> About and credits</button>
@@ -187,7 +188,8 @@
 <div id="px" hidden role="dialog" aria-label="Photoreal 3D view"><div id="pxv"></div><button id="pxc" class="btn fixed z-50 left-3" style="top: calc(var(--top-h, 76px) + 40px)"><span aria-hidden="true">✕</span> Close 3D view</button>
   <p class="fixed z-50 bottom-3 left-1/2 -translate-x-1/2 text-[10px] text-slate-300 bg-black/60 px-2 py-1 rounded text-center">Google Photorealistic 3D Tiles via Cesium ion (used under Google and Cesium terms). Main map search powered by OpenStreetMap Nominatim.</p></div>
 <aside id="keys" hidden role="dialog" aria-labelledby="keys-h" class="glass fixed z-[60] left-1/2 top-32 -translate-x-1/2 p-4 w-[min(460px,calc(100vw-24px))]">
-  <h2 id="keys-h" class="font-display font-bold mb-1">Tokens for real-life views</h2>
+  <h2 id="keys-h" class="font-display font-bold mb-1">🔑 Optional API Tokens (Mapillary & Cesium)</h2>
+  <p class="text-[12px] text-slate-400 mb-3">Optional. All core features (MapLibre 3D globe, satellite imagery, local climate, and 6 EIC Jukebox datasets) work 100% out of the box without any tokens.</p>
   <p id="kenv" class="text-emerald-400 font-mono text-[11px] mb-1"></p>
   <p id="kmsg" class="text-amber-300 text-[12px] mb-2"></p>
   <p class="text-[12px] text-slate-400 mb-3">Both are free. They are loaded automatically from .env or saved in this browser.</p>
@@ -195,7 +197,47 @@
   <label class="lbl block mb-1" for="ion">Cesium ion token (photoreal 3D) · <a class="underline text-sky-400" href="https://ion.cesium.com" target="_blank" rel="noopener">get one</a></label><input id="ion" type="password" autocomplete="off" class="w-full mb-3" placeholder="eyJ…">
   <div class="flex gap-2 justify-end"><button id="kx" class="btn">Cancel</button><button id="ks" class="cta">Save</button></div>
 </aside>
-<aside id="about" hidden role="dialog" aria-labelledby="about-h" class="glass fixed z-[60] left-1/2 top-24 -translate-x-1/2 p-4 w-[min(520px,calc(100vw-24px))] max-h-[70vh] overflow-auto text-[12px] text-slate-300">
+<aside id="kshortcuts-modal" hidden role="dialog" aria-labelledby="kshortcuts-h" class="glass fixed z-[60] left-1/2 top-28 -translate-x-1/2 p-4 w-[min(480px,calc(100vw-24px))] max-h-[75vh] overflow-y-auto">
+  <div class="flex items-center justify-between mb-3 border-b border-slate-700/60 pb-2">
+    <h2 id="kshortcuts-h" class="font-display font-bold text-sky-300 text-sm flex items-center gap-1.5">
+      <span>⌨️</span> Keyboard Navigation & Shortcuts
+    </h2>
+    <button id="kshortcuts-close" class="btn text-xs py-0.5 px-2" aria-label="Close shortcuts dialog">✕</button>
+  </div>
+  <p class="text-[11px] text-slate-300 mb-3 leading-relaxed">
+    The entire application is fully navigable via keyboard controls.
+  </p>
+  <div class="space-y-2 text-[11px] font-mono">
+    <div class="flex items-center justify-between p-1.5 rounded bg-slate-900/60 border border-slate-800">
+      <span class="text-amber-300 font-semibold"><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-200">Space</kbd> or <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-200">K</kbd></span>
+      <span class="text-slate-300">Play / Pause audio timeline</span>
+    </div>
+    <div class="flex items-center justify-between p-1.5 rounded bg-slate-900/60 border border-slate-800">
+      <span class="text-amber-300 font-semibold"><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-200">←</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-200">→</kbd></span>
+      <span class="text-slate-300">Step backward / forward one time step</span>
+    </div>
+    <div class="flex items-center justify-between p-1.5 rounded bg-slate-900/60 border border-slate-800">
+      <span class="text-amber-300 font-semibold"><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-200">M</kbd></span>
+      <span class="text-slate-300">Toggle audio mute / unmute</span>
+    </div>
+    <div class="flex items-center justify-between p-1.5 rounded bg-slate-900/60 border border-slate-800">
+      <span class="text-amber-300 font-semibold"><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-200">C</kbd></span>
+      <span class="text-slate-300">Toggle dual metric comparison drawer</span>
+    </div>
+    <div class="flex items-center justify-between p-1.5 rounded bg-slate-900/60 border border-slate-800">
+      <span class="text-amber-300 font-semibold"><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-200">Home</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-200">End</kbd></span>
+      <span class="text-slate-300">Jump to start / end of historical record</span>
+    </div>
+    <div class="flex items-center justify-between p-1.5 rounded bg-slate-900/60 border border-slate-800">
+      <span class="text-amber-300 font-semibold"><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-200">Esc</kbd></span>
+      <span class="text-slate-300">Close active modal or docked player</span>
+    </div>
+  </div>
+  <div class="mt-3 text-right">
+    <button id="kshortcuts-ok" class="btn text-xs py-1 px-3">Done</button>
+  </div>
+</aside>
+<aside id="about"  hidden role="dialog" aria-labelledby="about-h" class="glass fixed z-[60] left-1/2 top-24 -translate-x-1/2 p-4 w-[min(520px,calc(100vw-24px))] max-h-[70vh] overflow-auto text-[12px] text-slate-300">
   <h2 id="about-h" class="font-display font-bold text-base text-slate-100 mb-2">About and data credits</h2>
   <p>An independent prototype made for the NASA Space Apps Challenge. It is not an official NASA product, and NASA does not endorse it.</p>
   <ul class="list-disc pl-5 mt-2 space-y-1"><li>NASA EOSDIS GIBS: satellite imagery and data layers. NASA POWER: local climate.</li><li>Global High-Resolution Satellite & Esri World Imagery, OpenStreetMap and OpenFreeMap: base imagery, terrain, buildings and labels.</li><li>Street photos: © Mapillary contributors, CC BY-SA 4.0.</li><li>Open-source software: MapLibre GL JS, Tailwind CSS, CesiumJS, Flask, NumPy, Pillow and Requests. Esri imagery and Google photoreal 3D are third-party services with their own terms. Full list and licences: SOURCES.md in the repository.</li><li>Photoreal 3D: Google Photorealistic 3D Tiles through Cesium ion, used under their terms.</li></ul>
@@ -387,10 +429,10 @@
 
   <div class="flex flex-wrap items-center justify-between gap-2 mt-3 p-2 bg-slate-900/60 rounded-xl border border-slate-800">
     <div class="flex items-center gap-1.5">
-      <button id="eic-prev" class="btn text-xs py-1.5 px-2.5" title="Step back (Left Arrow)">⏮</button>
+      <button id="eic-prev" class="btn text-xs py-1.5 px-2.5" aria-label="Step back to previous observation" title="Step back (Left Arrow)" title="Step back (Left Arrow)">⏮</button>
       <button id="eic-play" class="cta text-xs py-1.5 px-3 flex items-center gap-1.5 font-semibold" title="Play or pause sonification (Space)"><span aria-hidden="true">▶</span> Play Audio Timeline</button>
-      <button id="eic-stop" class="btn text-xs py-1.5 px-2.5" title="Stop audio and reset timeline to beginning">⏹ Stop</button>
-      <button id="eic-next" class="btn text-xs py-1.5 px-2.5" title="Step forward (Right Arrow)">⏭</button>
+      <button id="eic-stop" class="btn text-xs py-1.5 px-2.5" aria-label="Stop playback and reset timeline" title="Stop audio and reset timeline to beginning" title="Stop audio and reset timeline to beginning">⏹ Stop</button>
+      <button id="eic-next" class="btn text-xs py-1.5 px-2.5" aria-label="Step forward to next observation" title="Step forward (Right Arrow)" title="Step forward (Right Arrow)">⏭</button>
     </div>
     <div class="flex items-center gap-2">
       <span id="eic-sync-status-indicator" class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/70 border border-amber-500/40 text-amber-300" hidden>Official Video: Linked · Not Synchronized</span>
@@ -419,7 +461,7 @@
             <tr class="text-slate-400 border-b border-slate-800">
               <th class="py-1 px-2">Year</th>
               <th class="py-1 px-2">Measured Value</th>
-              <th class="py-1 px-2">Annual Delta</th>
+              <th id="eic-table-delta-th" class="py-1 px-2">Annual Delta</th>
               <th class="py-1 px-2">Acoustic Pitch</th>
             </tr>
           </thead>
@@ -456,10 +498,10 @@
 
 <div id="live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
-<script src="assets/js/audio-engine.js?v=1.1"></script>
-<script src="assets/js/app.js?v=4.8"></script>
-<script src="assets/js/patch.js?v=4.8"></script>
-<script src="assets/js/enhance.js?v=4.8"></script>
-<script src="assets/js/eic.js?v=5.6"></script>
+<script src="assets/js/audio-engine.js?v=1.2"></script>
+<script src="assets/js/app.js?v=4.9"></script>
+<script src="assets/js/patch.js?v=4.9"></script>
+<script src="assets/js/enhance.js?v=4.9"></script>
+<script src="assets/js/eic.js?v=5.7"></script>
 </body>
 </html>
