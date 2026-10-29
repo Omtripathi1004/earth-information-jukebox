@@ -447,7 +447,29 @@ async function runAudioEngineVerification() {
   assert(EarthAudio.ctx === ctxBefore, 'Criterion 8: Dataset switching retains single shared AudioContext without duplicate instances');
   assert(window.ac === ctxBefore, 'Criterion 8: window.ac remains synchronized to shared context');
 
-  // 10. Playback Mode Coordination: Starting Jukebox stops Satellite Scan
+  // 10. Scientific Classifications and Provenance
+  for (const id of dsIds) {
+    const ds = datasets[id];
+    assert(typeof ds.data_classification === 'string' && ds.data_classification.length > 5, `Dataset ${id} has valid data_classification: "${ds.data_classification}"`);
+  }
+  assert(datasets.ecco2_ocean_currents.data_classification.includes('Synthesized Climatological Model Output'), 'ECCO2 classified as Synthesized Climatological Model Output');
+  assert(datasets.co2.data_classification.includes('In-Situ Observational Measurement'), 'NOAA CO2 classified as In-Situ Observational Measurement');
+
+  // 11. CO2 Calibration and Headroom
+  const co2Labels = Sonifier.generateDynamicPitchLabels(datasets.co2);
+  assert(co2Labels[0].includes('330') && co2Labels[0].includes('131'), 'CO2 pitch label has 330 ppm -> 131 Hz');
+  assert(co2Labels[1].includes('380') && co2Labels[1].includes('220'), 'CO2 pitch label has 380 ppm -> 220 Hz');
+  assert(co2Labels[2].includes('430') && co2Labels[2].includes('370'), 'CO2 pitch label has 430 ppm nominal -> 370 Hz');
+  assert(co2Labels[2].includes('450') && co2Labels[2].includes('456'), 'CO2 pitch label has 450 ppm headroom -> 456 Hz');
+
+  // 12. Compare Tool and Walkthrough Controller Methods
+  assert(typeof UI.renderCompare === 'function', 'UI.renderCompare exists');
+  assert(typeof UI.playDualAudio === 'function', 'UI.playDualAudio exists');
+  assert(typeof UI.toggleWalkthrough === 'function', 'UI.toggleWalkthrough exists');
+  assert(typeof UI.startWalkthrough === 'function', 'UI.startWalkthrough exists');
+  assert(typeof UI.stopWalkthrough === 'function', 'UI.stopWalkthrough exists');
+
+  // 13. Playback Mode Coordination: Starting Jukebox stops Satellite Scan
   const listenBtn = mockElement('listen');
   listenBtn.classList.add('on');
   await state.play();

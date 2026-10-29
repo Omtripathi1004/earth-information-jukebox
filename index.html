@@ -263,6 +263,11 @@
   <div id="eic-vis-asset-meta" class="mt-2 text-[11px] font-mono text-sky-300 bg-slate-900/90 border border-sky-800/50 rounded-lg p-2">
     🌡️ NASA GMAO GEOS-FP 2m Air Temp Model (2024 Climatological Cycle)
   </div>
+  <div class="mt-2 flex flex-wrap items-center gap-2">
+    <span class="lbl text-[10px] text-slate-400">Scientific Classification:</span>
+    <span id="eic-classification-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-950/80 border border-emerald-500/40 text-emerald-300">Model Output / Atmospheric Assimilation</span>
+    <a id="eic-dataset-source-link" href="https://earth.gov/" target="_blank" rel="noopener noreferrer" class="text-[10px] text-sky-400 hover:text-sky-300 underline font-mono flex items-center gap-1 ml-auto">Official Source Portal ↗</a>
+  </div>
 
   <!-- Judge & Reviewer Interactive Walkthrough Guide -->
   <details id="eic-judge-guide" class="mt-2.5 text-[11px] bg-sky-950/40 border border-sky-600/30 rounded-lg p-2.5">
@@ -278,6 +283,10 @@
       <li><b>Scrub Time:</b> Drag across the sparkline or slider to explore historical trends.</li>
       <li><b>Inspect Mathematical Rigor:</b> Expand <i>How Sound Works</i> to review the exact physics transfer equations and documented sensor limitations.</li>
     </ol>
+    <div class="mt-2.5 pt-2 border-t border-sky-800/50 flex flex-wrap items-center justify-between gap-2">
+      <button id="eic-start-walkthrough" class="btn text-xs py-1.5 px-3 bg-sky-900/60 hover:bg-sky-800/80 text-sky-200 border border-sky-400/40 flex items-center gap-1.5"><span aria-hidden="true">🚀</span> Start Guided Reviewer Tour (6 Metrics)</button>
+      <span id="eic-walkthrough-status" class="text-[11px] font-mono text-amber-300" hidden>Step 1/6: Mauna Loa CO2…</span>
+    </div>
   </details>
 
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 p-3 bg-slate-900/70 border border-slate-800 rounded-xl">
@@ -316,6 +325,50 @@
       <span>Modern Record</span>
     </div>
   </div>
+
+  <!-- Dual Metric Comparison Drawer -->
+  <details id="eic-compare-details" class="mt-3">
+    <summary class="lbl text-[11px] cursor-pointer select-none text-emerald-400 hover:text-emerald-300 flex items-center justify-between">
+      <span>⚖️ Compare Two Metrics (Dual Trajectory & Correlation)</span>
+      <span class="text-[10px] font-mono text-emerald-400">Click to expand</span>
+    </summary>
+    <div class="mt-2 p-3 bg-slate-950/90 border border-emerald-500/30 rounded-xl space-y-2.5 text-xs">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div>
+          <label class="lbl text-[10px] text-slate-400 block mb-1">Metric A (Primary)</label>
+          <select id="eic-compare-a" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
+            <option value="co2">NOAA Mauna Loa CO2 Record (1980–2024)</option>
+            <option value="sea_level">Global Mean Sea Level (1993–2024)</option>
+            <option value="temperature_anomaly" selected>Surface Temp Anomaly GISTEMP (1980–2024)</option>
+            <option value="arctic_sea_ice">Arctic Sea Ice Minimum (1980–2024)</option>
+            <option value="geos_fp_temp">GEOS-FP Near-Surface Air Temp (2024)</option>
+            <option value="ecco2_ocean_currents">ECCO2 Sea Surface Potential Temp (2024)</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl text-[10px] text-slate-400 block mb-1">Metric B (Comparison)</label>
+          <select id="eic-compare-b" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
+            <option value="co2" selected>NOAA Mauna Loa CO2 Record (1980–2024)</option>
+            <option value="sea_level">Global Mean Sea Level (1993–2024)</option>
+            <option value="temperature_anomaly">Surface Temp Anomaly GISTEMP (1980–2024)</option>
+            <option value="arctic_sea_ice">Arctic Sea Ice Minimum (1980–2024)</option>
+            <option value="geos_fp_temp">GEOS-FP Near-Surface Air Temp (2024)</option>
+            <option value="ecco2_ocean_currents">ECCO2 Sea Surface Potential Temp (2024)</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex items-center justify-between text-[11px] font-mono text-slate-300 px-1">
+        <span id="eic-compare-stats" class="text-amber-300 font-semibold">Pearson correlation r = +0.96 (Strong Coupling)</span>
+        <button id="eic-compare-dual-audio" class="btn text-xs py-1 px-2.5 text-emerald-300 border-emerald-500/40 hover:bg-emerald-950/50">▶ Dual Audio Harmony</button>
+      </div>
+      <canvas id="eic-compare-canvas" width="620" height="80" class="w-full h-20 bg-slate-950 rounded-lg border border-slate-800" role="img" aria-label="Dual metric normalized historical comparison chart"></canvas>
+      <div class="flex justify-between text-[9px] font-mono text-slate-400 px-1">
+        <span class="text-sky-400 font-semibold">■ Metric A (Normalized 0–1)</span>
+        <span id="eic-compare-overlap-range" class="text-slate-400">Overlap: 1980–2024</span>
+        <span class="text-amber-400 font-semibold">■ Metric B (Normalized 0–1)</span>
+      </div>
+    </div>
+  </details>
 
   <div class="mt-3">
     <input id="eic-slider" type="range" class="w-full accent-sky-400 cursor-pointer" min="0" max="11" value="0" aria-label="Timeline position">
@@ -403,10 +456,10 @@
 
 <div id="live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
-<script src="assets/js/audio-engine.js?v=1.0"></script>
-<script src="assets/js/app.js?v=4.7"></script>
-<script src="assets/js/patch.js?v=4.7"></script>
-<script src="assets/js/enhance.js?v=4.7"></script>
-<script src="assets/js/eic.js?v=5.5"></script>
+<script src="assets/js/audio-engine.js?v=1.1"></script>
+<script src="assets/js/app.js?v=4.8"></script>
+<script src="assets/js/patch.js?v=4.8"></script>
+<script src="assets/js/enhance.js?v=4.8"></script>
+<script src="assets/js/eic.js?v=5.6"></script>
 </body>
 </html>

@@ -642,16 +642,46 @@ class TestNOAACO2ScientificReconciliation(unittest.TestCase):
     def test_9_sonification_transfer_function_boundaries_and_checkpoints(self):
         # f = 130.81 * (2 ** (clamp((val - 330) / 100, 0, 1.2) * 1.5))
         # 1. Below / at calibration floor (330 ppm)
+        self.assertEqual(eic_data.calculate_pitch("co2", 280.0), 130.81)
         self.assertEqual(eic_data.calculate_pitch("co2", 300.0), 130.81)
         self.assertEqual(eic_data.calculate_pitch("co2", 330.0), 130.81)
-        # 2. Midpoint (380 ppm)
+        # 2. Midpoint (380 ppm -> norm=0.5)
         self.assertEqual(eic_data.calculate_pitch("co2", 380.0), 220.00)
-        # 3. Calibration ceiling (430 ppm)
+        # 3. Nominal calibration ceiling (430 ppm -> norm=1.0)
         self.assertEqual(eic_data.calculate_pitch("co2", 430.0), 369.99)
         # 4. Corrected 2024 observation (424.61 ppm)
         self.assertEqual(eic_data.calculate_pitch("co2", 424.61), 349.82)
-        # 5. Clamping upper threshold (450+ ppm -> norm=1.2)
+        # 5. Clamping upper threshold (450.0 ppm -> norm=1.2)
+        self.assertEqual(eic_data.calculate_pitch("co2", 450.0), 455.51)
+        # 6. Values beyond headroom (460, 500, 600 ppm) clamp cleanly to 455.51 Hz
+        self.assertEqual(eic_data.calculate_pitch("co2", 460.0), 455.51)
         self.assertEqual(eic_data.calculate_pitch("co2", 500.0), 455.51)
+        self.assertEqual(eic_data.calculate_pitch("co2", 600.0), 455.51)
+        # 7. Values outside physical valid range (<280 or >600) raise ValueError
+        with self.assertRaises(ValueError):
+            eic_data.calculate_pitch("co2", 250.0)
+        with self.assertRaises(ValueError):
+            eic_data.calculate_pitch("co2", 650.0)
+        with self.assertRaises(ValueError):
+            eic_data.calculate_pitch("co2", float("nan"))
+        with self.assertRaises(ValueError):
+            eic_data.calculate_pitch("co2", float("inf"))
+
+    def test_11_dataset_scientific_classification_and_ecco2_labeling(self):
+        # Verify all 6 datasets have explicit data_classification
+        for d_id in ["geos_fp_temp", "ecco2_ocean_currents", "co2", "sea_level", "temperature_anomaly", "arctic_sea_ice"]:
+            ds = eic_data.get_dataset(d_id)
+            self.assertIn("data_classification", ds, f"{d_id} must have data_classification")
+            self.assertTrue(len(ds["data_classification"]) > 10)
+
+        # ECCO2 must be labeled as synthesized climatological model output
+        ecco = eic_data.get_dataset("ecco2_ocean_currents")
+        self.assertIn("Synthesized Climatological Model Output", ecco["data_classification"])
+        self.assertIn("scalar thermal storage", ecco["transformation_notes"])
+
+        # NOAA CO2 must be in-situ observational
+        co2_ds = eic_data.get_dataset("co2")
+        self.assertIn("In-Situ Observational Measurement", co2_ds["data_classification"])
 
     def test_10_outdated_approximate_or_inconsistent_values_fail(self):
         outdated_approximations = [338.8, 341.2, 342.9, 344.4, 404.2, 424.5, 424.6]

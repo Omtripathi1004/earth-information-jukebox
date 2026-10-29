@@ -280,6 +280,45 @@ async function run() {
 
   assert(listenCoord && listenCoord.jbPaused === true, 'Activating Satellite Listen cleanly pauses Jukebox playback');
 
+  // 8. Test Scientific Classification Badge & Source Portal Link
+  const metaCheck = await evaluate(`(() => {
+    const badge = document.getElementById('eic-classification-badge');
+    const link = document.getElementById('eic-dataset-source-link');
+    return {
+      hasBadge: !!badge && badge.textContent.length > 5,
+      badgeText: badge ? badge.textContent : '',
+      hasLink: !!link && link.href.startsWith('http')
+    };
+  })()`);
+  assert(metaCheck && metaCheck.hasBadge === true, `Scientific classification badge rendered: "${metaCheck ? metaCheck.badgeText : ''}"`);
+  assert(metaCheck && metaCheck.hasLink === true, 'Official source portal link rendered with valid URL');
+
+  // 9. Test Metric Comparison Tool & Dual Audio Harmony
+  const compareCheck = await evaluate(`(async () => {
+    const details = document.getElementById('eic-compare-details');
+    if (details) details.open = true;
+    window.EICJukebox.UI.renderCompare();
+    const stats = document.getElementById('eic-compare-stats');
+    const canvas = document.getElementById('eic-compare-canvas');
+    return {
+      hasStats: !!stats && stats.textContent.includes('correlation'),
+      hasCanvas: !!canvas && canvas.width > 0
+    };
+  })()`);
+  assert(compareCheck && compareCheck.hasStats === true, 'Metric comparison calculates correlation stats');
+  assert(compareCheck && compareCheck.hasCanvas === true, 'Comparison dual-curve canvas rendered');
+
+  // 10. Test Reviewer Walkthrough Trigger
+  const tourCheck = await evaluate(`(async () => {
+    const btn = document.getElementById('eic-start-walkthrough');
+    if (btn) btn.click();
+    await new Promise(r => setTimeout(r, 400));
+    const active = window.EICJukebox.UI.isWalkthroughActive;
+    window.EICJukebox.UI.stopWalkthrough();
+    return { active };
+  })()`);
+  assert(tourCheck && tourCheck.active === true, 'Automated Scientific Reviewer Walkthrough starts successfully');
+
   // Clean shutdown
   try { ws.close(); } catch (e) {}
   try {

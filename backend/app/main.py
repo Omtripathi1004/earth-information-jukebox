@@ -166,7 +166,12 @@ def create_app() -> Flask:
     @app.get("/api/config")
     def config():
         """Optional shared tokens for a team deployment. Browser tokens are public by nature: restrict them at the provider."""
-        return jsonify(mapillary_token=os.environ.get("MAPILLARY_TOKEN") or None, cesium_ion_token=os.environ.get("CESIUM_ION_TOKEN") or None)
+        return jsonify(
+            mapillary_token=os.environ.get("MAPILLARY_TOKEN") or None,
+            cesium_ion_token=os.environ.get("CESIUM_ION_TOKEN") or None,
+            has_mapillary=bool(os.environ.get("MAPILLARY_TOKEN")),
+            has_cesium_ion=bool(os.environ.get("CESIUM_ION_TOKEN")),
+        )
 
     @app.get("/api/climate")
     def climate():

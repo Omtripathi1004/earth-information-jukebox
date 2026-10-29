@@ -17,6 +17,7 @@
       title: 'NASA GEOS-FP Near-Surface Temperature (2m Air Temp)',
       theme: 'Global Climate & Atmosphere',
       agency: 'NASA GSFC / GMAO & Earth Information Center (earth.gov)',
+      data_classification: 'Model Output / Atmospheric Assimilation (NASA GMAO GEOS-FP 2m Air Temp)',
       portalUrl: 'https://earth.gov/',
       units: '°C',
       unitName: 'Degrees Celsius',
@@ -53,12 +54,13 @@
       title: 'ECCO2 Sea Surface Potential Temperature',
       theme: 'Ocean Circulation & Energy',
       agency: 'NASA JPL / ECCO2 & Earth Information Center (earth.gov)',
+      data_classification: 'Synthesized Climatological Model Output (NASA JPL ECCO2 Cube92 Global Basin Mean)',
       portalUrl: 'https://earth.gov/',
       units: '°C',
       unitName: 'Degrees Celsius',
       baselineDesc: 'Global mean SST ~16.1 °C',
       baselineVal: 16.1,
-      description: 'High-resolution sea surface potential temperature (0–5m) area-averaged across global oceans from the Estimating the Circulation and Climate of the Ocean (ECCO2) state estimate, tracking seasonal thermal storage.',
+      description: 'Synthesized ocean state estimate. Near-surface layer potential temperature (0–5m) area-averaged across the global ocean basin from ECCO2 Cube92, tracking seasonal thermal storage (annual mean ~16.5 °C, amplitude ~1.5 °C). Dynamic ocean current vectors and circulation velocities are not sonified.',
       years: [
         'Jan 2024', 'Feb 2024', 'Mar 2024', 'Apr 2024', 'May 2024', 'Jun 2024',
         'Jul 2024', 'Aug 2024', 'Sep 2024', 'Oct 2024', 'Nov 2024', 'Dec 2024'
@@ -89,6 +91,7 @@
       title: 'Atmospheric Carbon Dioxide (CO₂) — NOAA GML Mauna Loa Record',
       theme: 'Greenhouse Gases',
       agency: 'NOAA GML / NASA Earth Information Center GHG Center',
+      data_classification: 'In-Situ Observational Measurement (NOAA GML Mauna Loa Baseline Observatory)',
       portalUrl: 'https://earth.gov/ghgcenter',
       units: 'ppm',
       unitName: 'Parts per million',
@@ -118,7 +121,7 @@
         contextualGlobeLayer: 'VIIRS_SNPP_CorrectedReflectance_TrueColor',
         contextualLayerTitle: 'Suomi-NPP VIIRS Corrected Reflectance (True Color)',
         contextualLayerNote: 'Contextual optical satellite imagery. Displays terrestrial vegetation and cloud cover at Mauna Loa for geographical orientation, not the atmospheric CO2 column mixing ratio.',
-        pitchRange: '131 Hz – 370 Hz (calibration) · 143 Hz – 350 Hz (observed 1980–2024)',
+        pitchRange: '131 Hz – 370 Hz (330–430 ppm nominal calibration) · headroom to 456 Hz (450 ppm) · 143 Hz – 350 Hz (observed 1980–2024)',
         fullCalibrationRange: '131 Hz – 370 Hz',
         voice_desc: 'Warm harmonic triangle voice representing terrestrial biosphere and atmospheric absorption',
         frequency_formula: 'f = 130.81 * (2 ** (clamp((CO2 - 330.0) / 100.0, 0.0, 1.2) * 1.5))',
@@ -132,6 +135,7 @@
       title: 'Global Mean Sea Level Variation',
       theme: 'Sea Level Change',
       agency: 'NASA GSFC / CNES Satellite Altimetry (TOPEX/Poseidon, Jason, Sentinel-6 MF · EIC #332)',
+      data_classification: 'Satellite Radar Altimeter Observation (TOPEX/Poseidon, Jason, Sentinel-6 MF)',
       portalUrl: 'https://earth.gov/sealevel/resources/332/global-mean-sea-level-1993-2024/',
       eic_resource_id: '332',
       eic_resource_url: 'https://earth.gov/sealevel/resources/332/global-mean-sea-level-1993-2024/',
@@ -194,6 +198,7 @@
       title: 'Global Surface Temperature Anomaly (GISTEMP)',
       theme: 'Global Climate & Energy',
       agency: 'NASA Goddard Institute for Space Studies (GISS)',
+      data_classification: 'Observational Surface Analysis (NASA GISS GISTEMP v4 LOTI vs 1951–1980 Baseline)',
       portalUrl: 'https://earth.gov/',
       units: '°C',
       unitName: 'Degrees Celsius anomaly',
@@ -237,6 +242,7 @@
       title: 'Arctic Sea Ice Minimum Extent (September)',
       theme: 'Cryosphere & Sea Level',
       agency: 'NSIDC / NASA Earth Observatory',
+      data_classification: 'Satellite Passive Microwave Radiometer Observation (NSIDC / NASA Sea Ice Index)',
       portalUrl: 'https://earth.gov/',
       units: 'million km²',
       unitName: 'Million square kilometers',
@@ -468,10 +474,11 @@
         const pFloor = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 330.0).freq);
         const pMid = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 380.0).freq);
         const pUpper = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 430.0).freq);
+        const pHead = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 450.0).freq);
         return [
-          `Floor (330 ${u} → ${pFloor} Hz)`,
-          `Mid-Scale (380 ${u} → ${pMid} Hz)`,
-          `Upper Bound (430 ${u} → ${pUpper} Hz)`
+          `Base (330 ${u} → ${pFloor} Hz)`,
+          `Mid (380 ${u} → ${pMid} Hz)`,
+          `Nominal (430 ${u} → ${pUpper} Hz · Headroom 450 → ${pHead} Hz)`
         ];
       } else if (id === 'sea_level') {
         const pBase = Math.round(this.calculateNote(dataset, 0, { deltas: [] }, 0.0).freq);
@@ -841,6 +848,17 @@
       this.btnStop = document.getElementById('eic-stop');
       this.btnPrev = document.getElementById('eic-prev');
       this.btnNext = document.getElementById('eic-next');
+      this.compareDetails = document.getElementById('eic-compare-details');
+      this.compareA = document.getElementById('eic-compare-a');
+      this.compareB = document.getElementById('eic-compare-b');
+      this.compareCanvas = document.getElementById('eic-compare-canvas');
+      this.compareStats = document.getElementById('eic-compare-stats');
+      this.compareRange = document.getElementById('eic-compare-overlap-range');
+      this.btnCompareAudio = document.getElementById('eic-compare-dual-audio');
+      this.btnWalkthrough = document.getElementById('eic-start-walkthrough');
+      this.walkthroughStatus = document.getElementById('eic-walkthrough-status');
+      this.isWalkthroughActive = false;
+      this.walkthroughTimer = null;
       this.slider = document.getElementById('eic-slider');
       this.canvas = document.getElementById('eic-sparkline');
       this.btnMute = document.getElementById('eic-mute');
@@ -978,6 +996,25 @@
 
         this.canvas.addEventListener('click', (e) => handleSeekPos(e.clientX));
 
+      // Comparison Tool Event Handlers
+      if (this.compareA && this.compareB) {
+        this.compareA.addEventListener('change', () => this.renderCompare());
+        this.compareB.addEventListener('change', () => this.renderCompare());
+      }
+      if (this.compareDetails) {
+        this.compareDetails.addEventListener('toggle', () => {
+          if (this.compareDetails.open) this.renderCompare();
+        });
+      }
+      if (this.btnCompareAudio) {
+        this.btnCompareAudio.addEventListener('click', () => this.playDualAudio());
+      }
+
+      // Reviewer Walkthrough Event Handlers
+      if (this.btnWalkthrough) {
+        this.btnWalkthrough.addEventListener('click', () => this.toggleWalkthrough());
+      }
+
         let isTouchDragging = false;
         this.canvas.addEventListener('touchstart', (e) => {
           if (e.touches && e.touches[0]) {
@@ -1029,6 +1066,12 @@
           } else if (e.key === 'm' || e.key === 'M') {
             e.preventDefault();
             this.state.toggleMute();
+          } else if (e.key === 'c' || e.key === 'C') {
+            if (this.compareDetails) {
+              e.preventDefault();
+              this.compareDetails.open = !this.compareDetails.open;
+              if (this.compareDetails.open) this.renderCompare();
+            }
           } else if (e.key === 'Home') {
             e.preventDefault();
             this.state.seek(0, true);
@@ -1068,6 +1111,15 @@
       setText('eic-title', d.title);
       setText('eic-theme', d.theme);
       setText('eic-agency', d.agency);
+
+      const classBadge = document.getElementById('eic-classification-badge');
+      if (classBadge && d.data_classification) {
+        classBadge.textContent = d.data_classification;
+      }
+      const portalLnk = document.getElementById('eic-dataset-source-link');
+      if (portalLnk && d.portalUrl) {
+        portalLnk.href = d.portalUrl;
+      }
 
       // Active visualization & observation platform badge
       let visMeta = '';
@@ -1298,6 +1350,251 @@
       ctx.beginPath();
       ctx.arc(curX, curY, 6.5, 0, Math.PI * 2);
       ctx.stroke();
+    }
+
+    static renderCompare() {
+      if (!this.compareCanvas || !this.compareA || !this.compareB) return;
+      const idA = this.compareA.value;
+      const idB = this.compareB.value;
+      const dsA = EIC_DATASETS[idA];
+      const dsB = EIC_DATASETS[idB];
+      if (!dsA || !dsB) return;
+
+      const isMonthlyA = dsA.years[0] && String(dsA.years[0]).includes(' ');
+      const isMonthlyB = dsB.years[0] && String(dsB.years[0]).includes(' ');
+
+      let commonPoints = [];
+      if (isMonthlyA && isMonthlyB) {
+        for (let i = 0; i < Math.min(dsA.years.length, dsB.years.length); i++) {
+          commonPoints.push({ label: dsA.years[i], valA: dsA.values[i], valB: dsB.values[i] });
+        }
+      } else if (!isMonthlyA && !isMonthlyB) {
+        const mapB = new Map(dsB.years.map((y, i) => [y, dsB.values[i]]));
+        dsA.years.forEach((yr, i) => {
+          if (mapB.has(yr)) {
+            commonPoints.push({ label: yr, valA: dsA.values[i], valB: mapB.get(yr) });
+          }
+        });
+      } else {
+        const len = Math.min(dsA.values.length, dsB.values.length);
+        for (let i = 0; i < len; i++) {
+          commonPoints.push({ label: `Pt ${i+1}`, valA: dsA.values[i], valB: dsB.values[i] });
+        }
+      }
+
+      if (commonPoints.length < 2) {
+        if (this.compareStats) this.compareStats.textContent = 'Insufficient overlapping period to correlate.';
+        return;
+      }
+
+      const aVals = commonPoints.map(p => p.valA);
+      const bVals = commonPoints.map(p => p.valB);
+
+      const meanA = aVals.reduce((a, b) => a + b, 0) / aVals.length;
+      const meanB = bVals.reduce((a, b) => a + b, 0) / bVals.length;
+
+      let cov = 0, varA = 0, varB = 0;
+      for (let i = 0; i < aVals.length; i++) {
+        const diffA = aVals[i] - meanA;
+        const diffB = bVals[i] - meanB;
+        cov += diffA * diffB;
+        varA += diffA * diffA;
+        varB += diffB * diffB;
+      }
+      const r = (varA > 0 && varB > 0) ? (cov / Math.sqrt(varA * varB)) : 0;
+
+      const strength = Math.abs(r) > 0.8 ? 'Strong' : Math.abs(r) > 0.5 ? 'Moderate' : 'Weak';
+      const dir = r >= 0 ? 'Positive' : 'Inverse';
+      if (this.compareStats) {
+        this.compareStats.textContent = `Pearson correlation r = ${r >= 0 ? '+' : ''}${r.toFixed(2)} (${strength} ${dir} Coupling · n=${commonPoints.length})`;
+      }
+      if (this.compareRange) {
+        this.compareRange.textContent = `Overlap: ${commonPoints[0].label} – ${commonPoints[commonPoints.length - 1].label}`;
+      }
+
+      // Draw dual sparklines on compare canvas
+      const ctx = this.compareCanvas.getContext('2d');
+      const w = this.compareCanvas.width;
+      const h = this.compareCanvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const padX = 14, padY = 8;
+      const plotW = w - padX * 2;
+      const plotH = h - padY * 2;
+
+      const minA = Math.min(...aVals), maxA = Math.max(...aVals), rangeA = maxA - minA || 1;
+      const minB = Math.min(...bVals), maxB = Math.max(...bVals), rangeB = maxB - minB || 1;
+
+      const getX = i => padX + (i / (commonPoints.length - 1)) * plotW;
+      const getYA = v => h - padY - ((v - minA) / rangeA) * plotH;
+      const getYB = v => h - padY - ((v - minB) / rangeB) * plotH;
+
+      // Draw zero / baseline grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.moveTo(padX, h / 2);
+      ctx.lineTo(w - padX, h / 2);
+      ctx.stroke();
+
+      // Curve A (Sky Blue)
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < commonPoints.length; i++) {
+        const x = getX(i), y = getYA(aVals[i]);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Curve B (Amber)
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < commonPoints.length; i++) {
+        const x = getX(i), y = getYB(bVals[i]);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    static async playDualAudio() {
+      if (!this.compareA || !this.compareB) return;
+      const dsA = EIC_DATASETS[this.compareA.value];
+      const dsB = EIC_DATASETS[this.compareB.value];
+      if (!dsA || !dsB || !window.EarthAudio) return;
+
+      await window.EarthAudio.init();
+
+      const noteA = EICSonifier.calculateNote(dsA, dsA.values.length - 1, EICDataPrep.computeStats(dsA));
+      const noteB = EICSonifier.calculateNote(dsB, dsB.values.length - 1, EICDataPrep.computeStats(dsB));
+
+      // Play Note A panned slightly left (-0.4)
+      window.EarthAudio.playVoice(noteA.voiceType, noteA.freq, noteA.vel, -0.4, 1.4);
+
+      // Play Note B panned slightly right (+0.4)
+      setTimeout(() => {
+        window.EarthAudio.playVoice(noteB.voiceType, noteB.freq, noteB.vel, +0.4, 1.4);
+      }, 70);
+    }
+
+    static toggleWalkthrough() {
+      if (this.isWalkthroughActive) {
+        this.stopWalkthrough();
+      } else {
+        this.startWalkthrough();
+      }
+    }
+
+    static stopWalkthrough() {
+      this.isWalkthroughActive = false;
+      if (this.walkthroughTimer) {
+        clearTimeout(this.walkthroughTimer);
+        this.walkthroughTimer = null;
+      }
+      if (this.btnWalkthrough) {
+        this.btnWalkthrough.innerHTML = '<span aria-hidden="true">🚀</span> Start Guided Reviewer Tour (6 Metrics)';
+      }
+      if (this.walkthroughStatus) {
+        this.walkthroughStatus.hidden = true;
+      }
+    }
+
+    static async startWalkthrough() {
+      this.isWalkthroughActive = true;
+      if (this.btnWalkthrough) {
+        this.btnWalkthrough.innerHTML = '<span aria-hidden="true">⏹</span> Stop Guided Tour';
+      }
+      if (this.walkthroughStatus) {
+        this.walkthroughStatus.hidden = false;
+      }
+
+      await window.EarthAudio.init();
+
+      const tourSteps = [
+        {
+          id: 'co2',
+          title: '1/6: Atmospheric CO2 (NOAA Mauna Loa In-Situ)',
+          action: async () => {
+            this.state.setDataset('co2');
+            this.state.seek(0, true);
+            await new Promise(r => setTimeout(r, 600));
+            this.state.seek(24, true); // 2004 (~377 ppm)
+            await new Promise(r => setTimeout(r, 600));
+            this.state.seek(44, true); // 2024 (424.61 ppm)
+          }
+        },
+        {
+          id: 'sea_level',
+          title: '2/6: Global Mean Sea Level (Satellite Altimetry 1993–2024)',
+          action: async () => {
+            this.state.setDataset('sea_level');
+            this.state.seek(0, true);
+            await new Promise(r => setTimeout(r, 600));
+            this.state.seek(15, true); // 2008
+            await new Promise(r => setTimeout(r, 600));
+            this.state.seek(31, true); // 2024 (+105.8 mm)
+          }
+        },
+        {
+          id: 'temperature_anomaly',
+          title: '3/6: Surface Temp Anomaly (NASA GISTEMP v4 LOTI)',
+          action: async () => {
+            this.state.setDataset('temperature_anomaly');
+            this.state.seek(0, true);
+            await new Promise(r => setTimeout(r, 600));
+            this.state.seek(44, true); // 2024 (+1.28 C)
+          }
+        },
+        {
+          id: 'arctic_sea_ice',
+          title: '4/6: Arctic Sea Ice Minimum (NSIDC Passive Microwave)',
+          action: async () => {
+            this.state.setDataset('arctic_sea_ice');
+            this.state.seek(0, true);
+            await new Promise(r => setTimeout(r, 600));
+            this.state.seek(32, true); // 2012 record low (3.39 M km2)
+          }
+        },
+        {
+          id: 'geos_fp_temp',
+          title: '5/6: NASA GEOS-FP 2m Air Temp (2024 Seasonal Cycle)',
+          action: async () => {
+            this.state.setDataset('geos_fp_temp');
+            this.state.seek(0, true); // Jan
+            await new Promise(r => setTimeout(r, 500));
+            this.state.seek(6, true); // Jul peak (17.1 C)
+          }
+        },
+        {
+          id: 'ecco2_ocean_currents',
+          title: '6/6: NASA ECCO2 Sea Surface Potential Temp (Climatology)',
+          action: async () => {
+            this.state.setDataset('ecco2_ocean_currents');
+            this.state.seek(0, true);
+            await new Promise(r => setTimeout(r, 500));
+            this.state.seek(6, true);
+          }
+        }
+      ];
+
+      for (let s = 0; s < tourSteps.length; s++) {
+        if (!this.isWalkthroughActive) break;
+        const step = tourSteps[s];
+        if (this.walkthroughStatus) {
+          this.walkthroughStatus.textContent = step.title;
+        }
+        await step.action();
+        await new Promise(r => setTimeout(r, 1400));
+      }
+
+      if (this.isWalkthroughActive) {
+        if (this.walkthroughStatus) {
+          this.walkthroughStatus.textContent = '✓ Tour Complete: All 6 metrics sonified!';
+        }
+        setTimeout(() => this.stopWalkthrough(), 2500);
+      }
     }
   }
 
