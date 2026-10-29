@@ -20,3 +20,5 @@ venv/
 
 # Scratch scripts
 scratch/
+
+.tmp_chrome_profile/

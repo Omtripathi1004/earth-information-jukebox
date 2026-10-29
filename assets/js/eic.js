@@ -370,6 +370,10 @@
   // ---------------------------------------------------------------------------
   class EICSonifier {
     static getAudioContext() {
+      if (window.EarthAudio) {
+        window.EarthAudio.init();
+        return window.EarthAudio.getContext();
+      }
       if (window.ac && window.ac.state !== 'closed') {
         if (window.ac.state === 'suspended') window.ac.resume();
         return window.ac;
@@ -501,11 +505,22 @@
     }
 
     static playNote(dataset, index, stats, isMuted) {
-      if (isMuted) return null;
-      const ctx = this.getAudioContext();
-      if (!ctx) return null;
+      if (isMuted || (window.EarthAudio && window.EarthAudio.isMuted)) return null;
+      if (window.EarthAudio) {
+        window.EarthAudio.init();
+      }
 
       const note = this.calculateNote(dataset, index, stats);
+
+      if (window.EarthAudio) {
+        window.EarthAudio.playVoice(
+          note.voiceType === 'ice' ? 'bell' : note.voiceType,
+          note.freq,
+          note.vel,
+          note.pan
+        );
+        return note;
+      }
 
       if (typeof window.voice === 'function') {
         try {
@@ -517,6 +532,8 @@
       }
 
       try {
+        const ctx = this.getAudioContext();
+        if (!ctx) return null;
         const now = ctx.currentTime;
         const dur = note.voiceType === 'water' ? 1.6 : 0.85;
         const osc = ctx.createOscillator();
@@ -578,7 +595,7 @@
       }
     }
 
-    setDataset(id) {
+    setDataset(id, playSound = false) {
       if (!EIC_DATASETS[id]) return;
       this.stop();
       this.dataset = EIC_DATASETS[id];
@@ -586,7 +603,7 @@
       this.currentIndex = 0;
       this.fetchAsyncUpdate(id);
       if (this.syncGlobe) this.flyToDatasetLocation();
-      const note = EICSonifier.playNote(this.dataset, this.currentIndex, this.stats, this.isMuted);
+      const note = playSound && window.EarthAudio && window.EarthAudio.ctx ? EICSonifier.playNote(this.dataset, this.currentIndex, this.stats, this.isMuted) : null;
       this.notify(note);
     }
 
@@ -636,13 +653,17 @@
       this.seek(this.currentIndex - 1, true);
     }
 
-    play() {
+    async play() {
       if (this.isPlaying) return;
       const listenBtn = document.getElementById('listen');
-      if (listenBtn && listenBtn.classList.contains('on')) {
+      if (listenBtn && listenBtn.classList && typeof listenBtn.classList.contains === 'function' && listenBtn.classList.contains('on')) {
         listenBtn.click();
       }
-      EICSonifier.getAudioContext();
+      if (window.EarthAudio) {
+        await window.EarthAudio.init();
+      } else {
+        EICSonifier.getAudioContext();
+      }
       this.isPlaying = true;
       clearInterval(this.timer);
 
@@ -697,6 +718,9 @@
 
     toggleMute() {
       this.isMuted = !this.isMuted;
+      if (window.EarthAudio) {
+        window.EarthAudio.setMuted(this.isMuted);
+      }
       this.notify(null);
     }
 
@@ -898,6 +922,26 @@
 
       if (this.btnMute) {
         this.btnMute.addEventListener('click', () => this.state.toggleMute());
+      }
+
+      const testSoundBtn = document.getElementById('eic-test-sound');
+      if (testSoundBtn) {
+        testSoundBtn.addEventListener('click', async () => {
+          testSoundBtn.disabled = true;
+          testSoundBtn.innerHTML = '🔔 Testing…';
+          if (window.EarthAudio) {
+            const res = await window.EarthAudio.playTestTone();
+            if (res && res.success) {
+              testSoundBtn.innerHTML = '✓ Sound Audible';
+            } else {
+              testSoundBtn.innerHTML = '⚠️ Check Audio';
+            }
+          }
+          setTimeout(() => {
+            testSoundBtn.disabled = false;
+            testSoundBtn.innerHTML = '🔔 Test Sound';
+          }, 1400);
+        });
       }
 
       if (this.speedSelect) {

@@ -151,7 +151,7 @@ function frame() {
     if (vig) vig.style.opacity = clamp(1 - (zs - 2.5) / 1.5, 0, 1);
 
     $('#zr').value = (zs - Z0) / (Z1 - Z0) * 1000;
-    if (ac) { dl.frequency.setTargetAtTime(150 + zs * 120, ac.currentTime, .1); dg.gain.setTargetAtTime(listening ? .035 : 0, ac.currentTime, .2); }
+    // audio drone handled by EarthAudio
   }
   requestAnimationFrame(frame);
 }
@@ -212,21 +212,15 @@ function drawCl() {
   const f = i => my + b * (Y[i] - (Y.reduce((a, c2) => a + c2) / Y.length)); g.strokeStyle = '#fff'; g.setLineDash([4, 3]); g.lineWidth = 1; g.beginPath(); g.moveTo(X(0), Yy(f(0))); g.lineTo(X(TT.length - 1), Yy(f(TT.length - 1))); g.stroke(); g.setLineDash([]);
 }
 
-/* ---------- sound: the image scan + the climate melody ---------- */
-let ac, mst, dly, dl, dg, listening = false, scanT, col = 0;
+/* ---------- sound: the image scan + the climate melody (unified EarthAudio) ---------- */
+let listening = false, scanT, col = 0;
 function boot() {
-  if (ac) return ac.resume(); ac = new (window.AudioContext || window.webkitAudioContext)(); mst = ac.createGain(); mst.gain.value = .8;
-  const cp = ac.createDynamicsCompressor(); mst.connect(cp); cp.connect(ac.destination);
-  dly = ac.createDelay(1); dly.delayTime.value = .33; const fb = ac.createGain(), wt = ac.createGain(); fb.gain.value = .4; wt.gain.value = .35; dly.connect(fb); fb.connect(dly); dly.connect(wt); wt.connect(mst);
-  const o = ac.createOscillator(); dl = ac.createBiquadFilter(); dg = ac.createGain(); o.type = 'sawtooth'; o.frequency.value = 55; dl.frequency.value = 200; dg.gain.value = 0; o.connect(dl); dl.connect(dg); dg.connect(mst); o.start();
+  if (window.EarthAudio) return window.EarthAudio.init();
+  return null;
 }
 const scaleF = k => 130.81 * 2 ** ((12 * Math.floor(k / 5) + [0, 2, 4, 7, 9][k % 5]) / 12);
 function voice(c, f, v, pan) {
-  const t = ac.currentTime, g = ac.createGain(), pn = ac.createStereoPanner(), lp = ac.createBiquadFilter(), dur = c === 'water' ? 1.8 : c === 'bell' ? 1.4 : .7; pn.pan.value = pan; lp.type = 'lowpass'; lp.frequency.value = c === 'desert' ? 1500 : 6000;
-  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + (c === 'water' ? .08 : .01)); g.gain.exponentialRampToValueAtTime(.0008, t + dur);
-  (c === 'bell' ? [[1, 'sine', 1], [2.76, 'sine', .45], [5.4, 'sine', .2]] : c === 'water' ? [[1, 'sine', 1], [1.005, 'sine', .6]] : c === 'forest' ? [[1, 'triangle', 1], [2, 'sine', .25]] : [[1, 'sawtooth', .6], [1.5, 'triangle', .3]])
-    .forEach(([m, ty, w]) => { const o = ac.createOscillator(), og = ac.createGain(); o.type = ty; o.frequency.value = f * m; og.gain.value = w; o.connect(og); og.connect(g); o.start(t); o.stop(t + dur + .05); });
-  g.connect(lp); lp.connect(pn); pn.connect(mst); pn.connect(dly);
+  if (window.EarthAudio) return window.EarthAudio.playVoice(c, f, v, pan);
 }
 window.boot = boot; window.voice = voice; window.applyLayer = applyLayer; window.scaleF = scaleF;
 function dataScan(d) {   /* NASA data frame: colour (blue = low, red = high) becomes pitch; grey = no data = silence */
@@ -236,7 +230,7 @@ function dataScan(d) {   /* NASA data frame: colour (blue = low, red = high) bec
   r /= n; g /= n; b /= n; const mx = Math.max(r, g, b), sat = mx - Math.min(r, g, b);
   let h = mx === r ? ((g - b) / sat) % 6 : mx === g ? (b - r) / sat + 2 : (r - g) / sat + 4; h = (h * 60 + 360) % 360;
   const v = clamp((240 - clamp(h, 0, 240)) / 240, 0, 1);
-  if (ac) voice('bell', scaleF(Math.round(v * 9) + 3), .1 + sat / 255 * .12, col / SW * 1.6 - .8);
+  voice('bell', scaleF(Math.round(v * 9) + 3), .1 + sat / 255 * .12, col / SW * 1.6 - .8);
   $('#hear').textContent = `${lyr()[0].includes('Temp') ? 'land temperature' : 'aerosol'} ${v < .33 ? 'low' : v < .66 ? 'medium' : 'high'} (${Math.round(v * 100)}%)`;
 }
 const SW = 48, SH = 27, sc = document.createElement('canvas'); sc.width = SW; sc.height = SH; const sx = sc.getContext('2d', { willReadFrequently: true });
@@ -249,18 +243,27 @@ function scan() {
       r /= n; g /= n; b /= n; const L = (r + g + b) / 765, mean = Ls.reduce((a, c) => a + c) / n, sd = Math.sqrt(Ls.reduce((a, c) => a + (c - mean) ** 2, 0) / n) / 765;
       const cls = L > .7 && Math.abs(r - b) < 30 ? 'ice' : b > r + 8 && b >= g - 6 ? 'water' : g > r + 4 && g >= b ? 'forest' : 'desert';
       const k = Math.round(clamp(L * 1.15, 0, 1) * 9), semis = [0, 2, 4, 7, 9][k % 5] + 12 * Math.floor(k / 5) + { water: -12, forest: 0, desert: 0, ice: 12 }[cls];
-      if (ac) voice(cls === 'ice' ? 'bell' : cls, 130.81 * 2 ** (semis / 12), .08 + Math.min(.14, sd * .9), col / SW * 1.6 - .8);
+      voice(cls === 'ice' ? 'bell' : cls, 130.81 * 2 ** (semis / 12), .08 + Math.min(.14, sd * .9), col / SW * 1.6 - .8);
       $('#hear').textContent = `${cls === 'ice' ? 'cloud / ice' : cls === 'water' ? 'water' : cls === 'forest' ? 'vegetation' : 'bare land / urban'} · ${Math.round(L * 100)}% bright`;
     }
   } catch (e) { $('#hear').textContent = 'the browser blocked reading map pixels'; }
   scanT = setTimeout(scan, +$('#spdn').value);
 }
-$('#listen').onclick = () => {
+$('#listen').onclick = async () => {
   listening = !listening; $('#listen').classList.toggle('on', listening); $('#listen').setAttribute('aria-pressed', listening); $('#listen').textContent = listening ? '■ Stop listening' : '♪ Listen to this view';
-  $('#scan').style.display = listening ? 'block' : 'none'; clearTimeout(scanT); lastZ = -1; if (listening) { boot(); scan(); } else $('#hear').textContent = 'paused';
+  $('#scan').style.display = listening ? 'block' : 'none'; clearTimeout(scanT); lastZ = -1;
+  if (listening) {
+    if (window.EICJukebox && window.EICJukebox.PlaybackState && window.EICJukebox.PlaybackState.isPlaying) {
+      window.EICJukebox.PlaybackState.pause();
+    }
+    await boot();
+    scan();
+  } else {
+    $('#hear').textContent = 'paused';
+  }
 };
-let cmT; $('#cm').onclick = () => {
-  if (!CL) return; boot(); clearInterval(cmT); const { Y, TT } = CL, m = CL.my; let i = 0;
+let cmT; $('#cm').onclick = async () => {
+  if (!CL) return; await boot(); clearInterval(cmT); const { Y, TT } = CL, m = CL.my; let i = 0;
   cmT = setInterval(() => { if (i >= Y.length) { clearInterval(cmT); $('#clyr').textContent = ''; return; } voice('bell', scaleF(Math.round(clamp((TT[i] - m + 1.5) / 3, 0, 1) * 14)), .16, i / Y.length * 1.6 - .8); $('#clyr').textContent = Y[i++]; }, 200);
 };
 
@@ -563,7 +566,10 @@ $('#desc').onclick = async () => {
     textEl.textContent = info.speech;
     card.hidden = false;
   }
-  speechSynthesis.cancel();
+  try {
+    speechSynthesis.cancel();
+    if (speechSynthesis.paused) speechSynthesis.resume();
+  } catch (e) {}
   const utt = new SpeechSynthesisUtterance(info.speech);
   utt.rate = 0.95;
   utt.pitch = 1.0;
@@ -1275,7 +1281,21 @@ if ($('#tl-slider')) {
 /* ---------- guided tour with narration ---------- */
 let touring = false; const wait = ms => new Promise(r => setTimeout(r, ms));
 const TOUR = [...PLACES.map(([n, la, lo, z]) => [n, la, lo, FACTS[n], z || 17.2]), ...LM.map(([n, la, lo, t]) => [n, la, lo, t, 17.6])];
-const say = t => { $('#hear').textContent = t; if (window.speechSynthesis) { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(t)); } };
+const say = t => {
+  $('#hear').textContent = t;
+  if (window.speechSynthesis) {
+    try {
+      speechSynthesis.cancel();
+      if (speechSynthesis.paused) speechSynthesis.resume();
+      const u = new SpeechSynthesisUtterance(t);
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      speechSynthesis.speak(u);
+    } catch (e) {
+      console.warn('Speech synthesis notice:', e);
+    }
+  }
+};
 $('#tour').onclick = async () => {
   if (touring) { touring = false; $('#tour').textContent = '🎬 Tour'; window.speechSynthesis && speechSynthesis.cancel(); return; }
   touring = true; $('#tour').textContent = '■ Stop tour'; if (!listening) $('#listen').click();
@@ -1307,3 +1327,12 @@ map.on('load', () => {
   applyLayer();
 });
 frame();
+
+if ($('#audio-status-pill')) {
+  $('#audio-status-pill').onclick = async () => {
+    if (window.EarthAudio) {
+      if (window.EarthAudio.isMuted) window.EarthAudio.setMuted(false);
+      await window.EarthAudio.playTestTone();
+    }
+  };
+}
