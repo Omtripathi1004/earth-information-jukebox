@@ -6,8 +6,10 @@
     display: none !important;
 }
 
-html {
+html, body {
     background: #02050c;
+    overflow-x: hidden;
+    max-width: 100vw;
 }
 
 body {
@@ -109,8 +111,21 @@ input[type=range] {
     pointer-events: none;
 }
 
+#chips {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    max-width: calc(100vw - 24px);
+}
+
+#chips::-webkit-scrollbar {
+    display: none;
+}
+
 .chip {
     flex: none;
+    white-space: nowrap;
 }
 
 .pe {

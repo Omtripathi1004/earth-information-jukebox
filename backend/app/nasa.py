@@ -65,16 +65,25 @@ def clear_caches():
         c.clear()
 
 
-def get_bytes(url: str, params=None, headers=None) -> bytes:
-    try:
-        r = requests.get(url, params=params, headers={"User-Agent": UA, **(headers or {})}, timeout=TIMEOUT)
-    except requests.RequestException as e:
-        raise UpstreamError(f"could not reach {url.split('/')[2]}") from e
-    if r.status_code != 200:
-        raise UpstreamError(f"{url.split('/')[2]} answered {r.status_code}")
-    if len(r.content) > MAX_BYTES:
-        raise UpstreamError("upstream response too large")
-    return r.content
+def get_bytes(url: str, params=None, headers=None, retries: int = 2) -> bytes:
+    last_err = None
+    for attempt in range(retries + 1):
+        try:
+            r = requests.get(url, params=params, headers={"User-Agent": UA, **(headers or {})}, timeout=TIMEOUT)
+            if r.status_code == 200:
+                if len(r.content) > MAX_BYTES:
+                    raise UpstreamError("upstream response too large")
+                return r.content
+            if r.status_code in (429, 500, 502, 503, 504) and attempt < retries:
+                time.sleep(0.3 * (attempt + 1))
+                continue
+            raise UpstreamError(f"{url.split('/')[2]} answered {r.status_code}")
+        except requests.RequestException as e:
+            last_err = e
+            if attempt < retries:
+                time.sleep(0.3 * (attempt + 1))
+                continue
+            raise UpstreamError(f"could not reach {url.split('/')[2]}") from last_err
 
 
 def get_json(url: str, params=None, headers=None):

@@ -189,21 +189,29 @@ async function lookup() {
   $('#place').textContent = place || 'Unnamed place';
   if (z >= 3 && (!lastC || Math.hypot(c.lat - lastC.lat, c.lng - lastC.lng) > .4)) { lastC = c; climate(c.lat, c.lng); }
 }
+let climateReqSeq = 0;
 async function climate(lat, lon) {
+  const reqSeq = ++climateReqSeq;
   $('#cl').textContent = 'Loading NASA POWER…'; $('#cm').disabled = true;
   try {
     if (BACKEND) {   /* the Python backend caches NASA POWER, computes the trend and avoids browser CORS limits */
-      const s = await (await fetch(`${API}/api/climate?lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}`)).json(); if (s.error) throw new Error(s.error);
+      const s = await (await fetch(`${API}/api/climate?lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}`)).json();
+      if (reqSeq !== climateReqSeq) return;
+      if (s.error) throw new Error(s.error);
       CL = { Y: s.years, TT: s.temp_c, b: s.trend_c_per_year, my: s.mean_c, rain: s.mean_rain_mm_day }; drawCl();
       $('#cl').textContent = `Mean ${CL.my.toFixed(1)} °C · trend ${CL.b >= 0 ? '+' : '−'}${Math.abs(CL.b * 10).toFixed(2)} °C per decade · rain ${CL.rain.toFixed(1)} mm/day`; $('#cm').disabled = false; return;
     }
     const j = await (await fetch(`https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=T2M,PRECTOTCORR&community=RE&longitude=${lon.toFixed(2)}&latitude=${lat.toFixed(2)}&start=1985&end=2025&format=JSON`)).json();
+    if (reqSeq !== climateReqSeq) return;
     const T = j.properties.parameter.T2M, R = j.properties.parameter.PRECTOTCORR, Y = [], TT = [], RR = [];
     for (let y = 1985; y <= 2025; y++) { const tm = [], rm = []; for (let m = 1; m <= 12; m++) { const k = y + String(m).padStart(2, '0'); if (T[k] > -900) tm.push(T[k]); if (R[k] > -900) rm.push(R[k]); } if (tm.length >= 10) { Y.push(y); TT.push(tm.reduce((a, b) => a + b) / tm.length); RR.push(rm.length ? rm.reduce((a, b) => a + b) / rm.length : 0); } }
     const n = Y.length, mx = Y.reduce((a, b) => a + b) / n, my = TT.reduce((a, b) => a + b) / n; let sxy = 0, sxx = 0; Y.forEach((y, i) => { sxy += (y - mx) * (TT[i] - my); sxx += (y - mx) ** 2; });
     CL = { Y, TT, b: sxy / sxx, my, rain: RR.reduce((a, b) => a + b) / n }; drawCl();
     $('#cl').textContent = `Mean ${CL.my.toFixed(1)} °C · trend ${CL.b >= 0 ? '+' : '−'}${Math.abs(CL.b * 10).toFixed(2)} °C per decade · rain ${CL.rain.toFixed(1)} mm/day`; $('#cm').disabled = false;
-  } catch (e) { CL = null; drawCl(); $('#cl').textContent = 'NASA POWER could not be reached for this spot.'; }
+  } catch (e) {
+    if (reqSeq !== climateReqSeq) return;
+    CL = null; drawCl(); $('#cl').textContent = 'NASA POWER could not be reached for this spot.';
+  }
 }
 function drawCl() {
   const c = $('#cc'), g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height); if (!CL) return; const { TT, b, my, Y } = CL, mn = Math.min(...TT), mx = Math.max(...TT);
