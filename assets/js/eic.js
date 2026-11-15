@@ -1349,6 +1349,13 @@
       ctx.lineTo(curX, h - padY / 2);
       ctx.stroke();
 
+      // Outer halo for high contrast visibility
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(curX, curY, 9, 0, Math.PI * 2);
+      ctx.stroke();
+
       ctx.fillStyle = '#f59e0b';
       ctx.beginPath();
       ctx.arc(curX, curY, 5, 0, Math.PI * 2);

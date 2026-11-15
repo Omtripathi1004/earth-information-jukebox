@@ -177,7 +177,28 @@ PLACES.forEach(([n, la, lo, z]) => { const b = document.createElement('button');
 LM.forEach(([n, la, lo]) => { const b = document.createElement('button'); b.className = 'btn chip pe'; b.style.borderColor = '#F59E0B'; b.textContent = '🏛 ' + n; b.onclick = () => pick(la, lo, 17.6); $('#chips').appendChild(b); });
 $('#sf').onsubmit = async e => {
   e.preventDefault(); const q = $('#q').value.trim(); if (!q) return;
-  try { const j = await (await fetch((BACKEND ? API + '/api/geocode' : 'https://nominatim.openstreetmap.org/search') + '?format=json&limit=1&q=' + encodeURIComponent(q))).json(); if (j[0]) pick(+j[0].lat, +j[0].lon, 16.8); else $('#place').textContent = 'No match for “' + q + '”'; } catch (err) { $('#place').textContent = 'Search needs an internet connection'; }
+  const goBtn = $('#sf button[type="submit"]') || $('#sf button');
+  const originalText = goBtn ? goBtn.textContent : 'Go';
+  if (goBtn) {
+    goBtn.disabled = true;
+    goBtn.innerHTML = '<span class="inline-block animate-spin" aria-hidden="true">⏳</span>';
+  }
+  try {
+    const res = await fetch((BACKEND ? API + '/api/geocode' : 'https://nominatim.openstreetmap.org/search') + '?format=json&limit=1&q=' + encodeURIComponent(q));
+    const j = await res.json();
+    if (j && j[0]) {
+      pick(+j[0].lat, +j[0].lon, 16.8);
+    } else {
+      $('#place').textContent = 'Location not found for “' + q + '”';
+    }
+  } catch (err) {
+    $('#place').textContent = 'Search needs an internet connection';
+  } finally {
+    if (goBtn) {
+      goBtn.disabled = false;
+      goBtn.textContent = originalText;
+    }
+  }
 };
 
 /* ---------- place name + NASA POWER local climate ---------- */
