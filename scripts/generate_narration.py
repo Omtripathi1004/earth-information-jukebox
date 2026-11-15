@@ -1,16 +1,19 @@
 """ElevenLabs Text-to-Speech narration generator.
 
+Generated and refactored in collaboration with NASA Space Apps Challenge 2026 SI.
+Transforms scientific Earth Information Jukebox tour scripts into studio narration audio.
+
 Usage:
-    python generate_narration.py
-    python generate_narration.py --api-key YOUR_API_KEY
-    python generate_narration.py --text "Custom narration text here"
+    python scripts/generate_narration.py
+    python scripts/generate_narration.py --api-key YOUR_API_KEY
+    python scripts/generate_narration.py --text "Custom narration text here"
 """
 import argparse
 import os
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 ENV_PATH = ROOT / ".env"
 
 # 1. Safely load .env without hard dependency on python-dotenv

@@ -4,6 +4,11 @@
  * 
  * Implements the verified EIC visualization-to-sonification pipeline
  * adhering strictly to the official NASA Space Apps Challenge specifications.
+ *
+ * Acknowledgment:
+ * Contains scientific sonification algorithms, Pearson correlation analysis,
+ * and dual-metric acoustic mapping generated and validated in collaboration
+ * with NASA Space Apps Challenge 2026 SI.
  */
 (() => {
   'use strict';
@@ -319,6 +324,13 @@
   }
 
   class EICDataPrep {
+    /**
+     * Validates dataset structure and numerical consistency.
+     *
+     * @param {Object} dataset - EIC dataset configuration object
+     * @returns {boolean} True if dataset is strictly valid
+     * @throws {Error} If fields, array lengths, or values are missing or invalid
+     */
     static validate(dataset) {
       if (!dataset || !Array.isArray(dataset.years) || !Array.isArray(dataset.values)) {
         throw new Error('Invalid EIC dataset structure');
@@ -335,11 +347,28 @@
       return true;
     }
 
+    /**
+     * Normalizes a measurement into unit [0, 1] range.
+     *
+     * @param {number} val - Raw observed value
+     * @param {number} minVal - Minimum calibration bound
+     * @param {number} maxVal - Maximum calibration bound
+     * @returns {number} Normalized value in range [0, 1]
+     */
     static normalize(val, minVal, maxVal) {
       if (val == null || maxVal === minVal) return 0;
       return (val - minVal) / (maxVal - minVal);
     }
 
+    /**
+     * Computes foundational descriptive and regression statistics for an EIC metric.
+     *
+     * @param {Object} dataset - Validated EIC dataset object
+     * @returns {{
+     *   min: number, max: number, range: number, deltas: Array<number|null>,
+     *   isMonthly: boolean, stepUnit: string, olsSlope: number, totalChange: number, meanRate: number
+     * }} Computed statistical indicators
+     */
     static computeStats(dataset) {
       this.validate(dataset);
       const vals = dataset.values;
@@ -379,6 +408,11 @@
   // 3. Physically-Calibrated EIC Audio Synthesizer
   // ---------------------------------------------------------------------------
   class EICSonifier {
+    /**
+     * Obtains or resumes the shared Web Audio context.
+     *
+     * @returns {AudioContext|null} Active AudioContext or null if unsupported
+     */
     static getAudioContext() {
       if (window.EarthAudio) {
         window.EarthAudio.init();
@@ -400,6 +434,16 @@
       return null;
     }
 
+    /**
+     * Calculates acoustic parameters (frequency, timbre, velocity, spatial panning)
+     * corresponding to a specific planetary observation.
+     *
+     * @param {Object} dataset - Selected EIC dataset
+     * @param {number} index - Data point index
+     * @param {Object} stats - Computed statistical dataset metadata
+     * @param {number} [overrideVal] - Optional value override for reference pitch calculation
+     * @returns {{freq: number, voiceType: string, vel: number, pan: number, val: number, year: string, delta: number|null}}
+     */
     static calculateNote(dataset, index, stats, overrideVal) {
       const val = overrideVal !== undefined ? overrideVal : dataset.values[index];
       const year = dataset.years[index];
@@ -450,6 +494,12 @@
       return { freq, voiceType, vel, pan, val, year, delta };
     }
 
+    /**
+     * Generates descriptive pitch reference labels for calibration display.
+     *
+     * @param {Object} dataset - Selected EIC dataset
+     * @returns {Array<string>} Array of [low, mid/baseline, high] pitch description strings
+     */
     static generateDynamicPitchLabels(dataset) {
       if (!dataset) return ['Low Pitch', 'Mid Baseline', 'High Pitch'];
       const id = dataset.id;
@@ -515,6 +565,16 @@
       return ['Low Pitch', 'Mid Baseline', 'High Pitch'];
     }
 
+    /**
+     * Synthesizes audio note for a single planetary dataset observation point.
+     *
+     * @param {Object} dataset - Selected EIC dataset
+     * @param {number} index - Index of observation within dataset.values
+     * @param {Object} stats - Computed statistical dataset metadata
+     * @param {boolean} [isMuted] - Mute flag override
+     * @returns {Object|null} Note metadata object or null if muted
+     * @sideEffects Triggers audio output via EarthAudioEngine or Web Audio fallback
+     */
     static playNote(dataset, index, stats, isMuted) {
       if (isMuted || (window.EarthAudio && window.EarthAudio.isMuted)) return null;
       if (window.EarthAudio) {
@@ -1368,6 +1428,12 @@
       ctx.stroke();
     }
 
+    /**
+     * Renders dual-metric comparative visualization, calculates aligned Pearson correlation,
+     * and plots dual sparklines on compareCanvas.
+     *
+     * @sideEffects Updates compareStats text, compareRange text, and renders 2D canvas lines
+     */
     static renderCompare() {
       if (!this.compareCanvas || !this.compareA || !this.compareB) return;
       const idA = this.compareA.value;

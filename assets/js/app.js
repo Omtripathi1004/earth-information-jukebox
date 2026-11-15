@@ -1,3 +1,12 @@
+/**
+ * Earth Information Jukebox - Core Client Application
+ * NASA Space Apps Challenge 2026
+ *
+ * Acknowledgment:
+ * Contains UI event coordination, camera interpolation, and NASA GIBS / POWER
+ * sonification algorithms generated and refactored in collaboration with
+ * NASA Space Apps Challenge 2026 SI.
+ */
 const $ = s => document.querySelector(s), clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 /* Optional Python backend (same origin, or ?api=https://your-backend). Without it the app calls NASA and OSM directly. */
 const API = (new URLSearchParams(location.search).get('api') || '').replace(/\/$/, '');
@@ -78,6 +87,10 @@ const map = new maplibregl.Map({
       { id: 'google_sat', type: 'raster', source: 'google_sat', paint: { 'raster-fade-duration': 0 } },
       { id: 'gibs', type: 'raster', source: 'gibs', layout: { visibility: (lyr()[0] === 'GOOGLE_SATELLITE' || lyr()[0] === 'ESRI_World_Imagery') ? 'none' : 'visible' }, paint: { 'raster-fade-duration': 0, 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 8.5, 1, 10.5, 0] } }] }
 });
+
+/* Keep map center longitude inside [-180, 180] to prevent date-line boundary errors */
+const origGetCenter = map.getCenter.bind(map);
+map.getCenter = () => origGetCenter().wrap();
 map.on('load', () => {
   schedulePhotoSpots();
   fetch('https://tiles.openfreemap.org/styles/bright').then(r => r.json()).then(s => {   /* OpenStreetMap buildings, extruded in 3D at ground level */
@@ -132,6 +145,12 @@ const range = () => Math.max(1, document.documentElement.scrollHeight - innerHei
 const scrollToZ = (z, b) => scrollTo({ top: (clamp(z, Z0, Z1) - Z0) / (Z1 - Z0) * range(), behavior: b || 'smooth' });
 const chap = z => z < 2.5 ? 'Orbit · the whole Earth' : z < 5 ? 'Continent' : z < 8 ? 'Region' : z < 11 ? 'City' : z < 14 ? 'Neighborhood' : z < 17 ? 'Street level' : 'Ground level · 3D';
 
+/**
+ * Animation loop driving scroll-to-zoom interpolation, 3D perspective pitch,
+ * dynamic scale calculations, and altitude readouts.
+ *
+ * @sideEffects Mutates map camera, updates coordinate/scale labels, and schedules next frame
+ */
 function frame() {
   const zt = zFromScroll(); zs += (zt - zs) * .12; if (Math.abs(zt - zs) < .003) zs = zt;
   if (!busy && Math.abs(zs - lastZ) > .002) {
@@ -159,7 +178,32 @@ const fmtKm = k => k >= 100 ? Math.round(k) + ' km' : k >= 1 ? k.toFixed(1) + ' 
 map.on('dragstart', () => busy = true);
 map.on('moveend', () => { busy = false; zs = map.getZoom(); scheduleLookup(); schedulePhotoSpots(); });
 map.on('dragend', () => { busy = false; zs = map.getZoom(); lastZ = -1; scheduleLookup(); schedulePhotoSpots(); });
-function pick(lat, lng, z) { busy = true; const t = Math.max(map.getZoom(), z); map.easeTo({ center: [lng, lat], zoom: t, duration: 1800 }); scrollToZ(t, 'instant'); }
+/**
+ * Fast travel to a geographic destination with smooth camera flight and pitch interpolation.
+ *
+ * @param {number} lat - Latitude in degrees
+ * @param {number} lng - Longitude in degrees
+ * @param {number} z - Target zoom level
+ * @sideEffects Initiates map.flyTo, updates scroll height, and triggers reverse geocode lookup
+ */
+window.pick = (lat, lng, z) => {
+  busy = true;
+  const c = map.getCenter(), far = Math.hypot(lat - c.lat, lng - c.lng) > 2, t = far ? z : Math.max(map.getZoom(), z);
+  scrollToZ(t, 'instant');
+  zs = t;
+  lastZ = t;
+  const targetPitch = clamp((t - 13) / 4.5, 0, 1) * 35;
+  map.flyTo({ center: [lng, lat], zoom: t, pitch: targetPitch, duration: far ? 2400 : 1400, essential: true });
+  map.once('moveend', () => {
+    busy = false;
+    zs = map.getZoom();
+    lastZ = zs;
+    scrollToZ(zs, 'instant');
+    scheduleLookup();
+    if (window.schedulePhotoSpots) schedulePhotoSpots();
+  });
+};
+const pick = window.pick;
 map.on('click', e => {
   if (map.getZoom() < 7) {
     pick(e.lngLat.lat, e.lngLat.lng, 10);
@@ -204,6 +248,12 @@ $('#sf').onsubmit = async e => {
 /* ---------- place name + NASA POWER local climate ---------- */
 let lt, place = '', lastC = null, CL = null;
 const scheduleLookup = () => { clearTimeout(lt); lt = setTimeout(lookup, 1000); };
+/**
+ * Performs reverse geocoding for the current center of the map viewport
+ * and triggers a NASA POWER local climate fetch when viewport moves significantly.
+ *
+ * @sideEffects Updates #place DOM label and dispatches climate(lat, lon)
+ */
 async function lookup() {
   const c = map.getCenter(), z = map.getZoom();
   try { const j = await (await fetch(`${BACKEND ? API + '/api/reverse' : 'https://nominatim.openstreetmap.org/reverse'}?format=json&zoom=${z < 3.5 ? 3 : z < 6 ? 5 : z < 9 ? 8 : z < 12 ? 10 : 16}&lat=${c.lat}&lon=${c.lng}`)).json(); const p = (j.display_name || '').split(', '); place = j.error ? 'Open ocean or remote area' : [...new Set([...p.slice(0, 2), p[p.length - 1]])].join(', '); } catch (e) { place = ''; }
@@ -212,6 +262,14 @@ async function lookup() {
 }
 let climateAbortCtrl = null;
 let climateReqSeq = 0;
+/**
+ * Fetches 40-year historical climate data (T2M temperature and precipitation)
+ * from the NASA POWER v10 API or local Python proxy, calculating OLS trendline.
+ *
+ * @param {number} lat - Target latitude
+ * @param {number} lon - Target longitude
+ * @sideEffects Updates #cl DOM label and renders climate sparkline canvas
+ */
 async function climate(lat, lon) {
   if (climateAbortCtrl) {
     try { climateAbortCtrl.abort(); } catch (e) {}
@@ -271,6 +329,12 @@ async function climate(lat, lon) {
     $('#cl').textContent = 'Climate data unavailable for this location.';
   }
 }
+/**
+ * Renders 40-year temperature time series and Ordinary Least Squares (OLS) linear trendline
+ * onto the climate graph 2D canvas.
+ *
+ * @sideEffects Draws to canvas #cc
+ */
 function drawCl() {
   const c = $('#cc'), g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height); if (!CL) return; const { TT, b, my, Y } = CL, mn = Math.min(...TT), mx = Math.max(...TT);
   const X = i => 4 + i / (TT.length - 1) * (c.width - 8), Yy = v => c.height - 6 - (v - mn) / (mx - mn || 1) * (c.height - 12);
@@ -285,10 +349,26 @@ function boot() {
   return null;
 }
 const scaleF = k => 130.81 * 2 ** ((12 * Math.floor(k / 5) + [0, 2, 4, 7, 9][k % 5]) / 12);
+/**
+ * Voice synthesis routing delegating to EarthAudioEngine singleton.
+ *
+ * @param {string} c - Instrument timbre ('bell'|'water'|'forest'|'desert'|'ice')
+ * @param {number} f - Frequency in Hz
+ * @param {number} v - Amplitude / velocity (0.01 - 0.4)
+ * @param {number} pan - Stereo panning position (-1.0 to +1.0)
+ * @returns {Object|null} Note metadata
+ */
 function voice(c, f, v, pan) {
   if (window.EarthAudio) return window.EarthAudio.playVoice(c, f, v, pan);
 }
 window.boot = boot; window.voice = voice; window.applyLayer = applyLayer; window.scaleF = scaleF;
+/**
+ * Sonifies a vertical column of NASA GIBS data layer pixels (e.g. Land Surface Temp, Aerosols),
+ * mapping color hue to acoustic pitch and saturation to note volume.
+ *
+ * @param {Uint8ClampedArray} d - RGBA pixel buffer of current scan column
+ * @sideEffects Triggers audio voice and updates #hear readout text
+ */
 function dataScan(d) {   /* NASA data frame: colour (blue = low, red = high) becomes pitch; grey = no data = silence */
   let r = 0, g = 0, b = 0, n = 0;
   for (let i = 0; i < d.length; i += 4) { if (d[i + 3] >= 128 && Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) > 40) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } }
@@ -300,6 +380,12 @@ function dataScan(d) {   /* NASA data frame: colour (blue = low, red = high) bec
   $('#hear').textContent = `${lyr()[0].includes('Temp') ? 'land temperature' : 'aerosol'} ${v < .33 ? 'low' : v < .66 ? 'medium' : 'high'} (${Math.round(v * 100)}%)`;
 }
 const SW = 48, SH = 27, sc = document.createElement('canvas'); sc.width = SW; sc.height = SH; const sx = sc.getContext('2d', { willReadFrequently: true });
+/**
+ * Scan loop traversing the satellite canvas horizontally column-by-column,
+ * classifying biome signatures (water, forest, ice, desert) and sonifying them.
+ *
+ * @sideEffects Mutates scan line position, triggers voice synthesis, and schedules next scan step
+ */
 function scan() {
   if (!listening) return; col = (col + 1) % SW; $('#scan').style.left = col / SW * 100 + '%';
   try {
@@ -658,7 +744,34 @@ $('#desc').onclick = async () => {
   speechSynthesis.speak(utt);
 };
 if ($('#narrative-close')) $('#narrative-close').onclick = stopSpeech;
-addEventListener('keydown', e => { if (!/INPUT|SELECT/.test(e.target.tagName) && (e.key === 'l' || e.key === 'L')) $('#listen').click(); });
+/* 1. Global Keyboard Navigation & Panel Escape Handler */
+addEventListener('keydown', e => {
+  if (/^l$/i.test(e.key) && (e.ctrlKey || e.metaKey || e.altKey)) return;
+  const tag = (e.target && e.target.tagName) || '';
+  if (/INPUT|SELECT|TEXTAREA/.test(tag)) return;
+  if (/^l$/i.test(e.key)) {
+    if ($('#listen')) $('#listen').click();
+  } else if (e.key === 'Escape') {
+    const panels = [
+      ['#eic-modal', '#eic-close'],
+      ['#no-street-modal', '#no-st-close'],
+      ['#kshortcuts-modal', '#kshortcuts-close'],
+      ['#keys', '#kx'],
+      ['#px', '#pxc'],
+      ['#st', '#stx'],
+      ['#legend', '#lg'],
+      ['#about', '#abx']
+    ];
+    const openPanel = panels.find(([p]) => $(p) && !$(p).hidden);
+    if (openPanel && $(openPanel[1])) {
+      e.preventDefault();
+      $(openPanel[1]).click();
+    } else if ($('#climate') && $('#climate').classList.contains('mobile-open')) {
+      e.preventDefault();
+      if ($('#cmob')) $('#cmob').click();
+    }
+  }
+});
 $('#gnd').onclick = () => scrollToZ(18.9);
 $('#lg').onclick = () => { const l = $('#legend'); l.hidden = !l.hidden; $('#lg').setAttribute('aria-expanded', String(!l.hidden)); };
 const downloadWav = async (btn, path, filename) => {
@@ -1413,4 +1526,108 @@ if ($('#audio-status-pill')) {
       await window.EarthAudio.playTestTone();
     }
   };
+}
+
+/* ---------- UI Enhancements & Accessibility (Consolidated from patch.js & enhance.js) ---------- */
+
+/* Photoreal Cesium render loop control to save battery/GPU when modal closed */
+if ($('#pxc')) $('#pxc').addEventListener('click', () => { if (window.pxv) window.pxv.useDefaultRenderLoop = false; });
+if ($('#p3')) $('#p3').addEventListener('click', () => { if (window.pxv) window.pxv.useDefaultRenderLoop = true; });
+
+/* 3D Extruded Buildings Toggle */
+let boxesOn = false;
+const setBoxes = (on) => {
+  try { map.setLayoutProperty('bld3d', 'visibility', on ? 'visible' : 'none'); } catch (e) {}
+  if ($('#b3')) { $('#b3').setAttribute('aria-pressed', String(on)); $('#b3').classList.toggle('on', on); }
+};
+let boxTries = 0;
+const wait3d = setInterval(() => {
+  if ((map.getLayer && map.getLayer('bld3d')) || ++boxTries > 40) { clearInterval(wait3d); setBoxes(false); }
+}, 500);
+if ($('#b3')) $('#b3').addEventListener('click', () => { boxesOn = !boxesOn; setBoxes(boxesOn); });
+
+/* Mobile climate drawer & About dialog */
+if ($('#cmob')) $('#cmob').addEventListener('click', () => {
+  if ($('#climate')) $('#cmob').setAttribute('aria-pressed', String($('#climate').classList.toggle('mobile-open')));
+});
+if ($('#ab')) $('#ab').addEventListener('click', () => { if ($('#about')) $('#about').hidden = false; });
+if ($('#abx')) $('#abx').addEventListener('click', () => { if ($('#about')) $('#about').hidden = true; });
+
+/* Synchronize header height to --top-h CSS custom property */
+const topHeader = $('top');
+if (topHeader) {
+  const setTopHeight = () => document.documentElement.style.setProperty('--top-h', topHeader.offsetHeight + 'px');
+  setTopHeight();
+  if ('ResizeObserver' in window) new ResizeObserver(setTopHeight).observe(topHeader);
+  else addEventListener('resize', setTopHeight);
+}
+
+/* More menu dismiss on item click, outside click, or Escape */
+const moreMenu = $('more');
+if (moreMenu) {
+  moreMenu.addEventListener('click', (e) => {
+    if (e.target.closest('#more-list button')) moreMenu.open = false;
+  });
+  document.addEventListener('click', (e) => {
+    if (moreMenu.open && !moreMenu.contains(e.target)) moreMenu.open = false;
+  });
+  moreMenu.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && moreMenu.open) {
+      moreMenu.open = false;
+      const trigger = moreMenu.querySelector('summary');
+      if (trigger) trigger.focus();
+      e.stopPropagation();
+    }
+  });
+}
+
+/* Screen reader polite live announcements */
+const liveRegion = $('live');
+const announce = (msg) => {
+  if (!liveRegion || !msg) return;
+  liveRegion.textContent = '';
+  setTimeout(() => { liveRegion.textContent = msg; }, 60);
+};
+
+const placeEl = $('place');
+if (placeEl && liveRegion) {
+  let timer;
+  let last = placeEl.textContent.trim();
+  new MutationObserver(() => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const now = placeEl.textContent.trim();
+      if (now && now !== last) { last = now; announce('Now viewing ' + now); }
+    }, 1500);
+  }).observe(placeEl, { childList: true, characterData: true, subtree: true });
+}
+
+/* Reflect active toggle states to aria-pressed for assistive technologies */
+const watchAriaToggle = (id, announceFn) => {
+  const btn = $(id);
+  if (!btn) return;
+  let state = btn.classList.contains('on') || btn.getAttribute('aria-pressed') === 'true';
+  new MutationObserver((records) => {
+    const fromClass = records.some((r) => r.attributeName === 'class');
+    const now = fromClass ? btn.classList.contains('on') : btn.getAttribute('aria-pressed') === 'true';
+    if (fromClass) btn.setAttribute('aria-pressed', String(now));
+    if (now === state) return;
+    state = now;
+    if (announceFn) announce(announceFn(now));
+  }).observe(btn, { attributes: true, attributeFilter: ['class', 'aria-pressed'] });
+};
+watchAriaToggle('listen', (on) => (on ? 'Listening started' : 'Listening stopped'));
+watchAriaToggle('lb', (on) => (on ? 'Labels on' : 'Labels off'));
+watchAriaToggle('tl', (on) => (on ? 'Time-lapse started' : 'Time-lapse stopped'));
+
+/* Name data layers accurately in the Hearing caption */
+const LAYER_NAMES = { GHRSST: 'sea temperature', MODIS_Terra_NDSI: 'snow cover', VIIRS_SNPP_DayNight: 'night light' };
+const hearEl = $('#hear');
+if (hearEl) {
+  new MutationObserver(() => {
+    const id = lyr()[0], k = Object.keys(LAYER_NAMES).find((n) => id.startsWith(n));
+    if (k && /^(aerosol|land temperature)/.test(hearEl.textContent)) {
+      hearEl.textContent = hearEl.textContent.replace(/^(aerosol|land temperature)/, LAYER_NAMES[k]);
+    }
+  }).observe(hearEl, { childList: true, characterData: true, subtree: true });
 }

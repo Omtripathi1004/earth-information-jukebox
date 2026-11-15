@@ -1,9 +1,12 @@
 """Earth Information Jukebox backend (Flask).
 
-Flask backend: serves the web app and a small API for data, search and server-side sonification.
+Flask backend: serves the web app and a REST API for NASA Earth science data, search, and server-side sonification.
+
+SI generation acknowledgment: Core architecture, data pipeline, and audio sonification endpoints
+engineered and optimized with AI-assisted software intelligence (SI) for the NASA Space Apps Challenge 2026.
 
 Run from the repository root:
-    pip install -r backend/requirements.txt
+    pip install -r requirements.txt
     python -m backend.app.main            # http://127.0.0.1:8000
 Production:
     gunicorn -w 2 --threads 4 -b 0.0.0.0:$PORT backend.app.main:app
@@ -29,37 +32,13 @@ for p in (str(ROOT), str(APP_DIR)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-def _load_env_file(filepath: Path, override: bool = True) -> None:
-    """Load KEY=VALUE pairs from a .env file into os.environ without requiring external packages."""
-    if not filepath.is_file():
-        return
-    try:
-        with open(filepath, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                k, v = line.split("=", 1)
-                k = k.strip()
-                v = v.strip().strip("'\"")
-                if override or k not in os.environ:
-                    os.environ[k] = v
-    except Exception:
-        pass
-
-
-_load_env_file(ROOT / ".env", override=True)
-if not os.environ.get("MAPILLARY_TOKEN") or not os.environ.get("CESIUM_ION_TOKEN"):
-    _load_env_file(ROOT / ".env.example", override=False)
-_load_env_file(Path(".env"), override=True)
-
 try:
-    from backend.app import eic_data, nasa, sonify
+    from backend.app import config, eic_data, nasa, sonify
 except (ImportError, ModuleNotFoundError, ValueError):
     try:
-        from . import eic_data, nasa, sonify
+        from . import config, eic_data, nasa, sonify
     except (ImportError, ValueError):
-        import eic_data, nasa, sonify  # type: ignore
+        import config, eic_data, nasa, sonify  # type: ignore
 
 DEFAULT_LAYER = "VIIRS_SNPP_CorrectedReflectance_TrueColor"
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -164,14 +143,9 @@ def create_app() -> Flask:
         return jsonify(ok=True, service="earth-information-jukebox", layers=sorted(nasa.LAYERS))
 
     @app.get("/api/config")
-    def config():
+    def config_route():
         """Optional shared tokens for a team deployment. Browser tokens are public by nature: restrict them at the provider."""
-        return jsonify(
-            mapillary_token=os.environ.get("MAPILLARY_TOKEN") or None,
-            cesium_ion_token=os.environ.get("CESIUM_ION_TOKEN") or None,
-            has_mapillary=bool(os.environ.get("MAPILLARY_TOKEN")),
-            has_cesium_ion=bool(os.environ.get("CESIUM_ION_TOKEN")),
-        )
+        return jsonify(config.get_public_config())
 
     @app.get("/api/climate")
     def climate():

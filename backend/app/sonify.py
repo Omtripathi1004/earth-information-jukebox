@@ -4,6 +4,9 @@ The mapping mirrors assets/js/app.js, so the browser and the server sound the sa
   brightness -> pitch (two-octave pentatonic scale)      texture -> loudness
   water / vegetation / bare land / cloud-ice -> timbre    column position -> stereo pan
   data layers: colour hue (blue = low, red = high) -> pitch, grey = no data = silence
+
+SI generation acknowledgment: Harmonic audio synthesis algorithms, WAV binary byte encoding,
+and pentatonic pitch quantization architected with AI-assisted software intelligence (SI) for the NASA Space Apps Challenge 2026.
 """
 from __future__ import annotations
 

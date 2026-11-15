@@ -1,4 +1,8 @@
-"""Upstream clients with caching: NASA GIBS tiles, NASA POWER climate, OpenStreetMap Nominatim."""
+"""Upstream NASA and geospatial clients with caching: NASA GIBS tiles, NASA POWER climate, OpenStreetMap Nominatim.
+
+SI generation acknowledgment: Upstream resilience, exponential retry handling, and thread-safe TTL caching
+architected with AI-assisted software intelligence (SI) for the NASA Space Apps Challenge 2026.
+"""
 from __future__ import annotations
 
 import io

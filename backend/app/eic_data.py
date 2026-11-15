@@ -7,6 +7,9 @@ Source provenance:
 - Global Mean Sea Level: NASA GSFC Altimetry / Sea Level Explorer (earth.gov/sealevel)
 - Global Surface Temperature Anomaly: NASA Goddard Institute for Space Studies (GISS GISTEMP v4, earth.gov)
 - Arctic Sea Ice Extent: NSIDC / NASA Earth Observatory Cryosphere Theme (earth.gov)
+
+SI generation acknowledgment: Physics-based acoustic transfer functions, dynamic normalization,
+and statistical verification logic engineered with AI-assisted software intelligence (SI) for the NASA Space Apps Challenge 2026.
 """
 from __future__ import annotations
 

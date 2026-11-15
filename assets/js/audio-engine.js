@@ -7,6 +7,10 @@
  * - Verified EIC Planetary Metric Jukebox (all 6 canonical datasets)
  * - Reference calibration test chime
  *
+ * Acknowledgment:
+ * Contains refactored sound synthesis and Web Audio graph architecture
+ * generated and verified in collaboration with NASA Space Apps Challenge 2026 SI.
+ *
  * Provides:
  * - Direct initialization from explicit user gestures
  * - Autoplay restriction recovery & status diagnostics
@@ -41,14 +45,19 @@
     /**
      * Get or initialize the single shared AudioContext.
      * Guaranteed to return a non-closed context or null if unsupported.
+     *
+     * @returns {AudioContext|null} The active Web Audio context instance or null.
      */
     getContext() {
       return this.ctx;
     }
 
     /**
-     * Explicit user gesture entry point.
-     * Must be called inside click / keydown / touch handlers.
+     * Explicit user gesture entry point for Web Audio context activation.
+     * Must be called inside click / keydown / touch handlers to satisfy browser autoplay policy.
+     *
+     * @returns {Promise<AudioContext|null>} Resolves with active AudioContext or null if blocked.
+     * @sideEffects Initializes master gain, compressor, and spatial delay nodes; updates DOM status pill.
      */
     async init() {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -143,6 +152,9 @@
 
     /**
      * Resumes the AudioContext if suspended by browser autoplay policy.
+     *
+     * @returns {Promise<void>} Resolves when context is running or rejected if blocked.
+     * @sideEffects Updates audio status pill in UI header.
      */
     async resume() {
       if (!this.ctx) return;
@@ -194,11 +206,13 @@
     /**
      * Universal voice synthesis for scientific datasets and image scanning.
      *
-     * @param {string} voiceType - 'bell' | 'water' | 'forest' | 'desert' | 'ice'
-     * @param {number} freq - Acoustic frequency in Hz
-     * @param {number} vel - Velocity / amplitude scaling (0.01 - 0.5)
-     * @param {number} pan - Stereo panning position (-1.0 to +1.0)
+     * @param {string} voiceType - Synthesis timbre: 'bell' | 'water' | 'forest' | 'desert' | 'ice'
+     * @param {number} freq - Acoustic frequency in Hz (20 Hz - 12000 Hz)
+     * @param {number} vel - Velocity / amplitude scaling factor (0.01 - 0.5)
+     * @param {number} pan - Stereo panning position (-1.0 left to +1.0 right)
      * @param {number} [overrideDur] - Optional duration in seconds
+     * @returns {Object|null} Note metadata object or null if muted/failed
+     * @sideEffects Schedules oscillator nodes and triggers transient gain envelope
      */
     playVoice(voiceType, freq, vel, pan, overrideDur) {
       if (this.isMuted) return null;
@@ -280,6 +294,8 @@
     /**
      * Measure current RMS audio output level from AnalyserNode.
      * Useful for automated signal validation and audio health checks.
+     *
+     * @returns {number} Root-Mean-Square signal amplitude (0.0 to 1.0)
      */
     measureRMS() {
       if (!this.analyser) return 0;
@@ -296,6 +312,9 @@
     /**
      * Plays an audible, pleasant reference test tone (A4 440 Hz + E5 660 Hz chime).
      * Validates that output is genuinely non-silent.
+     *
+     * @returns {Promise<{success: boolean, rms?: number, state?: string, reason?: string}>} Diagnostic audio status
+     * @sideEffects Emits test frequencies and samples AnalyserNode energy
      */
     async playTestTone() {
       await this.init();
@@ -323,6 +342,10 @@
 
     /**
      * Master Mute Toggle.
+     *
+     * @param {boolean} mute - True to mute audio, false to unmute
+     * @returns {boolean} Updated mute status
+     * @sideEffects Ramps master gain smoothly to 0 or restores masterVolume
      */
     setMuted(mute) {
       this.isMuted = !!mute;
@@ -337,12 +360,20 @@
       return this.isMuted;
     }
 
+    /**
+     * Toggles current mute state.
+     *
+     * @returns {boolean} New mute state
+     */
     toggleMute() {
       return this.setMuted(!this.isMuted);
     }
 
     /**
      * Master Volume setting (0.0 to 1.0).
+     *
+     * @param {number} vol - Desired linear gain factor (0.0 silent to 1.0 full)
+     * @sideEffects Sets masterGain node value if not muted
      */
     setMasterVolume(vol) {
       this.masterVolume = Math.max(0, Math.min(1.0, vol));
@@ -355,6 +386,9 @@
 
     /**
      * Register a status change listener callback.
+     *
+     * @param {function(string, string): void} fn - Callback receiving (status, statusMessage)
+     * @sideEffects Invokes callback immediately with initial state
      */
     onStatusChange(fn) {
       if (typeof fn === 'function') {
