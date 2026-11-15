@@ -7,6 +7,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { spawn } = require('child_process');
 
 const PORT = 8089;
@@ -70,7 +71,7 @@ async function run() {
   }
   console.log(`✓ Using browser binary: ${browserBin}`);
 
-  const tempProfile = path.join(ROOT, '.tmp_chrome_profile');
+  const tempProfile = path.join(os.tmpdir(), `chrome_audio_test_profile_${Date.now()}`);
   if (!fs.existsSync(tempProfile)) fs.mkdirSync(tempProfile, { recursive: true });
 
   const remotePort = 9226;
@@ -367,6 +368,11 @@ async function run() {
     }
   } catch (e) {}
   try { server.close(); } catch (e) {}
+  try {
+    if (fs.existsSync(tempProfile)) {
+      fs.rmSync(tempProfile, { recursive: true, force: true });
+    }
+  } catch (e) {}
 
   console.log(`\nReal Browser Audio Tests Completed: ${passed} passed, ${failed} failed.`);
   if (failed > 0) process.exit(1);
