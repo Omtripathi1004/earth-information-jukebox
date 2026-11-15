@@ -189,28 +189,65 @@ async function lookup() {
   $('#place').textContent = place || 'Unnamed place';
   if (z >= 3 && (!lastC || Math.hypot(c.lat - lastC.lat, c.lng - lastC.lng) > .4)) { lastC = c; climate(c.lat, c.lng); }
 }
+let climateAbortCtrl = null;
 let climateReqSeq = 0;
 async function climate(lat, lon) {
+  if (climateAbortCtrl) {
+    try { climateAbortCtrl.abort(); } catch (e) {}
+  }
+  if (typeof AbortController !== 'undefined') {
+    climateAbortCtrl = new AbortController();
+  }
+  const signal = climateAbortCtrl ? climateAbortCtrl.signal : undefined;
   const reqSeq = ++climateReqSeq;
-  $('#cl').textContent = 'Loading NASA POWER…'; $('#cm').disabled = true;
+
+  $('#cl').innerHTML = '<span class="inline-block animate-spin mr-1">⏳</span> Loading NASA POWER v10…';
+  $('#cm').disabled = true;
+
   try {
     if (BACKEND) {   /* the Python backend caches NASA POWER, computes the trend and avoids browser CORS limits */
-      const s = await (await fetch(`${API}/api/climate?lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}`)).json();
+      const res = await fetch(`${API}/api/climate?lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}`, { signal });
+      if (reqSeq !== climateReqSeq) return;
+      const s = await res.json();
       if (reqSeq !== climateReqSeq) return;
       if (s.error) throw new Error(s.error);
-      CL = { Y: s.years, TT: s.temp_c, b: s.trend_c_per_year, my: s.mean_c, rain: s.mean_rain_mm_day }; drawCl();
-      $('#cl').textContent = `Mean ${CL.my.toFixed(1)} °C · trend ${CL.b >= 0 ? '+' : '−'}${Math.abs(CL.b * 10).toFixed(2)} °C per decade · rain ${CL.rain.toFixed(1)} mm/day`; $('#cm').disabled = false; return;
+      CL = { Y: s.years, TT: s.temp_c, b: s.trend_c_per_year, my: s.mean_c, rain: s.mean_rain_mm_day };
+      drawCl();
+      $('#cl').textContent = `Mean ${CL.my.toFixed(1)} °C · trend ${CL.b >= 0 ? '+' : '−'}${Math.abs(CL.b * 10).toFixed(2)} °C per decade · rain ${CL.rain.toFixed(1)} mm/day`;
+      $('#cm').disabled = false;
+      return;
     }
-    const j = await (await fetch(`https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=T2M,PRECTOTCORR&community=RE&longitude=${lon.toFixed(2)}&latitude=${lat.toFixed(2)}&start=1985&end=2025&format=JSON`)).json();
+    const res = await fetch(`https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=T2M,PRECTOTCORR&community=RE&longitude=${lon.toFixed(2)}&latitude=${lat.toFixed(2)}&start=1985&end=2025&format=JSON`, { signal });
+    if (reqSeq !== climateReqSeq) return;
+    const j = await res.json();
     if (reqSeq !== climateReqSeq) return;
     const T = j.properties.parameter.T2M, R = j.properties.parameter.PRECTOTCORR, Y = [], TT = [], RR = [];
-    for (let y = 1985; y <= 2025; y++) { const tm = [], rm = []; for (let m = 1; m <= 12; m++) { const k = y + String(m).padStart(2, '0'); if (T[k] > -900) tm.push(T[k]); if (R[k] > -900) rm.push(R[k]); } if (tm.length >= 10) { Y.push(y); TT.push(tm.reduce((a, b) => a + b) / tm.length); RR.push(rm.length ? rm.reduce((a, b) => a + b) / rm.length : 0); } }
-    const n = Y.length, mx = Y.reduce((a, b) => a + b) / n, my = TT.reduce((a, b) => a + b) / n; let sxy = 0, sxx = 0; Y.forEach((y, i) => { sxy += (y - mx) * (TT[i] - my); sxx += (y - mx) ** 2; });
-    CL = { Y, TT, b: sxy / sxx, my, rain: RR.reduce((a, b) => a + b) / n }; drawCl();
-    $('#cl').textContent = `Mean ${CL.my.toFixed(1)} °C · trend ${CL.b >= 0 ? '+' : '−'}${Math.abs(CL.b * 10).toFixed(2)} °C per decade · rain ${CL.rain.toFixed(1)} mm/day`; $('#cm').disabled = false;
+    for (let y = 1985; y <= 2025; y++) {
+      const tm = [], rm = [];
+      for (let m = 1; m <= 12; m++) {
+        const k = y + String(m).padStart(2, '0');
+        if (T[k] > -900) tm.push(T[k]);
+        if (R[k] > -900) rm.push(R[k]);
+      }
+      if (tm.length >= 10) {
+        Y.push(y);
+        TT.push(tm.reduce((a, b) => a + b) / tm.length);
+        RR.push(rm.length ? rm.reduce((a, b) => a + b) / rm.length : 0);
+      }
+    }
+    const n = Y.length, mx = Y.reduce((a, b) => a + b) / n, my = TT.reduce((a, b) => a + b) / n;
+    let sxy = 0, sxx = 0;
+    Y.forEach((y, i) => { sxy += (y - mx) * (TT[i] - my); sxx += (y - mx) ** 2; });
+    CL = { Y, TT, b: sxy / sxx, my, rain: RR.reduce((a, b) => a + b) / n };
+    drawCl();
+    $('#cl').textContent = `Mean ${CL.my.toFixed(1)} °C · trend ${CL.b >= 0 ? '+' : '−'}${Math.abs(CL.b * 10).toFixed(2)} °C per decade · rain ${CL.rain.toFixed(1)} mm/day`;
+    $('#cm').disabled = false;
   } catch (e) {
+    if (e.name === 'AbortError') return;
     if (reqSeq !== climateReqSeq) return;
-    CL = null; drawCl(); $('#cl').textContent = 'NASA POWER could not be reached for this spot.';
+    CL = null;
+    drawCl();
+    $('#cl').textContent = 'Climate data unavailable for this location.';
   }
 }
 function drawCl() {
@@ -272,7 +309,16 @@ $('#listen').onclick = async () => {
 };
 let cmT; $('#cm').onclick = async () => {
   if (!CL) return; await boot(); clearInterval(cmT); const { Y, TT } = CL, m = CL.my; let i = 0;
-  cmT = setInterval(() => { if (i >= Y.length) { clearInterval(cmT); $('#clyr').textContent = ''; return; } voice('bell', scaleF(Math.round(clamp((TT[i] - m + 1.5) / 3, 0, 1) * 14)), .16, i / Y.length * 1.6 - .8); $('#clyr').textContent = Y[i++]; }, 200);
+  const playMsg = `Playing melody of local temperatures (${Y[0]}–${Y[Y.length - 1]}): Mean ${m.toFixed(1)} °C, trend ${CL.b >= 0 ? '+' : '−'}${Math.abs(CL.b * 10).toFixed(2)} °C/decade.`;
+  if ($('#clyr')) $('#clyr').textContent = playMsg;
+  const liveEl = document.getElementById('live');
+  if (liveEl) liveEl.textContent = playMsg;
+  cmT = setInterval(() => {
+    if (i >= Y.length) { clearInterval(cmT); if ($('#clyr')) $('#clyr').textContent = ''; return; }
+    if ($('#clyr')) $('#clyr').textContent = `${Y[i]}: ${TT[i].toFixed(1)} °C`;
+    voice('bell', scaleF(Math.round(clamp((TT[i] - m + 1.5) / 3, 0, 1) * 14)), .16, i / Y.length * 1.6 - .8);
+    i++;
+  }, 200);
 };
 
 /* ---------- rich historical knowledge & narrator ---------- */

@@ -1197,8 +1197,11 @@
         this.slider.min = '0';
         this.slider.max = String(d.years.length - 1);
         this.slider.value = String(idx);
+        this.slider.setAttribute('role', 'slider');
+        this.slider.setAttribute('aria-valuemin', '0');
+        this.slider.setAttribute('aria-valuemax', String(d.years.length - 1));
         this.slider.setAttribute('aria-valuenow', String(idx));
-        this.slider.setAttribute('aria-valuetext', `${year}: ${val} ${d.units}`);
+        this.slider.setAttribute('aria-valuetext', `${year}: ${val} ${d.units || ''}`);
       }
 
       if (this.btnPlay) {
@@ -1223,13 +1226,13 @@
       const dynamics = s.dynamics || '';
       const spatial = s.spatial || '';
 
-      setText('eic-sound-var', `${d.title} (${d.units})`);
-      setText('eic-sound-voice', `${voiceName}: ${voiceDesc}`);
-      setText('eic-sound-formula', formula);
-      setText('eic-sound-range', pitchRange);
-      setText('eic-sound-dynamics', dynamics);
-      setText('eic-sound-spatial', spatial);
-      setText('eic-sound-limits', d.limitations || '');
+      setText('eic-sound-var', `${d.title} (${d.units || 'TBD'})`);
+      setText('eic-sound-voice', `${voiceName || 'TBD'}: ${voiceDesc || 'TBD'}`);
+      setText('eic-sound-formula', formula || 'TBD');
+      setText('eic-sound-range', pitchRange || 'TBD');
+      setText('eic-sound-dynamics', dynamics || 'TBD');
+      setText('eic-sound-spatial', spatial || 'TBD');
+      setText('eic-sound-limits', d.limitations || 'TBD');
 
       const calculatedNote = note || EICSonifier.calculateNote(d, idx, state.stats);
       const freqHz = Math.round(calculatedNote.freq);

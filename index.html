@@ -32,7 +32,7 @@
   <div class="glass px-3 py-2 pe"><div class="lbl text-sky-400">NASA Space Apps 2026</div><div class="font-display font-bold text-sm sm:text-base leading-tight">Earth Information Jukebox</div></div>
   <form id="sf" role="search" class="flex-1 min-w-[200px] max-w-md flex gap-2 pe"><input id="q" class="flex-1 min-w-0" placeholder="Search any place on Earth…" aria-label="Search a place" autocomplete="off" spellcheck="false" enterkeyhint="search"><button class="btn" type="submit">Go</button></form>
   <button id="eic-btn" class="cta pe flex items-center gap-1.5" aria-haspopup="dialog" aria-expanded="false" title="Explore NASA Earth Information Center (EIC) verified datasets & sonification (Press E)"><span aria-hidden="true">🌐</span> EIC Jukebox</button>
-  <button id="listen" class="cta pe" aria-pressed="false" title="Start or stop listening (L)"><span aria-hidden="true">♪</span> Listen to this view</button>
+  <button id="listen" class="cta pe" aria-pressed="false" title="Click Listen to hear data: sonifies satellite pixels into musical tones (L)"><span aria-hidden="true">♪</span> Listen to this view</button>
   <button id="tour" class="btn pe" title="Narrated tour of places and monuments"><span aria-hidden="true">🎬</span> Tour</button>
   <button id="gnd" class="btn pe" title="Drop to ground level in 3D"><span aria-hidden="true">⛰</span> Drop to ground</button>
   <button id="spots-btn" class="btn pe on" aria-pressed="true" title="Toggle blue markers on map for photos, landmarks, malls, and 360 views"><span aria-hidden="true">📍</span> Photo spots</button>
@@ -73,9 +73,9 @@
 
 <aside class="glass fixed z-20 left-3 bottom-3 p-3 w-[min(340px,calc(100vw-24px))]" style="margin-bottom: env(safe-area-inset-bottom)" aria-live="off">
   <div class="lbl text-sky-400" id="chap">Orbit · the whole Earth</div>
-  <div id="place" class="font-display font-bold text-base leading-snug mt-1">Drag the globe, or click a place</div>
+  <div id="place" class="font-display font-bold text-base leading-snug mt-1 truncate max-w-full">Drag the globe, or click a place</div>
   <div class="font-mono text-[11px] text-slate-400 mt-1"><span id="coord"></span> · <span id="scale"></span></div>
-  <div class="font-mono text-[12px] mt-2 text-amber-300 break-words leading-relaxed">Hearing: <span id="hear" class="text-slate-200 break-words">press Listen</span></div>
+  <div class="font-mono text-[12px] mt-2 text-amber-300 break-words leading-relaxed">Hearing: <span id="hear" class="text-slate-200 break-words">Click Listen to hear data</span></div>
   <div class="grid grid-cols-2 gap-2 mt-3">
     <select id="lyr" aria-label="NASA layer"><optgroup label="Satellite photo (seamless & true colour)"><option value="GOOGLE_SATELLITE|20|jpg" selected>Seamless Global Satellite (High-Res, Farmlands & Cities)</option><option value="VIIRS_SNPP_CorrectedReflectance_TrueColor|9|jpg">NASA VIIRS (Daily clouds & weather)</option><option value="MODIS_Terra_CorrectedReflectance_TrueColor|9|jpg">NASA MODIS Terra (Daily True-Color Reflectance)</option><option value="MODIS_Aqua_CorrectedReflectance_TrueColor|9|jpg">NASA MODIS Aqua (Daily True-Color Reflectance)</option></optgroup><optgroup label="NASA data frames"><option value="MODIS_Terra_Land_Surface_Temp_Day|7|png">Land surface temperature</option><option value="MODIS_Terra_Aerosol|6|png">Aerosol optical depth</option><option value="GHRSST_L4_MUR_Sea_Surface_Temperature|7|png">Sea surface temperature</option><option value="MODIS_Terra_NDSI_Snow_Cover|8|png">Snow cover</option><option value="VIIRS_SNPP_DayNightBand_At_Sensor_Radiance|8|png">Night lights (VIIRS)</option></optgroup></select>
     <input id="dt" type="date" aria-label="Imagery date">
@@ -240,7 +240,7 @@
 <aside id="about"  hidden role="dialog" aria-labelledby="about-h" class="glass fixed z-[60] left-1/2 top-24 -translate-x-1/2 p-4 w-[min(520px,calc(100vw-24px))] max-h-[70vh] overflow-auto text-[12px] text-slate-300">
   <h2 id="about-h" class="font-display font-bold text-base text-slate-100 mb-2">About and data credits</h2>
   <p>An independent prototype made for the NASA Space Apps Challenge. It is not an official NASA product, and NASA does not endorse it.</p>
-  <ul class="list-disc pl-5 mt-2 space-y-1"><li>NASA EOSDIS GIBS: satellite imagery and data layers. NASA POWER: local climate.</li><li>Global High-Resolution Satellite & Esri World Imagery, OpenStreetMap and OpenFreeMap: base imagery, terrain, buildings and labels.</li><li>Street photos: © Mapillary contributors, CC BY-SA 4.0.</li><li>Open-source software: MapLibre GL JS, Tailwind CSS, CesiumJS, Flask, NumPy, Pillow and Requests. Esri imagery and Google photoreal 3D are third-party services with their own terms. Full list and licences: SOURCES.md in the repository.</li><li>Photoreal 3D: Google Photorealistic 3D Tiles through Cesium ion, used under their terms.</li></ul>
+  <ul class="list-disc pl-5 mt-2 space-y-1"><li><b>Authoritative Data Sources:</b> NASA GISS/GISTEMP v4 (Global Surface Temperature Anomalies), NOAA GML / NASA GHG Center (Atmospheric CO₂), NASA GSFC / EIC Resource #332 (Global Mean Sea Level), NSIDC / NASA Sea Ice Index (Arctic Sea Ice Extent), NASA JPL ECCO2 (Sea Surface Potential Temperature), NASA POWER v10 (Local Climatology), and NASA EOSDIS GIBS (Satellite Imagery).</li><li>NASA EOSDIS GIBS: satellite imagery and data layers. NASA POWER: local climate.</li><li>Global High-Resolution Satellite & Esri World Imagery, OpenStreetMap and OpenFreeMap: base imagery, terrain, buildings and labels.</li><li>Street photos: © Mapillary contributors, CC BY-SA 4.0.</li><li>Open-source software: MapLibre GL JS, Tailwind CSS, CesiumJS, Flask, NumPy, Pillow and Requests. Esri imagery and Google photoreal 3D are third-party services with their own terms. Full list and licences: SOURCES.md in the repository.</li><li>Photoreal 3D: Google Photorealistic 3D Tiles through Cesium ion, used under their terms.</li></ul>
   <p class="mt-2">Built with help from AI coding tools (Claude, by Anthropic). Source: github.com/Omtripathi1004/earth-information-jukebox</p>
   <div class="flex justify-end mt-3"><button id="abx" class="btn">Close</button></div>
 </aside>
@@ -413,7 +413,7 @@
   </details>
 
   <div class="mt-3">
-    <input id="eic-slider" type="range" class="w-full accent-sky-400 cursor-pointer" min="0" max="11" value="0" aria-label="Timeline position">
+    <input id="eic-slider" type="range" role="slider" class="w-full accent-sky-400 cursor-pointer" min="0" max="11" value="0" aria-label="Timeline position" aria-valuemin="0" aria-valuemax="11" aria-valuenow="0">
     <div class="mt-1.5 px-0.5">
       <div class="flex justify-between text-[9px] font-mono text-slate-400">
         <span id="eic-pitch-label-low">Min (12.0 °C → 200 Hz)</span>
@@ -499,9 +499,9 @@
 <div id="live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script src="assets/js/audio-engine.js?v=1.2"></script>
-<script src="assets/js/app.js?v=5.0"></script>
+<script src="assets/js/app.js?v=5.1"></script>
 <script src="assets/js/patch.js?v=4.9"></script>
 <script src="assets/js/enhance.js?v=4.9"></script>
-<script src="assets/js/eic.js?v=5.7"></script>
+<script src="assets/js/eic.js?v=5.8"></script>
 </body>
 </html>
